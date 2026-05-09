@@ -12,6 +12,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical, VerticalScroll
 from textual.css.query import NoMatches
+from textual.message import Message
 from textual.widgets import (
     Button,
     Checkbox,
@@ -21,7 +22,6 @@ from textual.widgets import (
     ProgressBar,
     RadioButton,
     RadioSet,
-    Select,
     Static,
 )
 
@@ -105,21 +105,49 @@ class StuiCheckbox(Checkbox):
         )
 
 
-class StuiSelectbox(Select):
+class StuiSelectbox(Static, can_focus=True):
+    BINDINGS = [
+        Binding("enter", "choose_next", "Next choice", show=False),
+        Binding("right", "choose_next", "Next choice", show=False),
+        Binding("down", "choose_next", "Next choice", show=False),
+        Binding("left", "choose_previous", "Previous choice", show=False),
+        Binding("up", "choose_previous", "Previous choice", show=False),
+    ]
+
+    class Changed(Message):
+        def __init__(self, selectbox: StuiSelectbox, value: object) -> None:
+            super().__init__()
+            self.selectbox = selectbox
+            self.value = value
+
     def __init__(self, element: SelectboxElement) -> None:
         self.stui_key = element.key
-        options = [(str(option), option) for option in element.options]
+        self.stui_options = element.options
+        self.stui_index = element.index
         super().__init__(
-            options,
-            prompt=element.label,
-            value=element.options[element.index],
-            allow_blank=False,
+            self._render_value(),
             id=dom_id_for_key(element.key),
-            disabled=element.disabled,
+            classes="stui-selectbox",
         )
+        self.disabled = element.disabled
 
-    def compose(self) -> ComposeResult:
-        yield from super().compose()
+    def action_choose_next(self) -> None:
+        self._move(1)
+
+    def action_choose_previous(self) -> None:
+        self._move(-1)
+
+    def _move(self, delta: int) -> None:
+        if self.disabled or len(self.stui_options) < 2:
+            return
+        self.stui_index = (self.stui_index + delta) % len(self.stui_options)
+        value = self.stui_options[self.stui_index]
+        self.update(self._render_value())
+        self.post_message(self.Changed(self, value))
+
+    def _render_value(self) -> str:
+        value = self.stui_options[self.stui_index]
+        return f"[ {value} ]"
 
 
 class StuiRadioSet(RadioSet):
@@ -229,7 +257,7 @@ class StuiApp(App[None]):
         margin: 0 0 1 0;
     }
 
-    Select, RadioSet {
+    .stui-selectbox, RadioSet {
         margin: 0 0 1 0;
     }
 
@@ -244,7 +272,7 @@ class StuiApp(App[None]):
         text-style: bold;
     }
 
-    Select:focus, RadioSet:focus {
+    .stui-selectbox:focus, RadioSet:focus {
         border: tall #8ab4ff;
         background: #202033;
     }
@@ -350,18 +378,6 @@ class StuiApp(App[None]):
         checkbox = event.checkbox
         key = getattr(checkbox, "stui_key", None)
         if key is None:
-            return
-        event.stop()
-        self.runtime.set_widget_value(key, event.value)
-        self.runtime.run_script()
-        await self.render_runtime()
-
-    async def on_select_changed(self, event: Select.Changed) -> None:
-        select = event.control
-        key = getattr(select, "stui_key", None)
-        if key is None:
-            return
-        if not self._body_is_ready():
             return
         event.stop()
         self.runtime.set_widget_value(key, event.value)
@@ -489,7 +505,9 @@ class StuiApp(App[None]):
             return checkbox
         if isinstance(element, SelectboxElement):
             selectbox = StuiSelectbox(element)
-            selectbox.tooltip = "Enter opens choices. Tab and Shift+Tab move focus."
+            selectbox.tooltip = (
+                "Enter or arrow keys cycle choices. Tab and Shift+Tab move focus."
+            )
             return Vertical(
                 Static(element.label, classes="stui-field-label"),
                 selectbox,
@@ -530,6 +548,17 @@ class StuiApp(App[None]):
                 classes="error",
             )
         return Static(str(element))
+
+    async def on_stui_selectbox_changed(
+        self, event: StuiSelectbox.Changed
+    ) -> None:
+        key = getattr(event.selectbox, "stui_key", None)
+        if key is None:
+            return
+        event.stop()
+        self.runtime.set_widget_value(key, event.value)
+        self.runtime.run_script()
+        await self.render_runtime()
 
     async def _restore_focus(self) -> None:
         key = self.runtime.last_focused_key
