@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 This project is currently pre-1.0, so APIs may change while the MVP is being
 shaped.
 
-## 0.2.0rc1 - 2026-05-09
+## 0.2.0 - 2026-05-09
 
 ### Added
 
@@ -16,6 +16,18 @@ shaped.
 - CLI diagnostics with `stui doctor` and example discovery with
   `stui examples`.
 - Example apps for inputs, data display, and a compact dashboard.
+
+### Changed
+
+- Promoted the 0.2.0 release line from release candidate to stable.
+- Refreshed public docs for the `stui-terminal` install path, compact API
+  reference, troubleshooting, and stable announcement copy.
+
+## 0.2.0rc1 - 2026-05-09
+
+### Added
+
+- Release candidate for the 0.2.0 API expansion.
 
 ## 0.1.0rc2 - 2026-05-09
 

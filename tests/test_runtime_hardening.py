@@ -143,6 +143,29 @@ raise RuntimeError("boom")
     assert runtime.session_state.count == 3
 
 
+def test_enabled_widget_change_survives_later_script_exception(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.text_input("Name", value="Ada", key="name")
+raise RuntimeError("boom")
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    runtime.set_widget_value("name", "Grace")
+    elements = runtime.run_script()
+
+    assert isinstance(elements[0], ErrorElement)
+    assert "RuntimeError: boom" in elements[0].traceback
+    assert runtime.session_state["name"] == "Grace"
+
+
 def test_duplicate_explicit_widget_key_renders_readable_error(
     tmp_path: Path,
 ) -> None:

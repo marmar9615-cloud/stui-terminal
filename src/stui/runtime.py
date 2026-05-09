@@ -59,9 +59,12 @@ class Runtime:
         self.explicit_widget_keys_seen: set[str] = set()
         self.pending_button_presses: set[str] = set()
         self.pending_changed_widgets: set[str] = set()
+        self.pending_widget_values: dict[str, Any] = {}
         self.last_focused_key: str | None = None
         self._active_button_presses: set[str] = set()
         self._active_changed_widgets: set[str] = set()
+        self._active_widget_values: dict[str, Any] = {}
+        self._committed_widget_values: dict[str, Any] = {}
 
     def run_script(self) -> list[Element]:
         for _ in range(10):
@@ -75,9 +78,11 @@ class Runtime:
                 continue
             except DuplicateWidgetKeyError as exc:
                 self.session_state.restore(session_snapshot)
+                self._restore_committed_widget_values()
                 self.elements = [ErrorElement(str(exc))]
             except Exception:
                 self.session_state.restore(session_snapshot)
+                self._restore_committed_widget_values()
                 self.elements = [ErrorElement(traceback.format_exc())]
             finally:
                 self._pop_script_dir(path_added)
@@ -189,9 +194,14 @@ class Runtime:
     ) -> int | float:
         widget_key = self.next_widget_key("slider", label, key)
         default = min_value if value is None else value
-        current = self.session_state.get(widget_key, default)
+        current = self._changed_widget_value(
+            widget_key,
+            self.session_state.get(widget_key, default),
+            disabled=disabled,
+        )
         snapped = snap_value(current, min_value, max_value, step)
         self.session_state[widget_key] = snapped
+        self._remember_committed_widget_value(widget_key, snapped, disabled=disabled)
         self.elements.append(
             SliderElement(
                 label=label,
@@ -225,8 +235,15 @@ class Runtime:
         kwargs: dict[str, Any] | None = None,
     ) -> str:
         widget_key = self.next_widget_key("text_input", label, key)
-        current = str(self.session_state.get(widget_key, value))
+        current = str(
+            self._changed_widget_value(
+                widget_key,
+                self.session_state.get(widget_key, value),
+                disabled=disabled,
+            )
+        )
         self.session_state[widget_key] = current
+        self._remember_committed_widget_value(widget_key, current, disabled=disabled)
         self.elements.append(
             TextInputElement(
                 label=label,
@@ -256,8 +273,15 @@ class Runtime:
         kwargs: dict[str, Any] | None = None,
     ) -> bool:
         widget_key = self.next_widget_key("checkbox", label, key)
-        current = bool(self.session_state.get(widget_key, value))
+        current = bool(
+            self._changed_widget_value(
+                widget_key,
+                self.session_state.get(widget_key, value),
+                disabled=disabled,
+            )
+        )
         self.session_state[widget_key] = current
+        self._remember_committed_widget_value(widget_key, current, disabled=disabled)
         self.elements.append(
             CheckboxElement(
                 label=label,
@@ -290,12 +314,17 @@ class Runtime:
     ) -> int | float:
         widget_key = self.next_widget_key("number_input", label, key)
         current = _coerce_number(
-            self.session_state.get(widget_key, value),
+            self._changed_widget_value(
+                widget_key,
+                self.session_state.get(widget_key, value),
+                disabled=disabled,
+            ),
             value,
             prefer_float=isinstance(step, float),
         )
         current = _clamp_number(current, min_value, max_value)
         self.session_state[widget_key] = current
+        self._remember_committed_widget_value(widget_key, current, disabled=disabled)
         self.elements.append(
             NumberInputElement(
                 label=label,
@@ -387,11 +416,16 @@ class Runtime:
             )
             return None
         safe_index = min(max(index, 0), len(options) - 1)
-        current = self.session_state.get(widget_key, options[safe_index])
+        current = self._changed_widget_value(
+            widget_key,
+            self.session_state.get(widget_key, options[safe_index]),
+            disabled=disabled,
+        )
         if current not in options:
             current = options[safe_index]
         current_index = options.index(current)
         self.session_state[widget_key] = current
+        self._remember_committed_widget_value(widget_key, current, disabled=disabled)
         element_cls = SelectboxElement if widget_type == "selectbox" else RadioElement
         self.elements.append(
             element_cls(
@@ -432,7 +466,7 @@ class Runtime:
         self.last_focused_key = key
 
     def set_widget_value(self, key: str, value: Any) -> None:
-        self.session_state[key] = value
+        self.pending_widget_values[key] = value
         self.pending_changed_widgets.add(key)
         self.last_focused_key = key
 
@@ -448,14 +482,42 @@ class Runtime:
         self._active_changed_widgets.remove(key)
         return True
 
+    def _changed_widget_value(
+        self,
+        key: str,
+        current: Any,
+        *,
+        disabled: bool,
+    ) -> Any:
+        if disabled or key not in self._active_changed_widgets:
+            return current
+        return self._active_widget_values.get(key, current)
+
+    def _remember_committed_widget_value(
+        self,
+        key: str,
+        value: Any,
+        *,
+        disabled: bool,
+    ) -> None:
+        if not disabled and key in self._active_changed_widgets:
+            self._committed_widget_values[key] = value
+
+    def _restore_committed_widget_values(self) -> None:
+        for key, value in self._committed_widget_values.items():
+            self.session_state[key] = value
+
     def _prepare_run(self) -> None:
         self.elements = []
         self.widget_call_counts = {}
         self.explicit_widget_keys_seen = set()
         self._active_button_presses = set(self.pending_button_presses)
         self._active_changed_widgets = set(self.pending_changed_widgets)
+        self._active_widget_values = dict(self.pending_widget_values)
+        self._committed_widget_values = {}
         self.pending_button_presses.clear()
         self.pending_changed_widgets.clear()
+        self.pending_widget_values.clear()
 
     def _push_script_dir(self) -> bool:
         script_dir = str(self.script_path.parent)

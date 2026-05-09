@@ -26,6 +26,7 @@ EXAMPLE_NAMES = (
     "inputs.py",
     "data_display.py",
     "dashboard.py",
+    "kitchen_sink.py",
 )
 
 

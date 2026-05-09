@@ -42,7 +42,7 @@ Use Python 3.11 or newer.
 Install the PyPI distribution named `stui-terminal`:
 
 ```bash
-python3.11 -m pip install stui-terminal
+python -m pip install stui-terminal
 ```
 
 The PyPI distribution name is `stui-terminal`, but the import package and CLI
@@ -58,13 +58,13 @@ extra:
 ```bash
 python3.11 -m venv .venv
 . .venv/bin/activate
-python3.11 -m pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
 ```
 
 For runtime-only local use, install without the dev extra:
 
 ```bash
-python3.11 -m pip install -e .
+python -m pip install -e .
 ```
 
 ## Quickstart
@@ -72,7 +72,7 @@ python3.11 -m pip install -e .
 Install from PyPI, then run your app:
 
 ```bash
-python3.11 -m pip install stui-terminal
+python -m pip install stui-terminal
 stui run app.py
 ```
 
@@ -83,7 +83,7 @@ git clone https://github.com/marmar9615-cloud/stui-terminal.git
 cd stui-terminal
 python3.11 -m venv .venv
 . .venv/bin/activate
-python3.11 -m pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
 stui run examples/basic.py
 ```
 
@@ -120,6 +120,7 @@ stui run examples/model_demo.py
 stui run examples/inputs.py
 stui run examples/data_display.py
 stui run examples/dashboard.py
+stui run examples/kitchen_sink.py
 ```
 
 ## Why terminal-native?
@@ -141,7 +142,7 @@ websockets, require port-forwarding, or depend on Streamlit at runtime.
 # Install the project for local development.
 python3.11 -m venv .venv
 . .venv/bin/activate
-python3.11 -m pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
 
 # Run the smoke-size example app.
 stui run examples/basic.py
@@ -173,37 +174,76 @@ python3.11 -m pytest
 
 ## Current API
 
-The current public API is intentionally small:
-
-- `st.title(body, *, key=None)`: render a title.
-- `st.header(body, *, key=None)`: render a section header.
-- `st.subheader(body, *, key=None)`: render a smaller section header.
-- `st.caption(body)`: render muted explanatory text.
-- `st.text(body)`: render plain text.
-- `st.markdown(body)`: render Markdown-flavored text.
-- `st.code(body, language=None)`: render a syntax-highlighted code block.
-- `st.json(obj)`: pretty-print JSON-serializable objects.
-- `st.exception(exc)`: render an exception traceback panel.
-- `st.progress(value, text=None)`: render progress from `0..100` or `0.0..1.0`.
-- `st.divider()`: render a horizontal divider.
-- `st.info(body)`, `st.success(body)`, `st.warning(body)`, `st.error(body)`: render status messages.
-- `st.table(data)`: render simple tabular data without requiring pandas.
-- `st.dataframe(data)`: alias for `st.table(data)` in this MVP.
-- `st.write(*args)`: render simple text output.
-- `st.button(label, key=None, help=None, disabled=False, on_click=None, args=None, kwargs=None)`: render a button and return `True` for the run where it was pressed.
-- `st.slider(label, min_value=0, max_value=100, value=None, step=1, *, key=None, help=None, disabled=False, on_change=None, args=None, kwargs=None)`: render a numeric slider and return its current value.
-- `st.text_input(label, value="", *, key=None, placeholder=None, disabled=False, on_change=None, args=None, kwargs=None)`: render a single-line text input and return its current value.
-- `st.checkbox(label, value=False, *, key=None, disabled=False, on_change=None, args=None, kwargs=None)`: render a checkbox and return its current value.
-- `st.number_input(label, min_value=None, max_value=None, value=0, step=1, *, key=None, disabled=False, on_change=None, args=None, kwargs=None)`: render a numeric input.
-- `st.selectbox(label, options, index=0, *, key=None, disabled=False, on_change=None, args=None, kwargs=None)`: choose one option from a dropdown.
-- `st.radio(label, options, index=0, *, key=None, disabled=False, on_change=None, args=None, kwargs=None)`: choose one option from a radio group.
-- `st.session_state`: persist values across reruns with dict-style or attribute-style access.
-- `st.rerun()`: request a script rerun.
-
 Import the API as:
 
 ```python
 import stui as st
+```
+
+The public API is intentionally compact:
+
+- Text: `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`,
+  `st.markdown`, `st.write`, `st.divider`
+- Status: `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception`
+- Display: `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe`
+- Inputs: `st.button`, `st.slider`, `st.text_input`, `st.checkbox`,
+  `st.number_input`, `st.selectbox`, `st.radio`
+- State and control flow: `st.session_state`, `st.rerun`
+
+Inputs support stable `key` values and optional callbacks where the function
+signature documents them. Tables are simple static displays and do not require
+pandas.
+
+## Troubleshooting
+
+### `stui: command not found`
+
+Make sure you installed into the same Python environment that your shell is
+using:
+
+```bash
+python -m pip install stui-terminal
+python -m stui --version
+```
+
+If `python -m stui --version` works but `stui --version` does not, your
+environment's script directory is not on `PATH`. Running through
+`python -m stui ...` is a reliable workaround.
+
+### Python Version
+
+`stui` requires Python 3.11 or newer:
+
+```bash
+python --version
+```
+
+If that prints an older version, create a 3.11+ environment first:
+
+```bash
+python3.11 -m venv .venv
+. .venv/bin/activate
+python -m pip install stui-terminal
+```
+
+### Terminal Rendering
+
+`stui` renders a Textual app inside your terminal. For the best results, use a
+modern terminal with UTF-8 and color support. If borders, focus rings, or block
+characters look wrong, try another terminal app, make the window wider, and
+check that `TERM` is set to a normal interactive terminal value such as
+`xterm-256color`.
+
+### macOS Editable Install Quirk
+
+If a local editable install appears to succeed but `import stui` or
+`stui --version` cannot find the package on macOS, check whether the virtual
+environment or editable-install `.pth` file was marked hidden:
+
+```bash
+chflags -R nohidden .venv
+python -m pip install -e ".[dev]"
+python -m stui --version
 ```
 
 ## Examples
@@ -252,6 +292,15 @@ small table into a compact terminal control panel.
 
 ```bash
 stui run examples/dashboard.py
+```
+
+### Kitchen Sink
+
+`examples/kitchen_sink.py` exercises the stable 0.2.0 API surface in one
+compact app.
+
+```bash
+stui run examples/kitchen_sink.py
 ```
 
 ## Limitations

@@ -7,6 +7,9 @@ import pytest
 from stui.elements import (
     ButtonElement,
     CheckboxElement,
+    NumberInputElement,
+    RadioElement,
+    SelectboxElement,
     SliderElement,
     TextInputElement,
 )
@@ -65,6 +68,49 @@ st.checkbox("Enabled", value=True, disabled=True)
     assert isinstance(elements[2], CheckboxElement)
     assert elements[2].disabled is True
     assert elements[2].value is True
+
+
+def test_disabled_non_button_widgets_ignore_pending_runtime_changes(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.slider("Amount", 0, 10, 5, key="amount", disabled=True)
+st.text_input("Name", value="Ada", key="name", disabled=True)
+st.checkbox("Enabled", value=True, key="enabled", disabled=True)
+st.number_input("Count", value=2, key="count", disabled=True)
+st.selectbox("Model", ["tiny", "base"], key="model", disabled=True)
+st.radio("Mode", ["fast", "careful"], key="mode", disabled=True)
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    runtime.set_widget_value("amount", 9)
+    runtime.set_widget_value("name", "Grace")
+    runtime.set_widget_value("enabled", False)
+    runtime.set_widget_value("count", 7)
+    runtime.set_widget_value("model", "base")
+    runtime.set_widget_value("mode", "careful")
+    elements = runtime.run_script()
+
+    assert runtime.session_state["amount"] == 5
+    assert runtime.session_state["name"] == "Ada"
+    assert runtime.session_state["enabled"] is True
+    assert runtime.session_state["count"] == 2
+    assert runtime.session_state["model"] == "tiny"
+    assert runtime.session_state["mode"] == "fast"
+    assert [type(element) for element in elements] == [
+        SliderElement,
+        TextInputElement,
+        CheckboxElement,
+        NumberInputElement,
+        SelectboxElement,
+        RadioElement,
+    ]
 
 
 def test_disabled_slider_widget_actions_do_not_commit_or_post_message() -> None:
