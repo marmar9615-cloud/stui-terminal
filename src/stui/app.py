@@ -118,6 +118,9 @@ class StuiSelectbox(Select):
             disabled=element.disabled,
         )
 
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+
 
 class StuiRadioSet(RadioSet):
     def __init__(self, element: RadioElement) -> None:
