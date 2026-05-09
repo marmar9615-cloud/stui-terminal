@@ -16,6 +16,11 @@ dependencies = [
   "typer>=0.12",
 ]
 
+[project.urls]
+Homepage = "https://github.com/marmar9615-cloud/stui-terminal"
+Repository = "https://github.com/marmar9615-cloud/stui-terminal"
+Issues = "https://github.com/marmar9615-cloud/stui-terminal/issues"
+
 [project.optional-dependencies]
 dev = [
   "build>=1.2",

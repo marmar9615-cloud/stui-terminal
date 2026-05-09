@@ -1,5 +1,7 @@
 # stui
 
+[![CI](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml/badge.svg)](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml)
+
 `stui` is a tiny Streamlit-inspired framework for terminal-native Python apps:
 write a short Python script, run it in your terminal, and get a Textual UI with
 stateful controls.
