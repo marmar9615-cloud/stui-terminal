@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 This project is currently pre-1.0, so APIs may change while the MVP is being
 shaped.
 
+## 0.2.1 - 2026-05-09
+
+### Changed
+
+- Prepared a polish and metadata patch for the public 0.2.x release line.
+- Refreshed release notes, announcement copy, and publishing references for
+  `stui-terminal` v0.2.1.
+- Kept the runtime API and behavior unchanged from 0.2.0.
+
 ## 0.2.0 - 2026-05-09
 
 ### Added

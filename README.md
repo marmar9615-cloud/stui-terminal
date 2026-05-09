@@ -409,7 +409,7 @@ stui run examples/dashboard.py
 
 ### Kitchen Sink
 
-`examples/kitchen_sink.py` exercises the stable 0.2.0 API surface in one
+`examples/kitchen_sink.py` exercises the stable 0.2.x API surface in one
 compact app.
 
 ```bash

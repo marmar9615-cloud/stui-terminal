@@ -58,7 +58,7 @@ def test_version_option() -> None:
     result = CliRunner().invoke(cli.app, ["--version"])
 
     assert result.exit_code == 0
-    assert "stui 0.2.0" in result.output
+    assert "stui 0.2.1" in result.output
 
 
 def test_doctor_command() -> None:
