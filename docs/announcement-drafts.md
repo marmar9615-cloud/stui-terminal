@@ -2,18 +2,20 @@
 
 ## Short X Post
 
-I just shipped the first RC of `stui`: a tiny Streamlit-inspired terminal UI
+I just shipped `stui` v0.1.0rc2: a tiny Streamlit-inspired terminal UI
 experiment for Python.
 
 Write a small Python script, run `stui run app.py`, and get a Textual TUI. No
 browser, no ports, no local server.
 
-Early MVP, intentionally small:
+Early MVP, intentionally small. The PyPI package name is `stui-terminal`; the
+import stays `stui`.
+
 https://github.com/marmar9615-cloud/stui-terminal
 
 ## Longer X Thread
 
-1. I shipped `stui` v0.1.0rc1 today.
+1. I shipped `stui` v0.1.0rc2 today.
 
 It is a tiny Streamlit-inspired terminal UI experiment for Python: write a
 small script, run it from the shell, and get an interactive TUI.
@@ -42,6 +44,9 @@ has a small pytest suite plus GitHub Actions CI.
 This is an early RC, so there are plenty of limitations: no charts, dataframes,
 sidebar, columns, forms, caching, or file upload yet.
 
+The PyPI distribution is `stui-terminal`; the import package and CLI remain
+`stui`.
+
 5. I wanted a clean-room, terminal-native Python UI layer that feels familiar
 without pretending to be full Streamlit compatibility.
 
@@ -52,7 +57,7 @@ https://github.com/marmar9615-cloud/stui-terminal
 
 ## LinkedIn Post
 
-I shipped the first release candidate of `stui`, a tiny Streamlit-inspired
+I shipped `stui` v0.1.0rc2, a tiny Streamlit-inspired
 terminal UI experiment for Python.
 
 The goal is simple: let you write small Python apps with a familiar
@@ -72,6 +77,9 @@ The current MVP includes:
 - `st.session_state`
 - alert boxes, dividers, reruns, and terminal traceback panels
 - examples and GitHub Actions CI
+
+The PyPI distribution is `stui-terminal`, while the Python import and CLI stay
+`stui`.
 
 It is intentionally not official Streamlit, not affiliated with Streamlit, and
 not a compatibility layer. It is a small clean-room experiment inspired by the

@@ -58,4 +58,4 @@ def test_version_option() -> None:
     result = CliRunner().invoke(cli.app, ["--version"])
 
     assert result.exit_code == 0
-    assert "stui 0.1.0rc1" in result.output
+    assert "stui 0.1.0rc2" in result.output

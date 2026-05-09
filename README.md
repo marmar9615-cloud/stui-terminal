@@ -39,6 +39,22 @@ project keeps its own smaller surface area.
 
 Use Python 3.11 or newer.
 
+Install the PyPI distribution named `stui-terminal`:
+
+```bash
+python3.11 -m pip install stui-terminal
+```
+
+The PyPI distribution name is `stui-terminal`, but the import package and CLI
+are both `stui`:
+
+```python
+import stui as st
+```
+
+For local development from a checkout, use an editable install with the dev
+extra:
+
 ```bash
 python3.11 -m venv .venv
 . .venv/bin/activate
@@ -53,7 +69,14 @@ python3.11 -m pip install -e .
 
 ## Quickstart
 
-Set up the project and run the basic example:
+Install from PyPI, then run your app:
+
+```bash
+python3.11 -m pip install stui-terminal
+stui run app.py
+```
+
+Or set up the project from source and run the basic example:
 
 ```bash
 git clone https://github.com/marmar9615-cloud/stui-terminal.git

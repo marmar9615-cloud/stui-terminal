@@ -3,8 +3,8 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "stui"
-version = "0.1.0rc1"
+name = "stui-terminal"
+version = "0.1.0rc2"
 description = "A tiny Streamlit-inspired terminal UI experiment."
 readme = "README.md"
 requires-python = ">=3.11"

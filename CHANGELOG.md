@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 This project is currently pre-1.0, so APIs may change while the MVP is being
 shaped.
 
+## 0.1.0rc2 - 2026-05-09
+
+### Changed
+
+- Updated install documentation for the future PyPI distribution name,
+  `stui-terminal`.
+- Clarified that the distribution name is `stui-terminal`, while the import
+  package and CLI remain `stui`.
+- Preserved editable local development install instructions for contributors.
+
 ## 0.1.0rc1 - 2026-05-08
 
 ### Added
