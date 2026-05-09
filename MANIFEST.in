@@ -6,10 +6,17 @@ include RELEASE_NOTES_v0.1.0rc2.md
 include RELEASE_NOTES_v0.2.0rc1.md
 include RELEASE_NOTES_v0.2.0.md
 include CONTRIBUTING.md
+include CODE_OF_CONDUCT.md
+include ROADMAP.md
+include SECURITY.md
+include SUPPORT.md
 include AGENTS.md
 include pyproject.toml
 recursive-include assets *.svg
 recursive-include docs *.md
 recursive-include examples *.py
+recursive-include scripts *.sh
 recursive-include tests *.py
+recursive-include .github/ISSUE_TEMPLATE *.yml
+include .github/PULL_REQUEST_TEMPLATE.md
 recursive-include .github/workflows *.yml

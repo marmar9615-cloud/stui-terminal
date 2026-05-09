@@ -1,0 +1,79 @@
+name: Bug report
+description: Report a reproducible problem with stui.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem. Please include enough detail for someone else to reproduce it locally.
+
+        `stui` is Streamlit-inspired, but it is not official Streamlit, not affiliated with Streamlit, and not a Streamlit compatibility layer.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight
+      options:
+        - label: I searched existing issues before opening this report.
+          required: true
+        - label: This is about `stui`, not Streamlit itself.
+          required: true
+        - label: I am not requesting browser, server, websocket, or port-forwarding behavior.
+          required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the bug and the behavior you expected instead.
+      placeholder: The app crashes when...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include a short script or exact commands that reproduce the issue.
+      render: python
+      placeholder: |
+        import stui as st
+
+        st.title("Repro")
+    validations:
+      required: true
+  - type: textarea
+    id: commands
+    attributes:
+      label: Commands run
+      description: Paste the exact command line you used and any relevant output.
+      render: shell
+      placeholder: |
+        python3.11 -m stui run repro.py
+    validations:
+      required: true
+  - type: input
+    id: stui-version
+    attributes:
+      label: stui version
+      description: Run `python -m stui --version` if available, or note the git commit.
+      placeholder: "0.2.0 or commit SHA"
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      placeholder: "Python 3.11.x"
+    validations:
+      required: true
+  - type: input
+    id: os-terminal
+    attributes:
+      label: OS and terminal
+      placeholder: "macOS 15 Terminal.app, Ubuntu 24.04 over SSH, etc."
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add screenshots, traceback text, terminal details, or anything else useful.

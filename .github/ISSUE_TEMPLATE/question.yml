@@ -1,0 +1,49 @@
+name: Question
+description: Ask a usage or project-direction question.
+title: "[Question]: "
+labels: ["question", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for questions about using or contributing to `stui`.
+
+        `stui` is Streamlit-inspired, but it is not official Streamlit, not affiliated with Streamlit, and not a Streamlit compatibility layer.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight
+      options:
+        - label: I checked the README and existing issues first.
+          required: true
+        - label: This question is about `stui`, not Streamlit itself.
+          required: true
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options:
+        - Usage
+        - Installation
+        - CLI
+        - Public API
+        - Widgets
+        - Examples
+        - Contributing
+        - Project direction
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are you trying to understand or decide?
+      placeholder: How should I...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Include the relevant script, command, terminal, or documentation section.

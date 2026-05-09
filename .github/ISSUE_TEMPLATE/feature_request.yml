@@ -1,0 +1,67 @@
+name: Feature request
+description: Suggest a small, terminal-native improvement for stui.
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. `stui` intentionally keeps a small, terminal-native public API.
+
+        It is Streamlit-inspired, but it is not official Streamlit, not affiliated with Streamlit, and not a Streamlit compatibility layer.
+  - type: checkboxes
+    id: fit
+    attributes:
+      label: Project fit
+      options:
+        - label: I searched existing issues before opening this request.
+          required: true
+        - label: This request keeps `stui` terminal-native and does not require a browser, server, websocket, or port-forwarding layer.
+          required: true
+        - label: This is not a request for Streamlit compatibility.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem would this solve?
+      placeholder: I am trying to build...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API or behavior
+      description: Show the smallest API or behavior change that would solve the problem.
+      render: python
+      placeholder: |
+        import stui as st
+
+        # Example of the API you want to use.
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Area
+      options:
+        - Public API
+        - Widget behavior
+        - Terminal rendering
+        - CLI
+        - Documentation
+        - Examples
+        - Testing or developer experience
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What can you do today, and why is it not enough?
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Link examples, terminal screenshots, prior art, or related issues.
