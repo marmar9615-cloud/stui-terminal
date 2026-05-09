@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 This project is currently pre-1.0, so APIs may change while the MVP is being
 shaped.
 
+## 0.2.2 - 2026-05-09
+
+### Changed
+
+- Replaced the generated SVG preview with a real terminal screenshot captured
+  from `stui run examples/model_demo.py`.
+- Switched the README preview image to a versioned raw GitHub URL so it renders
+  correctly on PyPI.
+- Kept the runtime API and behavior unchanged from 0.2.1.
+
 ## 0.2.1 - 2026-05-09
 
 ### Changed

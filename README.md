@@ -17,7 +17,7 @@ project keeps its own smaller surface area.
 
 ## Preview
 
-![stui model demo terminal screenshot](assets/model_demo.svg)
+![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v0.2.2/assets/stui-model-demo.png)
 
 ```text
 ┌─ stui ───────────────────────────────────────────┐
