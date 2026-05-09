@@ -2,19 +2,22 @@
 
 [![CI](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml/badge.svg)](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml)
 
-`stui` is a tiny Streamlit-inspired framework for terminal-native Python apps:
-write a short Python script, run it in your terminal, and get a Textual UI with
-stateful controls.
+`stui` is a tiny Streamlit-inspired framework for building terminal-native
+Python apps. Write a short script, run it in your terminal, and get a Textual UI
+with stateful controls.
 
 It is built for local tools, demos, data scripts, model debug panels, SSH
-sessions, and headless environments where a browser dashboard is more ceremony
-than help. The public API is deliberately small and readable.
+sessions, and headless environments where opening a browser, binding a port, or
+running a dashboard server is unnecessary ceremony. The public API is
+deliberately small and readable.
 
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer. The API intentionally feels familiar, but this
 project keeps its own smaller surface area.
 
 ## Preview
+
+![stui model demo terminal screenshot](assets/model_demo.svg)
 
 ```text
 ┌─ stui ───────────────────────────────────────────┐
@@ -53,9 +56,11 @@ python3.11 -m pip install -e .
 Set up the project and run the basic example:
 
 ```bash
+git clone https://github.com/marmar9615-cloud/stui-terminal.git
+cd stui-terminal
 python3.11 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e ".[dev]"
+python3.11 -m pip install -e ".[dev]"
 stui run examples/basic.py
 ```
 
@@ -91,13 +96,26 @@ stui run examples/counter.py
 stui run examples/model_demo.py
 ```
 
+## Why terminal-native?
+
+Some useful Python apps do not need a browser runtime. `stui` keeps the
+interface inside the terminal so it can fit naturally into:
+
+- SSH sessions, remote machines, and headless boxes.
+- Internal tools where opening ports or managing local server URLs is friction.
+- Offline or locked-down environments where browser access is limited.
+- Model, data, and DevOps workflows that already start from a shell.
+
+That also keeps the boundary simple: `stui` does not start a web server, use
+websockets, require port-forwarding, or depend on Streamlit at runtime.
+
 ## Commands
 
 ```bash
 # Install the project for local development.
 python3.11 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e ".[dev]"
+python3.11 -m pip install -e ".[dev]"
 
 # Run the smoke-size example app.
 stui run examples/basic.py
@@ -109,7 +127,7 @@ stui run examples/counter.py
 stui run examples/model_demo.py
 
 # Run the test suite.
-python -m pytest
+python3.11 -m pytest
 ```
 
 ## Keyboard Shortcuts
