@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextvars
+import json as json_lib
 import runpy
 import sys
 import traceback
@@ -11,13 +12,23 @@ from typing import Any
 from .elements import (
     AlertElement,
     ButtonElement,
+    CaptionElement,
     CheckboxElement,
+    CodeElement,
     DividerElement,
     Element,
     ErrorElement,
+    ExceptionElement,
     HeaderElement,
+    JsonElement,
     MarkdownElement,
+    NumberInputElement,
+    ProgressElement,
+    RadioElement,
+    SelectboxElement,
     SliderElement,
+    SubheaderElement,
+    TableElement,
     TextElement,
     TextInputElement,
     TitleElement,
@@ -84,11 +95,43 @@ class Runtime:
     def header(self, body: Any, *, key: str | None = None) -> None:
         self.elements.append(HeaderElement(str(body), key=key))
 
+    def subheader(self, body: Any, *, key: str | None = None) -> None:
+        self.elements.append(SubheaderElement(str(body), key=key))
+
     def text(self, body: Any) -> None:
         self.elements.append(TextElement(str(body)))
 
+    def caption(self, body: Any) -> None:
+        self.elements.append(CaptionElement(str(body)))
+
     def markdown(self, body: Any) -> None:
         self.elements.append(MarkdownElement(str(body)))
+
+    def code(self, body: Any, language: str | None = None) -> None:
+        self.elements.append(CodeElement(str(body), language=language))
+
+    def json(self, obj: Any) -> None:
+        text = json_lib.dumps(obj, indent=2, sort_keys=True, default=str)
+        self.elements.append(JsonElement(obj=obj, text=text))
+
+    def exception(self, exc: BaseException) -> None:
+        rendered = "".join(
+            traceback.format_exception(type(exc), exc, exc.__traceback__)
+        )
+        self.elements.append(ExceptionElement(rendered))
+
+    def progress(self, value: int | float, text: Any | None = None) -> None:
+        label = None if text is None else str(text)
+        self.elements.append(
+            ProgressElement(_normalize_progress(value), label)
+        )
+
+    def table(self, data: Any) -> None:
+        headers, rows = _normalize_table(data)
+        self.elements.append(TableElement(headers=headers, rows=rows))
+
+    def dataframe(self, data: Any) -> None:
+        self.table(data)
 
     def divider(self) -> None:
         self.elements.append(DividerElement())
@@ -161,7 +204,11 @@ class Runtime:
                 disabled=disabled,
             )
         )
-        if self.consume_changed_widget(widget_key) and on_change is not None:
+        if (
+            not disabled
+            and self.consume_changed_widget(widget_key)
+            and on_change is not None
+        ):
             on_change(*(args or ()), **(kwargs or {}))
         return snapped
 
@@ -189,7 +236,11 @@ class Runtime:
                 disabled=disabled,
             )
         )
-        if self.consume_changed_widget(widget_key) and on_change is not None:
+        if (
+            not disabled
+            and self.consume_changed_widget(widget_key)
+            and on_change is not None
+        ):
             on_change(*(args or ()), **(kwargs or {}))
         return current
 
@@ -215,7 +266,147 @@ class Runtime:
                 disabled=disabled,
             )
         )
-        if self.consume_changed_widget(widget_key) and on_change is not None:
+        if (
+            not disabled
+            and self.consume_changed_widget(widget_key)
+            and on_change is not None
+        ):
+            on_change(*(args or ()), **(kwargs or {}))
+        return current
+
+    def number_input(
+        self,
+        label: str,
+        min_value: int | float | None = None,
+        max_value: int | float | None = None,
+        value: int | float = 0,
+        step: int | float = 1,
+        *,
+        key: str | None = None,
+        disabled: bool = False,
+        on_change: Callable[..., Any] | None = None,
+        args: tuple[Any, ...] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> int | float:
+        widget_key = self.next_widget_key("number_input", label, key)
+        current = _coerce_number(
+            self.session_state.get(widget_key, value),
+            value,
+            prefer_float=isinstance(step, float),
+        )
+        current = _clamp_number(current, min_value, max_value)
+        self.session_state[widget_key] = current
+        self.elements.append(
+            NumberInputElement(
+                label=label,
+                key=widget_key,
+                value=current,
+                min_value=min_value,
+                max_value=max_value,
+                step=step,
+                disabled=disabled,
+            )
+        )
+        if (
+            not disabled
+            and self.consume_changed_widget(widget_key)
+            and on_change is not None
+        ):
+            on_change(*(args or ()), **(kwargs or {}))
+        return current
+
+    def selectbox(
+        self,
+        label: str,
+        options: Any,
+        index: int = 0,
+        *,
+        key: str | None = None,
+        disabled: bool = False,
+        on_change: Callable[..., Any] | None = None,
+        args: tuple[Any, ...] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> Any:
+        return self._choice_widget(
+            "selectbox",
+            label,
+            tuple(options),
+            index,
+            key=key,
+            disabled=disabled,
+            on_change=on_change,
+            args=args,
+            kwargs=kwargs,
+        )
+
+    def radio(
+        self,
+        label: str,
+        options: Any,
+        index: int = 0,
+        *,
+        key: str | None = None,
+        disabled: bool = False,
+        on_change: Callable[..., Any] | None = None,
+        args: tuple[Any, ...] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> Any:
+        return self._choice_widget(
+            "radio",
+            label,
+            tuple(options),
+            index,
+            key=key,
+            disabled=disabled,
+            on_change=on_change,
+            args=args,
+            kwargs=kwargs,
+        )
+
+    def _choice_widget(
+        self,
+        widget_type: str,
+        label: str,
+        options: tuple[Any, ...],
+        index: int,
+        *,
+        key: str | None,
+        disabled: bool,
+        on_change: Callable[..., Any] | None,
+        args: tuple[Any, ...] | None,
+        kwargs: dict[str, Any] | None,
+    ) -> Any:
+        widget_key = self.next_widget_key(widget_type, label, key)
+        if not options:
+            self.session_state[widget_key] = None
+            self.elements.append(
+                AlertElement(
+                    f"{widget_type} '{label}' requires at least one option.",
+                    "error",
+                )
+            )
+            return None
+        safe_index = min(max(index, 0), len(options) - 1)
+        current = self.session_state.get(widget_key, options[safe_index])
+        if current not in options:
+            current = options[safe_index]
+        current_index = options.index(current)
+        self.session_state[widget_key] = current
+        element_cls = SelectboxElement if widget_type == "selectbox" else RadioElement
+        self.elements.append(
+            element_cls(
+                label=label,
+                key=widget_key,
+                options=options,
+                index=current_index,
+                disabled=disabled,
+            )
+        )
+        if (
+            not disabled
+            and self.consume_changed_widget(widget_key)
+            and on_change is not None
+        ):
             on_change(*(args or ()), **(kwargs or {}))
         return current
 
@@ -291,3 +482,88 @@ def get_current_runtime() -> Runtime:
     if runtime is None:
         raise RuntimeError("stui API calls must run inside `stui run`.")
     return runtime
+
+
+def _normalize_progress(value: int | float) -> int:
+    if not isinstance(value, int | float):
+        raise TypeError("progress value must be an int or float.")
+    if isinstance(value, float) and 0 <= value <= 1:
+        percent = round(value * 100)
+    else:
+        percent = round(value)
+    return max(0, min(100, percent))
+
+
+def _coerce_number(
+    value: Any,
+    fallback: int | float = 0,
+    *,
+    prefer_float: bool = False,
+) -> int | float:
+    try:
+        if (
+            isinstance(fallback, int)
+            and not isinstance(fallback, bool)
+            and not prefer_float
+        ):
+            return int(value)
+        return float(value)
+    except (TypeError, ValueError):
+        return fallback
+
+
+def _clamp_number(
+    value: int | float,
+    min_value: int | float | None,
+    max_value: int | float | None,
+) -> int | float:
+    if min_value is not None:
+        value = max(value, min_value)
+    if max_value is not None:
+        value = min(value, max_value)
+    return value
+
+
+def _normalize_table(data: Any) -> tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]:
+    if hasattr(data, "to_dict") and hasattr(data, "columns"):
+        return _normalize_table(data.to_dict(orient="records"))
+    if isinstance(data, dict):
+        if data and all(isinstance(value, (list, tuple)) for value in data.values()):
+            headers = tuple(str(key) for key in data)
+            max_len = max((len(value) for value in data.values()), default=0)
+            rows = tuple(
+                tuple(
+                    str(data[key][row_index])
+                    if row_index < len(data[key])
+                    else ""
+                    for key in data
+                )
+                for row_index in range(max_len)
+            )
+            return headers, rows
+        return ("key", "value"), tuple(
+            (str(key), str(value)) for key, value in data.items()
+        )
+    if isinstance(data, (list, tuple)):
+        if not data:
+            return ("value",), ()
+        if all(isinstance(item, dict) for item in data):
+            headers = tuple(dict.fromkeys(str(key) for row in data for key in row))
+            rows = tuple(
+                tuple(str(row.get(header, "")) for header in headers)
+                for row in data
+            )
+            return headers, rows
+        if all(isinstance(item, (list, tuple)) for item in data):
+            width = max((len(item) for item in data), default=0)
+            headers = tuple(f"col_{index + 1}" for index in range(width))
+            rows = tuple(
+                tuple(
+                    str(item[index]) if index < len(item) else ""
+                    for index in range(width)
+                )
+                for item in data
+            )
+            return headers, rows
+        return ("value",), tuple((str(item),) for item in data)
+    return ("value",), ((str(data),),)

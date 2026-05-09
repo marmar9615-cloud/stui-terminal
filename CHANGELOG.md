@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 This project is currently pre-1.0, so APIs may change while the MVP is being
 shaped.
 
+## 0.2.0rc1 - 2026-05-09
+
+### Added
+
+- Display helpers: `subheader`, `caption`, `code`, `json`, `exception`, and
+  `progress`.
+- Input helpers: `number_input`, `selectbox`, and `radio`.
+- Data display helpers: `table` and `dataframe` without a pandas dependency.
+- CLI diagnostics with `stui doctor` and example discovery with
+  `stui examples`.
+- Example apps for inputs, data display, and a compact dashboard.
+
 ## 0.1.0rc2 - 2026-05-09
 
 ### Changed

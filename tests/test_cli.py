@@ -58,4 +58,21 @@ def test_version_option() -> None:
     result = CliRunner().invoke(cli.app, ["--version"])
 
     assert result.exit_code == 0
-    assert "stui 0.1.0rc2" in result.output
+    assert "stui 0.2.0rc1" in result.output
+
+
+def test_doctor_command() -> None:
+    result = CliRunner().invoke(cli.app, ["doctor"])
+
+    assert result.exit_code == 0
+    assert "stui:" in result.output
+    assert "python:" in result.output
+    assert "textual:" in result.output
+
+
+def test_examples_command() -> None:
+    result = CliRunner().invoke(cli.app, ["examples"])
+
+    assert result.exit_code == 0
+    assert "stui run examples/basic.py" in result.output
+    assert "stui run examples/dashboard.py" in result.output

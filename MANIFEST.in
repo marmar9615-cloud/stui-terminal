@@ -3,6 +3,7 @@ include LICENSE
 include CHANGELOG.md
 include RELEASE_NOTES_v0.1.0rc1.md
 include RELEASE_NOTES_v0.1.0rc2.md
+include RELEASE_NOTES_v0.2.0rc1.md
 include CONTRIBUTING.md
 include AGENTS.md
 include pyproject.toml

@@ -117,6 +117,9 @@ More examples:
 ```bash
 stui run examples/counter.py
 stui run examples/model_demo.py
+stui run examples/inputs.py
+stui run examples/data_display.py
+stui run examples/dashboard.py
 ```
 
 ## Why terminal-native?
@@ -149,6 +152,10 @@ stui run examples/counter.py
 # Run the deterministic model-parameter demo.
 stui run examples/model_demo.py
 
+# List installed examples and print environment diagnostics.
+stui examples
+stui doctor
+
 # Run the test suite.
 python3.11 -m pytest
 ```
@@ -170,15 +177,26 @@ The current public API is intentionally small:
 
 - `st.title(body, *, key=None)`: render a title.
 - `st.header(body, *, key=None)`: render a section header.
+- `st.subheader(body, *, key=None)`: render a smaller section header.
+- `st.caption(body)`: render muted explanatory text.
 - `st.text(body)`: render plain text.
 - `st.markdown(body)`: render Markdown-flavored text.
+- `st.code(body, language=None)`: render a syntax-highlighted code block.
+- `st.json(obj)`: pretty-print JSON-serializable objects.
+- `st.exception(exc)`: render an exception traceback panel.
+- `st.progress(value, text=None)`: render progress from `0..100` or `0.0..1.0`.
 - `st.divider()`: render a horizontal divider.
 - `st.info(body)`, `st.success(body)`, `st.warning(body)`, `st.error(body)`: render status messages.
+- `st.table(data)`: render simple tabular data without requiring pandas.
+- `st.dataframe(data)`: alias for `st.table(data)` in this MVP.
 - `st.write(*args)`: render simple text output.
 - `st.button(label, key=None, help=None, disabled=False, on_click=None, args=None, kwargs=None)`: render a button and return `True` for the run where it was pressed.
 - `st.slider(label, min_value=0, max_value=100, value=None, step=1, *, key=None, help=None, disabled=False, on_change=None, args=None, kwargs=None)`: render a numeric slider and return its current value.
 - `st.text_input(label, value="", *, key=None, placeholder=None, disabled=False, on_change=None, args=None, kwargs=None)`: render a single-line text input and return its current value.
 - `st.checkbox(label, value=False, *, key=None, disabled=False, on_change=None, args=None, kwargs=None)`: render a checkbox and return its current value.
+- `st.number_input(label, min_value=None, max_value=None, value=0, step=1, *, key=None, disabled=False, on_change=None, args=None, kwargs=None)`: render a numeric input.
+- `st.selectbox(label, options, index=0, *, key=None, disabled=False, on_change=None, args=None, kwargs=None)`: choose one option from a dropdown.
+- `st.radio(label, options, index=0, *, key=None, disabled=False, on_change=None, args=None, kwargs=None)`: choose one option from a radio group.
 - `st.session_state`: persist values across reruns with dict-style or attribute-style access.
 - `st.rerun()`: request a script rerun.
 
@@ -210,11 +228,38 @@ dependencies.
 stui run examples/model_demo.py
 ```
 
+### Inputs
+
+`examples/inputs.py` shows text, numeric, selectbox, radio, checkbox, and button
+controls together.
+
+```bash
+stui run examples/inputs.py
+```
+
+### Data Display
+
+`examples/data_display.py` shows tables, JSON, and code output.
+
+```bash
+stui run examples/data_display.py
+```
+
+### Dashboard
+
+`examples/dashboard.py` combines controls, progress, status messages, and a
+small table into a compact terminal control panel.
+
+```bash
+stui run examples/dashboard.py
+```
+
 ## Limitations
 
 - No browser, web server, websocket, or port-forwarding runtime.
 - No Streamlit dependency and no promise of Streamlit compatibility.
-- No charts, tables, dataframes, forms, columns, sidebars, or file upload yet.
+- No charts, forms, columns, sidebars, or file upload yet.
+- Tables are static display only; there is no full dataframe editing or sorting.
 - Slider input supports numeric values only.
 - Layout is currently linear and script-driven.
 - The app reruns the script as interactions change state, so examples should keep top-level work lightweight.
@@ -223,9 +268,8 @@ stui run examples/model_demo.py
 
 ## Roadmap
 
-- Add small text output helpers such as `caption`.
-- Add common controls such as `selectbox`, `radio`, and number inputs.
-- Add simple display primitives for tables and progress.
+- Add charts and richer dataframe display.
+- Add simple form-like batching once rerun semantics are clearer.
 - Improve focus behavior, accessibility hints, and keyboard discoverability.
 - Expand example coverage for data scripts, model controls, DevOps panels, and internal tools.
 - Keep the implementation clean-room, readable, and based on Textual first-party widgets where possible.

@@ -58,12 +58,44 @@ def header(body: Any, *, key: str | None = None) -> None:
     get_current_runtime().header(body, key=key)
 
 
+def subheader(body: Any, *, key: str | None = None) -> None:
+    get_current_runtime().subheader(body, key=key)
+
+
 def text(body: Any) -> None:
     get_current_runtime().text(body)
 
 
+def caption(body: Any) -> None:
+    get_current_runtime().caption(body)
+
+
 def markdown(body: Any) -> None:
     get_current_runtime().markdown(body)
+
+
+def code(body: Any, language: str | None = None) -> None:
+    get_current_runtime().code(body, language=language)
+
+
+def json(obj: Any) -> None:
+    get_current_runtime().json(obj)
+
+
+def exception(exc: BaseException) -> None:
+    get_current_runtime().exception(exc)
+
+
+def progress(value: int | float, text: Any | None = None) -> None:
+    get_current_runtime().progress(value, text=text)
+
+
+def table(data: Any) -> None:
+    get_current_runtime().table(data)
+
+
+def dataframe(data: Any) -> None:
+    get_current_runtime().dataframe(data)
 
 
 def divider() -> None:
@@ -175,6 +207,79 @@ def checkbox(
     return get_current_runtime().checkbox(
         label,
         value,
+        key=key,
+        disabled=disabled,
+        on_change=on_change,
+        args=args,
+        kwargs=kwargs,
+    )
+
+
+def number_input(
+    label: str,
+    min_value: int | float | None = None,
+    max_value: int | float | None = None,
+    value: int | float = 0,
+    step: int | float = 1,
+    *,
+    key: str | None = None,
+    disabled: bool = False,
+    on_change=None,
+    args: tuple[Any, ...] | None = None,
+    kwargs: dict[str, Any] | None = None,
+) -> int | float:
+    return get_current_runtime().number_input(
+        label,
+        min_value=min_value,
+        max_value=max_value,
+        value=value,
+        step=step,
+        key=key,
+        disabled=disabled,
+        on_change=on_change,
+        args=args,
+        kwargs=kwargs,
+    )
+
+
+def selectbox(
+    label: str,
+    options,
+    index: int = 0,
+    *,
+    key: str | None = None,
+    disabled: bool = False,
+    on_change=None,
+    args: tuple[Any, ...] | None = None,
+    kwargs: dict[str, Any] | None = None,
+):
+    return get_current_runtime().selectbox(
+        label,
+        options,
+        index=index,
+        key=key,
+        disabled=disabled,
+        on_change=on_change,
+        args=args,
+        kwargs=kwargs,
+    )
+
+
+def radio(
+    label: str,
+    options,
+    index: int = 0,
+    *,
+    key: str | None = None,
+    disabled: bool = False,
+    on_change=None,
+    args: tuple[Any, ...] | None = None,
+    kwargs: dict[str, Any] | None = None,
+):
+    return get_current_runtime().radio(
+        label,
+        options,
+        index=index,
         key=key,
         disabled=disabled,
         on_change=on_change,

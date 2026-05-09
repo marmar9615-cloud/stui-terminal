@@ -1,5 +1,51 @@
 # stui Announcement Drafts
 
+## v0.2.0rc1 Short X Post
+
+`stui` v0.2.0rc1 is out on PyPI.
+
+It is still tiny and terminal-native: write a Python script, run `stui run
+app.py`, get an interactive Textual TUI. No browser, no ports.
+
+New in this RC: tables, progress, JSON/code output, `number_input`,
+`selectbox`, `radio`, `doctor`, and more examples.
+
+```bash
+python -m pip install stui-terminal
+```
+
+https://github.com/marmar9615-cloud/stui-terminal
+
+## v0.2.0rc1 LinkedIn Post
+
+I shipped `stui` v0.2.0rc1, the next release candidate of my tiny
+Streamlit-inspired terminal UI experiment for Python.
+
+The project is still deliberately small: no browser, no local web server, no
+ports, and no Streamlit dependency. You write a short Python script and run it
+with `stui run app.py`; it renders as a Textual TUI in the terminal.
+
+This RC makes it feel more useful for real prototypes:
+
+- display helpers for captions, code, JSON, exceptions, and progress
+- input helpers for numeric values, selectboxes, and radio groups
+- simple static tables without requiring pandas
+- `stui doctor` and `stui examples`
+- new examples for inputs, data display, and a compact dashboard
+
+The PyPI distribution is `stui-terminal`; the import and CLI stay `stui`.
+
+```bash
+python -m pip install stui-terminal
+```
+
+It is not official Streamlit and not a compatibility layer. It is a clean-room,
+terminal-native experiment for the cases where a browser dashboard is more
+ceremony than help.
+
+Repo:
+https://github.com/marmar9615-cloud/stui-terminal
+
 ## Short X Post
 
 I just shipped `stui` v0.1.0rc2: a tiny Streamlit-inspired terminal UI

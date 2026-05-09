@@ -2,23 +2,48 @@ from __future__ import annotations
 
 import hashlib
 
+from rich.json import JSON as RichJSON
 from rich.markdown import Markdown
 from rich.panel import Panel
+from rich.syntax import Syntax
+from rich.table import Table as RichTable
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical, VerticalScroll
-from textual.widgets import Button, Checkbox, Footer, Header, Input, Static
+from textual.css.query import NoMatches
+from textual.widgets import (
+    Button,
+    Checkbox,
+    Footer,
+    Header,
+    Input,
+    ProgressBar,
+    RadioButton,
+    RadioSet,
+    Select,
+    Static,
+)
 
 from .elements import (
     AlertElement,
     ButtonElement,
+    CaptionElement,
     CheckboxElement,
+    CodeElement,
     DividerElement,
     ErrorElement,
+    ExceptionElement,
     HeaderElement,
+    JsonElement,
     MarkdownElement,
+    NumberInputElement,
+    ProgressElement,
+    RadioElement,
+    SelectboxElement,
     SliderElement,
+    SubheaderElement,
+    TableElement,
     TextElement,
     TextInputElement,
     TitleElement,
@@ -55,12 +80,55 @@ class StuiTextInput(Input):
         )
 
 
+class StuiNumberInput(Input):
+    def __init__(self, element: NumberInputElement) -> None:
+        self.stui_key = element.key
+        self.stui_fallback = element.value
+        self.stui_min_value = element.min_value
+        self.stui_max_value = element.max_value
+        self.stui_step = element.step
+        super().__init__(
+            value=str(element.value),
+            id=dom_id_for_key(element.key),
+            disabled=element.disabled,
+        )
+
+
 class StuiCheckbox(Checkbox):
     def __init__(self, element: CheckboxElement) -> None:
         self.stui_key = element.key
         super().__init__(
             element.label,
             value=element.value,
+            id=dom_id_for_key(element.key),
+            disabled=element.disabled,
+        )
+
+
+class StuiSelectbox(Select):
+    def __init__(self, element: SelectboxElement) -> None:
+        self.stui_key = element.key
+        options = [(str(option), option) for option in element.options]
+        super().__init__(
+            options,
+            prompt=element.label,
+            value=element.options[element.index],
+            allow_blank=False,
+            id=dom_id_for_key(element.key),
+            disabled=element.disabled,
+        )
+
+
+class StuiRadioSet(RadioSet):
+    def __init__(self, element: RadioElement) -> None:
+        self.stui_key = element.key
+        buttons = [
+            RadioButton(str(option), value=index == element.index)
+            for index, option in enumerate(element.options)
+        ]
+        self.stui_options = element.options
+        super().__init__(
+            *buttons,
             id=dom_id_for_key(element.key),
             disabled=element.disabled,
         )
@@ -94,7 +162,19 @@ class StuiApp(App[None]):
         margin: 1 0 1 0;
     }
 
-    .write, .text, .markdown {
+    .subheader {
+        color: #cfd6ff;
+        text-style: bold;
+        margin: 1 0 1 0;
+    }
+
+    .caption {
+        color: #a2a4b3;
+        text-style: italic;
+        margin: 0 0 1 0;
+    }
+
+    .write, .text, .markdown, .code, .json {
         margin: 0 0 1 0;
     }
 
@@ -146,6 +226,10 @@ class StuiApp(App[None]):
         margin: 0 0 1 0;
     }
 
+    Select, RadioSet {
+        margin: 0 0 1 0;
+    }
+
     Input:focus {
         border: tall #8ab4ff;
         background: #202033;
@@ -155,6 +239,11 @@ class StuiApp(App[None]):
         background: #202033;
         color: #ffffff;
         text-style: bold;
+    }
+
+    Select:focus, RadioSet:focus {
+        border: tall #8ab4ff;
+        background: #202033;
     }
 
     .stui-slider {
@@ -180,6 +269,23 @@ class StuiApp(App[None]):
 
     .traceback {
         color: #ffd7d7;
+    }
+
+    .exception {
+        margin: 1 0;
+    }
+
+    .stui-progress {
+        margin: 1 0;
+    }
+
+    .stui-progress-label {
+        color: #cfd3df;
+        margin: 0 0 1 0;
+    }
+
+    .table {
+        margin: 1 0;
     }
     """
     BINDINGS = [
@@ -230,7 +336,10 @@ class StuiApp(App[None]):
         if key is None:
             return
         event.stop()
-        self.runtime.set_widget_value(key, event.value)
+        value = event.value
+        if isinstance(input_widget, StuiNumberInput):
+            value = self._parse_number_input(input_widget, event.value)
+        self.runtime.set_widget_value(key, value)
         self.runtime.run_script()
         await self.render_runtime()
 
@@ -243,6 +352,38 @@ class StuiApp(App[None]):
         self.runtime.set_widget_value(key, event.value)
         self.runtime.run_script()
         await self.render_runtime()
+
+    async def on_select_changed(self, event: Select.Changed) -> None:
+        select = event.control
+        key = getattr(select, "stui_key", None)
+        if key is None:
+            return
+        if not self._body_is_ready():
+            return
+        event.stop()
+        self.runtime.set_widget_value(key, event.value)
+        self.runtime.run_script()
+        await self.render_runtime()
+
+    async def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
+        radio_set = event.control
+        key = getattr(radio_set, "stui_key", None)
+        if key is None:
+            return
+        if not self._body_is_ready():
+            return
+        event.stop()
+        options = getattr(radio_set, "stui_options", ())
+        pressed = event.pressed
+        buttons = list(radio_set.query(RadioButton))
+        try:
+            index = buttons.index(pressed)
+        except ValueError:
+            return
+        if index < len(options):
+            self.runtime.set_widget_value(key, options[index])
+            self.runtime.run_script()
+            await self.render_runtime()
 
     async def render_runtime(self) -> None:
         body = self.query_one("#body", VerticalScroll)
@@ -257,12 +398,56 @@ class StuiApp(App[None]):
             return Static(Text(element.body, style="bold"), classes="title")
         if isinstance(element, HeaderElement):
             return Static(Text(element.body, style="bold"), classes="header")
+        if isinstance(element, SubheaderElement):
+            return Static(Text(element.body, style="bold"), classes="subheader")
         if isinstance(element, WriteElement):
             return Static(element.text, classes="write")
         if isinstance(element, TextElement):
             return Static(element.body, classes="text")
+        if isinstance(element, CaptionElement):
+            return Static(Text(element.body, style="italic dim"), classes="caption")
         if isinstance(element, MarkdownElement):
             return Static(Markdown(element.body), classes="markdown")
+        if isinstance(element, CodeElement):
+            return Static(
+                Syntax(
+                    element.body,
+                    element.language or "text",
+                    word_wrap=True,
+                    theme="ansi_dark",
+                ),
+                classes="code",
+            )
+        if isinstance(element, JsonElement):
+            return Static(RichJSON(element.text), classes="json")
+        if isinstance(element, TableElement):
+            table = RichTable(show_lines=False)
+            for header in element.headers:
+                table.add_column(header, overflow="fold")
+            for row in element.rows:
+                table.add_row(*row)
+            return Static(table, classes="table")
+        if isinstance(element, ExceptionElement):
+            return Static(
+                Panel(
+                    Text(element.traceback, style="#ffd7d7"),
+                    title="Exception",
+                    border_style="red",
+                    title_align="left",
+                    padding=(0, 1),
+                ),
+                classes="exception",
+            )
+        if isinstance(element, ProgressElement):
+            progress_bar = ProgressBar(total=100, show_eta=False)
+            progress_bar.update(progress=element.value)
+            if element.text is None:
+                return Vertical(progress_bar, classes="stui-progress")
+            return Vertical(
+                Static(element.text, classes="stui-progress-label"),
+                progress_bar,
+                classes="stui-progress",
+            )
         if isinstance(element, DividerElement):
             return Static("─" * 40, classes="divider")
         if isinstance(element, AlertElement):
@@ -287,10 +472,34 @@ class StuiApp(App[None]):
                 text_input,
                 classes="stui-field",
             )
+        if isinstance(element, NumberInputElement):
+            number_input = StuiNumberInput(element)
+            number_input.tooltip = "Enter submits. Tab and Shift+Tab move focus."
+            return Vertical(
+                Static(element.label, classes="stui-field-label"),
+                number_input,
+                classes="stui-field",
+            )
         if isinstance(element, CheckboxElement):
             checkbox = StuiCheckbox(element)
             checkbox.tooltip = "Space toggles. Tab and Shift+Tab move focus."
             return checkbox
+        if isinstance(element, SelectboxElement):
+            selectbox = StuiSelectbox(element)
+            selectbox.tooltip = "Enter opens choices. Tab and Shift+Tab move focus."
+            return Vertical(
+                Static(element.label, classes="stui-field-label"),
+                selectbox,
+                classes="stui-field",
+            )
+        if isinstance(element, RadioElement):
+            radio = StuiRadioSet(element)
+            radio.tooltip = "Arrow keys choose. Tab and Shift+Tab move focus."
+            return Vertical(
+                Static(element.label, classes="stui-field-label"),
+                radio,
+                classes="stui-field",
+            )
         if isinstance(element, SliderElement):
             slider = StuiSlider(
                 label=element.label,
@@ -323,7 +532,10 @@ class StuiApp(App[None]):
         key = self.runtime.last_focused_key
         if key is None:
             return
-        widget = self.query(f"#{dom_id_for_key(key)}").first()
+        try:
+            widget = self.query(f"#{dom_id_for_key(key)}").first()
+        except NoMatches:
+            return
         if widget is not None and getattr(widget, "can_focus", False):
             self.set_focus(widget)
 
@@ -332,6 +544,34 @@ class StuiApp(App[None]):
         if focused is None:
             return None
         return getattr(focused, "stui_key", None)
+
+    def _body_is_ready(self) -> bool:
+        try:
+            self.query_one("#body", VerticalScroll)
+        except NoMatches:
+            return False
+        return True
+
+    @staticmethod
+    def _parse_number_input(widget: StuiNumberInput, raw: str) -> int | float:
+        fallback = widget.stui_fallback
+        try:
+            value: int | float
+            if (
+                isinstance(fallback, int)
+                and not isinstance(fallback, bool)
+                and not isinstance(widget.stui_step, float)
+            ):
+                value = int(float(raw))
+            else:
+                value = float(raw)
+        except ValueError:
+            value = fallback
+        if widget.stui_min_value is not None:
+            value = max(value, widget.stui_min_value)
+        if widget.stui_max_value is not None:
+            value = min(value, widget.stui_max_value)
+        return value
 
     @staticmethod
     def _alert_style(kind: str) -> str:

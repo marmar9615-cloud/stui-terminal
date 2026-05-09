@@ -2,6 +2,7 @@ import asyncio
 from pathlib import Path
 
 from stui.app import StuiApp
+from stui.elements import ProgressElement
 from stui.runtime import Runtime
 
 
@@ -70,5 +71,63 @@ st.write("enabled =", enabled)
             await pilot.pause()
             assert runtime.session_state["checkbox:Enabled:0"] is True
             assert runtime.last_focused_key == "checkbox:Enabled:0"
+
+    asyncio.run(scenario())
+
+
+def test_textual_app_display_api_smoke(tmp_path) -> None:
+    script = tmp_path / "display_app.py"
+    script.write_text(
+        """
+import stui as st
+
+st.subheader("Details")
+st.caption("small note")
+st.code("print('hi')", language="python")
+st.json({"ok": True})
+try:
+    raise RuntimeError("boom")
+except RuntimeError as exc:
+    st.exception(exc)
+st.progress(75, text="Almost")
+""",
+        encoding="utf-8",
+    )
+
+    async def scenario() -> None:
+        runtime = Runtime(script)
+        app = StuiApp(runtime)
+
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            assert isinstance(runtime.elements[-1], ProgressElement)
+            assert runtime.elements[-1].value == 75
+
+    asyncio.run(scenario())
+
+
+def test_textual_app_new_widgets_smoke(tmp_path) -> None:
+    script = tmp_path / "new_widgets_app.py"
+    script.write_text(
+        """
+import stui as st
+
+st.number_input("Count", value=2, key="count")
+st.selectbox("Model", ["tiny", "base"], key="model")
+st.radio("Mode", ["fast", "careful"], key="mode")
+st.table([{"name": "Ada", "score": 10}])
+""",
+        encoding="utf-8",
+    )
+
+    async def scenario() -> None:
+        runtime = Runtime(script)
+        app = StuiApp(runtime)
+
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            assert runtime.session_state["count"] == 2
+            assert runtime.session_state["model"] == "tiny"
+            assert runtime.session_state["mode"] == "fast"
 
     asyncio.run(scenario())

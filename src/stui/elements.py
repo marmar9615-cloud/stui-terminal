@@ -19,13 +19,53 @@ class HeaderElement:
 
 
 @dataclass(frozen=True)
+class SubheaderElement:
+    body: str
+    key: str | None = None
+
+
+@dataclass(frozen=True)
 class TextElement:
+    body: str
+
+
+@dataclass(frozen=True)
+class CaptionElement:
     body: str
 
 
 @dataclass(frozen=True)
 class MarkdownElement:
     body: str
+
+
+@dataclass(frozen=True)
+class CodeElement:
+    body: str
+    language: str | None = None
+
+
+@dataclass(frozen=True)
+class JsonElement:
+    obj: Any
+    text: str
+
+
+@dataclass(frozen=True)
+class ExceptionElement:
+    traceback: str
+
+
+@dataclass(frozen=True)
+class ProgressElement:
+    value: int
+    text: str | None = None
+
+
+@dataclass(frozen=True)
+class TableElement:
+    headers: tuple[str, ...]
+    rows: tuple[tuple[str, ...], ...]
 
 
 @dataclass(frozen=True)
@@ -83,6 +123,35 @@ class CheckboxElement:
 
 
 @dataclass(frozen=True)
+class NumberInputElement:
+    label: str
+    key: str
+    value: Number
+    min_value: Number | None = None
+    max_value: Number | None = None
+    step: Number = 1
+    disabled: bool = False
+
+
+@dataclass(frozen=True)
+class SelectboxElement:
+    label: str
+    key: str
+    options: tuple[Any, ...]
+    index: int
+    disabled: bool = False
+
+
+@dataclass(frozen=True)
+class RadioElement:
+    label: str
+    key: str
+    options: tuple[Any, ...]
+    index: int
+    disabled: bool = False
+
+
+@dataclass(frozen=True)
 class ErrorElement:
     traceback: str
 
@@ -90,8 +159,15 @@ class ErrorElement:
 Element: TypeAlias = (
     TitleElement
     | HeaderElement
+    | SubheaderElement
     | TextElement
+    | CaptionElement
     | MarkdownElement
+    | CodeElement
+    | JsonElement
+    | ExceptionElement
+    | ProgressElement
+    | TableElement
     | DividerElement
     | AlertElement
     | WriteElement
@@ -99,5 +175,8 @@ Element: TypeAlias = (
     | SliderElement
     | TextInputElement
     | CheckboxElement
+    | NumberInputElement
+    | SelectboxElement
+    | RadioElement
     | ErrorElement
 )
