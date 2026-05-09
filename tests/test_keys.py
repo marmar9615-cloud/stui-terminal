@@ -1,0 +1,62 @@
+from pathlib import Path
+
+from stui.elements import ButtonElement, SliderElement
+from stui.runtime import Runtime
+
+
+def write_script(tmp_path: Path, body: str) -> Path:
+    script = tmp_path / "app.py"
+    script.write_text(body, encoding="utf-8")
+    return script
+
+
+def test_generated_widget_keys_are_stable(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.slider("x")
+st.slider("x")
+st.button("Go")
+""",
+    )
+    runtime = Runtime(script)
+
+    first = runtime.run_script()
+    second = runtime.run_script()
+
+    first_keys = [
+        element.key
+        for element in first
+        if isinstance(element, (SliderElement, ButtonElement))
+    ]
+    second_keys = [
+        element.key
+        for element in second
+        if isinstance(element, (SliderElement, ButtonElement))
+    ]
+    assert first_keys == ["slider:x:0", "slider:x:1", "button:Go:0"]
+    assert second_keys == first_keys
+
+
+def test_explicit_keys_override_generated_keys(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.slider("x", key="custom-x")
+st.button("Go", key="custom-go")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    keys = [
+        element.key
+        for element in elements
+        if isinstance(element, (SliderElement, ButtonElement))
+    ]
+    assert keys == ["custom-x", "custom-go"]
