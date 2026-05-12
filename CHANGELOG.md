@@ -9,6 +9,32 @@ shaped.
 
 No unreleased changes.
 
+## 0.8.0 - 2026-05-12
+
+### Added
+
+- Added release-candidate hardening notes for the v0.8.0 pre-v1 pass.
+- Added installed-package guidance when `stui run examples/<name>.py` is used
+  from a directory that does not contain a repository checkout.
+- Added CLI regression coverage for the installed-package example-copy hint.
+- Added clearer README links to the API reference, API stability labels,
+  terminal compatibility matrix, and v1 readiness checklist.
+
+### Changed
+
+- Reaffirmed stable versus pre-v1 experimental API labels in the README, API
+  reference, API stability docs, and v1 readiness docs.
+- Clarified the public package boundary: install `stui-terminal`, import
+  `stui`, run the `stui` CLI, and use `python -m stui` as the fallback entry
+  point.
+- Updated the v1 readiness and roadmap docs around the v0.8.0
+  release-candidate hardening checkpoint and the v0.9.0 final candidate.
+- Expanded feedback docs for API-label mismatches, CLI install/init/example
+  issues, limitation wording, and v0.9/v1 blockers.
+- Refreshed publishing docs to use the v0.8.0 release tag and install
+  verification commands.
+- Kept public announcement-style launch pushes explicitly saved for v1.0.0.
+
 ## 0.7.0 - 2026-05-12
 
 ### Added

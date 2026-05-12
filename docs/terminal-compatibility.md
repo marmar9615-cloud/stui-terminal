@@ -61,6 +61,20 @@ capability classification for `TERM`/`COLORTERM`, `STUI_THEME` resolution, and
 small-terminal warnings. It does not replace manual visual checks in real
 terminal emulators.
 
+## Keyboard Notes
+
+Automated Textual harness coverage verifies button activation, text and number
+input submission, checkbox toggles, selectbox arrow movement, slider
+arrow/Home/End movement, expander toggles, `r` rerun, `q` quit, and focus moving
+through widgets inside columns. Radio focus is covered in the harness, but
+radio arrow movement remains terminal/Textual-sensitive enough that this RC
+documents it rather than adding a brittle timing assertion.
+
+One focus bootstrap path remains terminal/Textual-dependent: when the first
+focusable controls in an app are custom static widgets such as selectbox, radio,
+or slider, the first Tab target can vary. Once focus is on a widget, the
+selectbox and slider shortcuts are covered by stable tests.
+
 ## Reporting Compatibility Bugs
 
 When opening a terminal compatibility issue, include:

@@ -370,6 +370,37 @@ with right:
     asyncio.run(scenario())
 
 
+def test_deep_nested_layout_renders_in_very_narrow_terminal(tmp_path: Path) -> None:
+    long_label = "Details " + ("x" * 120)
+    script = write_script(
+        tmp_path,
+        f"""
+import stui as st
+
+left, right = st.columns(2)
+with left:
+    with st.container():
+        with st.expander("{long_label}", expanded=True):
+            st.write("left nested")
+with right:
+    with st.expander("{long_label}", expanded=True):
+        with st.container():
+            st.write("right nested")
+""",
+    )
+    runtime = Runtime(script)
+    app = StuiApp(runtime)
+
+    async def scenario() -> None:
+        async with app.run_test(size=(24, 18)) as pilot:
+            await pilot.pause()
+            assert len(list(app.query(".stui-columns-stacked"))) == 1
+            assert len(list(app.query(".stui-expander"))) == 2
+            assert len(list(app.query(".write"))) == 2
+
+    asyncio.run(scenario())
+
+
 def test_textual_columns_render_side_by_side_when_wide(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,

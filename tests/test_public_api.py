@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import re
 from pathlib import Path
 
 import stui as st
@@ -230,6 +231,34 @@ def _documented_api_classifications(path: Path) -> dict[str, str]:
     return classifications
 
 
+def _readme_api_rows(path: Path) -> list[tuple[list[str], str]]:
+    text = path.read_text(encoding="utf-8")
+    table_match = re.search(
+        r"\| Area \| APIs \| Status in v[0-9.]+ \|(?P<table>.*?)"
+        r"Inputs support stable `key` values",
+        text,
+        flags=re.S,
+    )
+    assert table_match is not None
+    table = table_match.group("table")
+    rows: list[tuple[list[str], str]] = []
+
+    for line in table.splitlines():
+        if not line.startswith("| ") or line.startswith("| ---"):
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        if len(cells) != 3:
+            continue
+        apis = [
+            name.removeprefix("st.")
+            for name in re.findall(r"`st\.([a-z_]+)`", cells[1])
+        ]
+        if apis:
+            rows.append((apis, cells[2].lower()))
+
+    return rows
+
+
 def test_public_all_exports_are_intentional() -> None:
     assert st.__all__ == EXPECTED_PUBLIC_EXPORTS
 
@@ -240,6 +269,10 @@ def test_import_stui_as_st_exposes_only_intended_public_exports() -> None:
 
     for name in PRIVATE_INTERNAL_NAMES:
         assert name not in st.__all__, name
+
+    for name in st.__all__:
+        obj = getattr(st, name)
+        assert not inspect.isclass(obj), name
 
 
 def test_star_import_only_exports_public_contract() -> None:
@@ -256,6 +289,21 @@ def test_public_exports_match_documented_api_classification() -> None:
     assert stability_doc == EXPECTED_API_CLASSIFICATIONS
     assert reference_doc == EXPECTED_API_CLASSIFICATIONS
     assert set(st.__all__) == set(stability_doc)
+
+
+def test_readme_api_table_matches_public_api_stability_labels() -> None:
+    rows = _readme_api_rows(ROOT / "README.md")
+    documented = {api for apis, _status in rows for api in apis}
+    public_without_version = set(st.__all__) - {"__version__"}
+
+    assert documented == public_without_version
+
+    for apis, status in rows:
+        classifications = {EXPECTED_API_CLASSIFICATIONS[api] for api in apis}
+        if "pre-v1 experimental" in classifications:
+            assert "experimental" in status, apis
+        if classifications == {"v1-stable"}:
+            assert "v1-stable" in status, apis
 
 
 def test_public_api_signatures_are_intentional() -> None:

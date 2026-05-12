@@ -39,6 +39,30 @@ def test_run_rejects_missing_file() -> None:
     assert "file does not exist: missing.py" in result.output
 
 
+def test_run_missing_repo_example_guides_installed_users() -> None:
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli.app, ["run", "examples/basic.py"])
+
+    assert result.exit_code != 0
+    normalized_output = " ".join(result.output.split())
+    assert "file does not exist: examples/basic.py" in result.output
+    assert "Bundled examples are available after installation" in result.output
+    assert "stui example copy basic" in normalized_output
+    assert "./basic.py" in normalized_output
+    assert "stui run ./basic.py" in normalized_output
+
+
+def test_run_missing_unknown_repo_example_stays_plain() -> None:
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli.app, ["run", "examples/not_bundled.py"])
+
+    assert result.exit_code != 0
+    assert "file does not exist: examples/not_bundled.py" in result.output
+    assert "Bundled examples are available after installation" not in result.output
+
+
 def test_run_rejects_directory(tmp_path: Path) -> None:
     result = CliRunner().invoke(cli.app, ["run", str(tmp_path)])
 
@@ -60,7 +84,7 @@ def test_version_option() -> None:
     result = CliRunner().invoke(cli.app, ["--version"])
 
     assert result.exit_code == 0
-    assert "stui 0.7.0" in result.output
+    assert "stui 0.8.0" in result.output
 
 
 def test_doctor_command() -> None:
@@ -157,7 +181,7 @@ def test_doctor_json_output(monkeypatch) -> None:
 
     assert result.exit_code == 0
     diagnostics = json.loads(result.output)
-    assert diagnostics["stui"] == "0.7.0"
+    assert diagnostics["stui"] == "0.8.0"
     assert diagnostics["terminal"]["columns"] == 72
     assert diagnostics["terminal"]["lines"] == 24
     assert diagnostics["terminal"]["too_small"] is True

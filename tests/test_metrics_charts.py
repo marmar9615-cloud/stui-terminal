@@ -6,6 +6,7 @@ from stui.elements import (
     BarChartElement,
     BarChartPoint,
     LineChartElement,
+    LineChartSeries,
     MetricElement,
 )
 from stui.runtime import Runtime
@@ -199,6 +200,33 @@ def test_bar_chart_render_handles_small_width_and_blank_labels() -> None:
 
     assert "2" in rendered
     assert "█" in rendered
+
+
+def test_charts_render_edge_finite_values() -> None:
+    bar = BarChartElement(
+        points=(
+            BarChartPoint("huge-positive", 1e308),
+            BarChartPoint("huge-negative", -1e308),
+            BarChartPoint("tiny", 1e-308),
+        ),
+        width=6,
+    )
+    line = LineChartElement(
+        series=(
+            LineChartSeries("swing", (-1e308, 0.0, 1e308)),
+            LineChartSeries("flat tiny", (1e-308, 1e-308)),
+        ),
+        width=3,
+    )
+
+    bar_rendered = StuiApp._render_bar_chart(bar).plain
+    line_rendered = StuiApp._render_line_chart(line).plain
+
+    assert "huge-posi..." in bar_rendered
+    assert "huge-nega..." in bar_rendered
+    assert "1e+308" in bar_rendered
+    assert "swing" in line_rendered
+    assert "1e+308" in line_rendered
 
 
 def test_line_chart_accepts_list_and_dict_series(tmp_path: Path) -> None:

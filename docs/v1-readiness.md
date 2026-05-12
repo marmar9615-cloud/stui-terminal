@@ -7,13 +7,14 @@ that can be installed from PyPI, explained quickly, and trusted for local tools.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## Status After v0.7.0
+## Status After v0.8.0
 
-v0.7.0 is an API contract readiness checkpoint, not the v1 API freeze. It moves
-the public docs from broad readiness language to a clearer contract: stable
-candidate APIs have documented signatures and return values, examples and
-starter commands are tied to the package, and intentionally smaller areas are
-called out before users mistake them for Streamlit compatibility.
+v0.8.0 is a release-candidate hardening checkpoint, not the v1 API freeze. It
+moves the public docs from broad readiness language to a clearer contract:
+stable-candidate APIs have documented signatures and return values, pre-v1
+experimental APIs are labeled before users mistake them for Streamlit
+compatibility, and install/init/example commands are tied to the package as
+well as to the repository checkout.
 
 The v1 gate remains open. Before v1.0.0, the project still needs a terminal
 compatibility evidence pass, narrow-width polish, package verification from
@@ -25,12 +26,12 @@ are verified together.
 
 ## API Stability Status
 
-The project should keep the public API small. v0.7.0 treats the table below as
+The project should keep the public API small. v0.8.0 treats the table below as
 the candidate v1 reference, while still allowing corrections before the v1
 release candidate line.
 
 Stable-candidate APIs should not change casually. If a signature or return value
-changes after v0.7.0, the changelog should call it out plainly and the README
+changes after v0.8.0, the changelog should call it out plainly and the README
 examples should be updated in the same release.
 
 Experimental or intentionally modest areas:
@@ -50,7 +51,7 @@ Experimental or intentionally modest areas:
 
 ## API Contract Status
 
-v0.7.0 considers the public contract documented, but not frozen. The current
+v0.8.0 considers the public contract documented, but not frozen. The current
 contract lives in [`docs/api-reference.md`](api-reference.md) and covers:
 
 - Public imports exported from `stui.__all__`.
@@ -69,14 +70,13 @@ the changelog and release notes.
 
 Stable-candidate for v1:
 
-- Text and status output.
-- Static display helpers: `st.code`, `st.json`, `st.progress`, `st.table`, and
-  `st.dataframe`, with the static-table limits kept visible.
-- Input widgets with keys, disabled state, callbacks, and documented return
-  values.
-- `st.form` and `st.form_submit_button` as small submit-style primitives.
-- `st.container` and `st.expander` as terminal grouping/layout primitives.
-- `st.session_state`, `st.rerun`, and `st.stop`.
+- Text output: `st.title`, `st.header`, `st.subheader`, `st.caption`,
+  `st.text`, `st.markdown`, `st.write`, `st.divider`, and `st.code`.
+- Basic status output: `st.info`, `st.success`, `st.warning`, `st.error`, and
+  `st.exception`.
+- Core input widgets: `st.button`, `st.slider`, `st.text_input`, and
+  `st.checkbox`.
+- `st.session_state` as the core state mapping and attribute proxy.
 - CLI commands for running apps, diagnostics, example listing/copying, starter
   generation, and version output.
 
@@ -84,6 +84,14 @@ Experimental or intentionally modest before v1:
 
 - `st.status`, `st.spinner`, and `st.help` as terminal status/help primitives
   while their exact v1 grouping and formatting contract gathers feedback.
+- `st.json`, `st.progress`, `st.table`, and `st.dataframe` as static display
+  helpers whose terminal formatting may still tighten.
+- `st.number_input`, `st.selectbox`, and `st.radio` as newer input widgets
+  still gathering keyboard and terminal feedback.
+- `st.form` and `st.form_submit_button` as small submit-style primitives.
+- `st.container` and `st.expander` as terminal grouping/layout primitives.
+- `st.rerun` and `st.stop` as flow-control helpers that need real-app
+  feedback before being frozen.
 - `st.metric`, `st.bar_chart`, and `st.line_chart` as compact terminal
   summaries.
 - `st.columns` as a simple responsive terminal primitive. It accepts only an
@@ -104,13 +112,16 @@ surface once their behavior is documented and covered by tests:
 | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` |
-| Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` |
-| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` |
-| Forms | `st.form`, `st.form_submit_button` |
-| Grouping | `st.container`, `st.columns`, `st.expander` |
-| Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` |
-| State and flow | `st.session_state`, `st.rerun`, `st.stop` |
+| Display | `st.code` |
+| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox` |
+| State | `st.session_state` |
 | CLI | `stui run`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` |
+
+The pre-v1 experimental API is public and documented, but not part of the
+stable-candidate table yet. Current experimental areas include static display
+formatting beyond `st.code`, newer selection and numeric widgets, forms,
+grouping/layout helpers, metrics/charts, status/help helpers, and flow-control
+helpers.
 
 Before v1, every stable API must have:
 
@@ -151,6 +162,25 @@ stui --version
 The distribution name remains `stui-terminal`; the import package and CLI remain
 `stui`.
 
+The v1 docs should preserve the install and command contract:
+
+```bash
+python -m pip install stui-terminal
+stui --version
+python -m stui --version
+stui doctor
+stui doctor --json
+stui run app.py
+python -m stui run app.py
+stui examples
+stui example list
+stui example copy counter ./counter.py
+stui init ./new_app.py
+stui init ./dashboard.py --template dashboard
+```
+
+The documented starter templates are `basic`, `dashboard`, and `forms`.
+
 The v1 release should verify:
 
 - Clean install in a new virtual environment.
@@ -178,8 +208,8 @@ The v1 docs should include and test installed or discoverable examples for:
 
 ## Keyboard Documentation
 
-v0.7.0 documents the current keyboard behavior in the README. v1 must keep that
-documentation current for the default Textual UI:
+v0.8.0 verifies and documents the current keyboard behavior in the README. v1
+must keep that documentation current for the default Textual UI:
 
 - `q` quits and `r` manually reruns the script.
 - `tab` and `shift+tab` move focus between widgets.
@@ -196,8 +226,9 @@ and may vary by terminal.
 ## Terminal Compatibility
 
 The v1 release notes should state the terminal environments tested for the
-release. v0.7.0 links users here and asks for structured reports, but does not
-claim a finished compatibility matrix. At minimum, v1 should be checked in:
+release. v0.8.0 keeps linking users here and asks for structured reports, but
+does not claim a finished compatibility matrix. At minimum, v1 should be
+checked in:
 
 The working terminal report is tracked in
 [`docs/terminal-compatibility.md`](terminal-compatibility.md).
@@ -251,7 +282,7 @@ The README, release notes, and API docs should keep these limits explicit:
 ## Remaining v1 Gates
 
 - Keep the API reference synchronized with implementation changes through the
-  v0.8/v0.9 release-candidate line.
+  v0.9 release-candidate line.
 - Capture terminal compatibility evidence for macOS, Linux, SSH/headless or
   container workflows, narrow terminals, and wide terminals.
 - Fix or document narrow-rendering issues for tables, charts, forms, expanders,
@@ -265,26 +296,27 @@ The README, release notes, and API docs should keep these limits explicit:
 - Save public launch-style announcement pushes until v1.0.0 is published and
   verified.
 
-## v0.8 And v0.9 Plan
+## v0.9 And v1 Plan
 
-v0.8 should be the terminal-evidence and package-hardening release:
+v0.9 should be the final pre-v1 closeout:
 
-- Run manual terminal checks in the environments listed in
+- Run or collect final manual terminal checks in the environments listed in
   [`docs/terminal-compatibility.md`](terminal-compatibility.md).
-- Capture narrow and wide terminal notes for tables, charts, forms, expanders,
-  long labels, and help/footer text.
-- Verify bundled examples, `stui example copy`, and `stui init` from built
-  wheel/source artifacts.
-- Keep any larger feature requests out unless they directly unblock v1.
-
-v0.9 should be the v1 release-candidate closeout:
-
 - Freeze the public docs against the built artifact.
+- Verify bundled examples, `stui example copy`, and `stui init` from built
+  wheel and source artifacts.
 - Resolve, defer, or document every remaining v1 blocker.
 - Confirm supported Python versions match CI, README, `pyproject.toml`, and
   release notes.
-- Prepare the v1 checklist without publishing public launch-style
-  announcements.
+- Keep any larger feature requests out unless they directly unblock v1.
+
+v1 should be the small stable release:
+
+- Freeze the stable API surface.
+- Keep experimental APIs labeled if they are not ready to graduate.
+- Verify PyPI install, examples, docs, CI, and terminal compatibility together.
+- Publish public launch-style announcements only after v1.0.0 is released and
+  verified.
 
 ## Release Process
 

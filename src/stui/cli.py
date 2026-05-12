@@ -166,6 +166,24 @@ def _read_bundled_example(name: str) -> str:
     )
 
 
+def _missing_script_message(script: Path) -> str:
+    message = f"file does not exist: {script}"
+    parts = script.parts
+    if (
+        len(parts) >= 2
+        and parts[0] == "examples"
+        and _example_name(parts[-1]) in _bundled_examples()
+    ):
+        stem = Path(parts[-1]).stem
+        message += (
+            "\n\nBundled examples are available after installation, but they are "
+            "not created in your current directory automatically. Run "
+            f"`stui example copy {stem} ./{Path(parts[-1]).name}` first, then "
+            f"`stui run ./{Path(parts[-1]).name}`."
+        )
+    return message
+
+
 def _version_callback(value: bool) -> None:
     if value:
         typer.echo(f"stui {__version__}")
@@ -299,7 +317,7 @@ def run(script: Path) -> None:
 
     script_path = script.expanduser()
     if not script_path.exists():
-        raise typer.BadParameter(f"file does not exist: {script}")
+        raise typer.BadParameter(_missing_script_message(script))
     if not script_path.is_file():
         raise typer.BadParameter(f"not a file: {script}")
     if script_path.suffix != ".py":

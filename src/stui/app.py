@@ -22,8 +22,6 @@ from textual.widgets import (
     Header,
     Input,
     ProgressBar,
-    RadioButton,
-    RadioSet,
     Static,
 )
 
@@ -104,7 +102,7 @@ HIGH_CONTRAST_CSS = """
         text-style: bold;
     }
 
-    Input:focus, .stui-selectbox:focus, RadioSet:focus {
+    Input:focus, .stui-selectbox:focus, .stui-radio:focus {
         border: tall #ffff00;
         background: #000000;
         color: #ffffff;
@@ -170,6 +168,11 @@ def _clip_text(value: object, width: int) -> str:
 
 
 class StuiButton(Button):
+    BINDINGS = [
+        Binding("enter", "press", "Press button", show=False),
+        Binding("space", "press", "Press button", show=False),
+    ]
+
     def __init__(self, element: ButtonElement) -> None:
         self.stui_key = element.key
         super().__init__(
@@ -177,7 +180,7 @@ class StuiButton(Button):
             id=dom_id_for_key(element.key),
             disabled=element.disabled,
             tooltip=element.help
-            or "Enter activates. Tab and Shift+Tab move focus.",
+            or "Enter or Space activates. Tab and Shift+Tab move focus.",
         )
 
 
@@ -262,36 +265,53 @@ class StuiSelectbox(Static, can_focus=True):
         return f"[ {_clip_text(value, MAX_WIDGET_LABEL_WIDTH)} ]"
 
 
-class StuiRadioSet(RadioSet):
+class StuiRadioSet(Static, can_focus=True):
     BINDINGS = [
-        Binding("down,right", "next_button", "Next option"),
-        Binding("up,left", "previous_button", "Previous option"),
-        Binding("enter,space", "toggle_button", "Toggle", show=False),
+        Binding("down", "next_button", "Next option"),
+        Binding("right", "next_button", "Next option", show=False),
+        Binding("up", "previous_button", "Previous option"),
+        Binding("left", "previous_button", "Previous option", show=False),
+        Binding("enter", "next_button", "Next option", show=False),
+        Binding("space", "next_button", "Next option", show=False),
     ]
+
+    class Changed(Message):
+        def __init__(self, radio: StuiRadioSet, value: object) -> None:
+            super().__init__()
+            self.radio = radio
+            self.value = value
 
     def __init__(self, element: RadioElement) -> None:
         self.stui_key = element.key
-        buttons = [
-            RadioButton(
-                _clip_text(option, MAX_WIDGET_LABEL_WIDTH),
-                value=index == element.index,
-            )
-            for index, option in enumerate(element.options)
-        ]
         self.stui_options = element.options
+        self.stui_index = element.index
         super().__init__(
-            *buttons,
+            self._render_value(),
             id=dom_id_for_key(element.key),
-            disabled=element.disabled,
+            classes="stui-radio",
         )
+        self.disabled = element.disabled
 
     def action_next_button(self) -> None:
-        super().action_next_button()
-        self.action_toggle_button()
+        self._move(1)
 
     def action_previous_button(self) -> None:
-        super().action_previous_button()
-        self.action_toggle_button()
+        self._move(-1)
+
+    def _move(self, delta: int) -> None:
+        if self.disabled or len(self.stui_options) < 2:
+            return
+        self.stui_index = (self.stui_index + delta) % len(self.stui_options)
+        value = self.stui_options[self.stui_index]
+        self.update(self._render_value())
+        self.post_message(self.Changed(self, value))
+
+    def _render_value(self) -> str:
+        lines = []
+        for index, option in enumerate(self.stui_options):
+            marker = "*" if index == self.stui_index else " "
+            lines.append(f"({marker}) {_clip_text(option, MAX_WIDGET_LABEL_WIDTH)}")
+        return "\n".join(lines)
 
 
 class StuiExpander(Vertical, can_focus=True):
@@ -419,7 +439,7 @@ class StuiApp(App[None]):
         margin: 0 0 1 0;
     }
 
-    .stui-selectbox, RadioSet {
+    .stui-selectbox, .stui-radio {
         margin: 0 0 1 0;
     }
 
@@ -434,7 +454,7 @@ class StuiApp(App[None]):
         text-style: bold;
     }
 
-    .stui-selectbox:focus, RadioSet:focus {
+    .stui-selectbox:focus, .stui-radio:focus {
         border: tall #8ab4ff;
         background: #202033;
     }
@@ -595,25 +615,19 @@ class StuiApp(App[None]):
         self.runtime.run_script()
         await self.render_runtime()
 
-    async def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
-        radio_set = event.control
-        key = getattr(radio_set, "stui_key", None)
+    async def on_stui_radio_set_changed(
+        self, event: StuiRadioSet.Changed
+    ) -> None:
+        key = getattr(event.radio, "stui_key", None)
         if key is None:
             return
         if not self._body_is_ready():
             return
         event.stop()
-        options = getattr(radio_set, "stui_options", ())
-        pressed = event.pressed
-        buttons = list(radio_set.query(RadioButton))
-        try:
-            index = buttons.index(pressed)
-        except ValueError:
-            return
-        if index < len(options):
-            self.runtime.set_widget_value(key, options[index])
-            self.runtime.run_script()
-            await self.render_runtime()
+        self.runtime.last_focused_key = key
+        self.runtime.set_widget_value(key, event.value)
+        self.runtime.run_script()
+        await self.render_runtime()
 
     async def render_runtime(self) -> None:
         body = self.query_one("#body", VerticalScroll)
@@ -658,7 +672,7 @@ class StuiApp(App[None]):
         if isinstance(element, ExceptionElement):
             return Static(
                 Panel(
-                    Text(element.traceback, style="#ffd7d7"),
+                    Text(element.traceback, style="#ffd7d7", overflow="fold"),
                     title="Exception",
                     border_style="red",
                     title_align="left",
@@ -718,7 +732,7 @@ class StuiApp(App[None]):
         if isinstance(element, HelpElement):
             return Static(
                 Panel(
-                    Text(element.body),
+                    Text(element.body, overflow="fold"),
                     title="help",
                     title_align="left",
                     border_style="#6f7cff",
@@ -806,7 +820,7 @@ class StuiApp(App[None]):
         if isinstance(element, SelectboxElement):
             selectbox = StuiSelectbox(element)
             selectbox.tooltip = (
-                "Left/right arrows cycle choices. Enter chooses next. "
+                "Right/down/Enter choose next. Left/up choose previous. "
                 "Tab and Shift+Tab move focus."
             )
             return Vertical(
@@ -842,13 +856,14 @@ class StuiApp(App[None]):
                 id=dom_id_for_key(element.key),
             )
             slider.tooltip = (
-                element.help or "Left/right arrows or h/l adjust the value."
+                element.help
+                or "Left/right arrows or h/l adjust. Home/End jump to min/max."
             )
             return slider
         if isinstance(element, ErrorElement):
             return Static(
                 Panel(
-                    Text(element.traceback, style="#ffd7d7"),
+                    Text(element.traceback, style="#ffd7d7", overflow="fold"),
                     title=self._script_error_title(element.traceback),
                     border_style="red",
                     title_align="left",
@@ -930,7 +945,12 @@ class StuiApp(App[None]):
         return value
 
     @staticmethod
-    def _render_table(element: TableElement, available_width: int = 80) -> RichTable:
+    def _render_table(
+        element: TableElement,
+        available_width: int = 80,
+    ) -> RichTable | Text:
+        if available_width and available_width < 16:
+            return Text("Table requires a wider terminal.", style="yellow")
         headers, rows = StuiApp._trim_table(
             element.headers,
             element.rows,
@@ -1082,10 +1102,34 @@ class StuiApp(App[None]):
             return "─" * max(1, len(values))
         ticks = "▁▂▃▄▅▆▇█"
         scale = len(ticks) - 1
+        spread = high - low
+        if not math.isfinite(spread):
+            max_abs = max(abs(value) for value in values) or 1
+            return "".join(
+                ticks[
+                    StuiApp._clamped_tick_index(
+                        ((value / max_abs) + 1) / 2,
+                        scale,
+                    )
+                ]
+                for value in values
+            )
         return "".join(
-            ticks[round(((value - low) / (high - low)) * scale)]
+            ticks[
+                StuiApp._clamped_tick_index(
+                    (value - low) / spread,
+                    scale,
+                )
+            ]
             for value in values
         )
+
+    @staticmethod
+    def _clamped_tick_index(normalized: float, scale: int) -> int:
+        if not math.isfinite(normalized):
+            normalized = 0.0
+        normalized = min(1.0, max(0.0, normalized))
+        return round(normalized * scale)
 
     @staticmethod
     def _alert_style(kind: str) -> str:

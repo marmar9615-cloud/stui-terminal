@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml/badge.svg)](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml)
 
-`stui` v0.7.0 is a tiny Streamlit-inspired framework for building
+`stui` v0.8.0 is a tiny Streamlit-inspired framework for building
 terminal-native Python apps. Write a short script, run it in your terminal, and
 get a Textual UI with stateful controls.
 
@@ -39,8 +39,8 @@ project keeps its own smaller surface area.
 
 Use Python 3.11 or newer.
 
-Install the PyPI distribution named `stui-terminal`. The import package and CLI
-are both still named `stui`:
+Install the PyPI distribution named `stui-terminal`. The import package and
+command are both still named `stui`:
 
 ```bash
 python -m pip install stui-terminal
@@ -72,6 +72,13 @@ For runtime-only local use, install without the dev extra:
 ```bash
 python -m pip install -e .
 ```
+
+The distribution/import split is intentional:
+
+- PyPI package: `stui-terminal`
+- Python import: `import stui as st`
+- CLI command: `stui`
+- Module CLI fallback: `python -m stui`
 
 ## 60-Second Quickstart
 
@@ -178,6 +185,11 @@ python -m stui run ./forms_app.py
 stui init ./ops_dashboard.py --template dashboard
 python -m stui run ./ops_dashboard.py
 ```
+
+For more detail, see the [API reference](docs/api-reference.md),
+[API stability labels](docs/api-stability.md), [terminal compatibility
+matrix](docs/terminal-compatibility.md), and
+[v1 readiness checklist](docs/v1-readiness.md).
 
 ## Copy-Paste Examples
 
@@ -311,7 +323,7 @@ python3.11 -m pytest
 - `r`: rerun the script
 - `tab`: focus the next widget
 - `shift+tab`: focus the previous widget
-- `enter`: press the focused button
+- `enter` or `space`: press the focused button
 - `space`: toggle the focused checkbox
 - `enter` in text and number inputs: submit the edited value
 - `enter`, `right`, or `down`: move a selectbox to the next choice
@@ -347,17 +359,17 @@ and [docs/v1-readiness.md#stable-api-candidate](docs/v1-readiness.md#stable-api-
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v0.7.0 |
+| Area | APIs | Status in v0.8.0 |
 | --- | --- | --- |
-| Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | Stable candidate |
-| Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | Stable candidate |
+| Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable candidates |
+| Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable candidates |
 | Status/help primitives | `st.status`, `st.spinner`, `st.help` | Pre-v1 experimental while terminal grouping/help formatting gathers feedback |
-| Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | Stable candidate; tables/dataframes are static |
-| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | Stable candidate with keys, disabled state, and callbacks |
-| Forms | `st.form`, `st.form_submit_button` | Deferred commit to `session_state` until submit |
-| Layout/grouping | `st.container`, `st.columns`, `st.expander` | Terminal grouping primitives; columns are pre-v1 experimental and stack on narrow terminals |
-| Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Experimental terminal summaries, not plotting replacements |
-| State and flow | `st.session_state`, `st.rerun`, `st.stop` | Stable candidate with explicit rerun/stop semantics |
+| Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | Mixed: `st.code` is v1-stable; `st.json`, `st.progress`, `st.table`, and `st.dataframe` are pre-v1 experimental static terminal displays |
+| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | Mixed: core inputs are v1-stable; `st.number_input`, `st.selectbox`, and `st.radio` are pre-v1 experimental |
+| Forms | `st.form`, `st.form_submit_button` | Pre-v1 experimental deferred commit to `session_state` until submit |
+| Layout/grouping | `st.container`, `st.columns`, `st.expander` | Pre-v1 experimental terminal grouping primitives; columns stack on narrow terminals |
+| Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Pre-v1 experimental terminal summaries, not plotting replacements |
+| State and flow | `st.session_state`, `st.rerun`, `st.stop` | Mixed: `st.session_state` is v1-stable; `st.rerun` and `st.stop` are pre-v1 experimental flow control |
 | CLI and examples | `stui run`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | Stable candidate for v1 docs |
 
 Inputs support stable `key` values and optional callbacks where the function
@@ -385,7 +397,7 @@ Runtime expectations:
   normal interactive `TERM` such as `xterm-256color`.
 
 See [Terminal Compatibility](docs/terminal-compatibility.md) for the current
-evidence matrix and report format. v0.7.0 still treats terminal support as
+evidence matrix and report format. v0.8.0 still treats terminal support as
 evidence-driven, so unknown terminals are labeled as test-needed instead of
 claimed as supported.
 
@@ -458,6 +470,15 @@ python -m stui --version
 ```
 
 ## Examples
+
+The commands below use repository paths from a checkout. If you installed
+`stui-terminal` from PyPI and do not have this repository, copy a bundled
+example first:
+
+```bash
+stui example copy counter ./counter.py
+stui run ./counter.py
+```
 
 ### Counter
 
@@ -556,11 +577,16 @@ stui run examples/kitchen_sink.py
 - Charts are compact terminal summaries, not plotting-library replacements.
   `st.bar_chart` supports signed values and zero-only data; `st.line_chart` is
   a simple static sparkline for numeric lists or dictionaries of numeric series.
+- `st.status`, `st.spinner`, and `st.help` are display helpers, not live
+  animation, background task, or pager systems.
+- `st.rerun` and `st.stop` are small flow-control helpers, not a full job
+  scheduler or async runtime.
 - No sidebars, file upload, browser components, or caching decorators yet.
 - Tables are static display only; there is no full dataframe editing or sorting.
 - Slider input supports numeric values only.
 - Layout remains terminal-first and intentionally modest.
-- The app reruns the script as interactions change state, so examples should keep top-level work lightweight.
+- The app reruns the script as interactions change state, so examples should
+  keep top-level work lightweight.
 - Error handling is still early and meant for development feedback.
 - The package is an MVP and has not stabilized a long-term compatibility policy.
 - Public announcement pushes are saved for v1.0.0, after PyPI install, docs,
@@ -580,13 +606,13 @@ stui run examples/kitchen_sink.py
 
 ## Roadmap
 
-- v0.7: API contract readiness: final public signatures and return values are
-  documented, layout primitives are scoped as terminal grouping helpers,
-  examples/init/copy docs are aligned, and release notes/changelog are prepared.
-- v0.8: release hardening: terminal matrix evidence, narrow-width fixes,
-  installed-package smoke tests, and package verification.
-- v0.9: release-candidate closeout: freeze docs against the built artifact,
-  resolve or document remaining blockers, and prepare the v1 checklist.
+- v0.8: release-candidate hardening: stable and experimental API labels are
+  explicit, CLI install/init/example docs are aligned, terminal compatibility
+  links are prominent, limitations stay visible, and release notes/changelog are
+  prepared.
+- v0.9: final pre-v1 closeout: freeze docs against the built artifact, resolve
+  or document remaining blockers, verify installed-package flows, and prepare
+  the v1 checklist.
 - v1: a small stable API with no known state/rerun bugs, verified PyPI install,
   supported Python versions aligned with CI, and honest non-goals. Public
   launch announcements wait for v1.0.0.

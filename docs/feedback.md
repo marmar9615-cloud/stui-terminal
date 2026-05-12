@@ -10,6 +10,9 @@ Streamlit compatibility layer.
 
 Feedback that is most helpful right now:
 
+- Stable versus experimental API labels: places where README,
+  `docs/api-stability.md`, `docs/api-reference.md`, or examples disagree about
+  whether an API is `v1-stable` or `pre-v1 experimental`.
 - Terminal reports from real shells, SSH sessions, containers, headless
   environments, narrow terminals, wide terminals, unusual fonts, and different
   color themes. Include whether the app was local, over SSH, in a container, or
@@ -23,7 +26,7 @@ Feedback that is most helpful right now:
   become hard to scan, and help/footer text that crowds the app.
 - Install and package issues: `pip install stui-terminal`, `stui` command not
   found, `python -m stui`, editable installs, bundled examples, `stui example
-  copy`, and `stui init`.
+  copy`, `stui init`, and the `basic`, `dashboard`, or `forms` templates.
 - API signature confusion: names, parameter order, return values, callbacks,
   `args`/`kwargs`, stable `key` behavior, disabled widgets, form submit
   semantics, reruns, `st.stop`, and `session_state`.
@@ -41,6 +44,9 @@ Feedback that is most helpful right now:
   and kitchen-sink coverage.
 - Places where README, release notes, or examples make a feature look broader
   than it really is.
+- Limitations or non-goals that are still unclear, especially around Streamlit
+  compatibility, browser/server behavior, hosted/cloud scope, dataframe
+  behavior, plotting behavior, layout, tabs, sidebars, or GPL widget code.
 - Bugs that can be reproduced with a short `stui run` script.
 
 ## Next
@@ -48,7 +54,7 @@ Feedback that is most helpful right now:
 Feedback that can shape near-term design:
 
 - Terminal evidence: which environments should move from unknown/test-needed to
-  supported in the v0.8 compatibility pass.
+  supported before v1.
 - Package hardening: whether install, copy, init, and example flows work from
   clean virtual environments and built artifacts.
 - Charts: whether the first bar chart helper is enough, and which chart
@@ -67,6 +73,8 @@ Feedback that can shape near-term design:
   control without becoming required.
 - Screenshot and GIF docs: which workflows would be clearer with recorded
   terminal examples.
+- v0.9/v1 blockers: any mismatch that should stop the API/docs from freezing
+  before v1.0.0.
 
 ## Later
 

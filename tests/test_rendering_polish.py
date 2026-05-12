@@ -39,6 +39,17 @@ def test_wide_table_trims_columns_for_narrow_width() -> None:
     assert "col" in exported
 
 
+def test_table_warns_in_ultra_narrow_width() -> None:
+    table = TableElement(
+        headers=("alpha", "beta", "gamma"),
+        rows=(("one", "two", "three"),),
+    )
+
+    rendered = StuiApp._render_table(table, 12)
+
+    assert rendered.plain == "Table requires a wider terminal."
+
+
 def test_chart_renderers_handle_one_column_width_and_long_labels() -> None:
     long_label = "dataset-" + ("x" * 80)
     bar = BarChartElement(
@@ -73,6 +84,37 @@ def test_selectbox_render_value_clips_long_option() -> None:
 
     assert len(rendered) < 80
     assert rendered.endswith("... ]")
+
+
+def test_panels_with_long_text_render_in_tiny_terminal_without_traceback(
+    tmp_path: Path,
+) -> None:
+    long_text = "help " + ("x" * 300)
+    script = write_script(
+        tmp_path,
+        f"""
+import stui as st
+
+with st.status("{long_text}", expanded=True):
+    st.help("{long_text}")
+try:
+    raise RuntimeError("{"frame_with_a_very_long_name " * 20}")
+except RuntimeError as exc:
+    st.exception(exc)
+""",
+    )
+    runtime = Runtime(script)
+    app = StuiApp(runtime)
+
+    async def scenario() -> None:
+        async with app.run_test(size=(16, 12)) as pilot:
+            await pilot.pause()
+            assert list(app.query(".stui-status"))
+            assert len(list(app.query(".stui-help"))) == 1
+            assert len(list(app.query(".exception"))) == 1
+            assert not list(app.query(".error"))
+
+    asyncio.run(scenario())
 
 
 def test_long_labels_render_in_narrow_app_without_traceback(tmp_path: Path) -> None:

@@ -7,7 +7,7 @@ timeline or compatibility with Streamlit.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## v0.7 API Contract Readiness
+## v0.8 API Contract And Docs Hardening
 
 - Keep the v1 candidate API list frozen unless a documented issue forces a
   change.
@@ -24,7 +24,7 @@ Streamlit compatibility layer.
 - Keep release notes, changelog, README, feedback docs, and v1 readiness docs
   aligned without generating public launch posts.
 
-## v0.8 Terminal Evidence And Hardening
+## v0.8 Release-Candidate Hardening
 
 - Verify terminal compatibility across supported Python versions and common
   environments: macOS terminals, Linux terminals or containers, SSH/headless
@@ -48,6 +48,31 @@ Streamlit compatibility layer.
   chart variants, tabs, sidebars, or layout expansion unless real v1 feedback
   shows a clear need.
 
+## Stable Versus Experimental API Boundary
+
+The stable-candidate API is the top-level `stui` surface marked `v1-stable` in
+[`docs/api-stability.md`](docs/api-stability.md). These names should keep their
+call shape and core behavior through the v0.8/v0.9 line unless a correctness
+issue forces a change.
+
+The pre-v1 experimental API is still public enough to try, but the project is
+asking for feedback before freezing it. This includes newer display helpers,
+tables/dataframes, charts, forms, selection widgets, layout/grouping helpers,
+status/help helpers, and flow-control helpers that need more real terminal
+evidence before v1.
+
+The command surface is expected to remain stable for v1 docs:
+
+- `stui run APP.py`
+- `python -m stui run APP.py`
+- `stui examples`
+- `stui example list`
+- `stui example copy NAME DEST`
+- `stui init APP.py --template basic|dashboard|forms`
+- `stui doctor`
+- `stui doctor --json`
+- `stui --version`
+
 ## Layout Criteria Before Expansion
 
 - `st.columns` must keep passing focused runtime/rendering tests for child order,
@@ -61,7 +86,7 @@ Streamlit compatibility layer.
   scrolling unless a real terminal workflow cannot be expressed with headings,
   containers, columns, and expanders.
 
-## v0.9 Release Candidate Closeout
+## v0.9 Final Pre-v1 Closeout
 
 - Freeze README, API reference, v1 readiness docs, changelog, and release notes
   against the artifact that will be published.
@@ -69,6 +94,8 @@ Streamlit compatibility layer.
   narrow-width rendering, package verification, and state/rerun correctness.
 - Confirm supported Python versions match CI, `pyproject.toml`, README, and
   release notes.
+- Re-run the CLI install/init/example workflow from a clean environment and
+  built artifacts, not only from the editable checkout.
 - Keep public announcement-style launch pushes saved for v1.0.0.
 
 ## v1 Stable API

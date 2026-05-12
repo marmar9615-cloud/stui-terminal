@@ -66,6 +66,9 @@ defined in [API Stability](api-stability.md).
 
 ## Text and Status
 
+`st.help` is pre-v1 experimental while the terminal formatting and public name
+settle. The other text helpers in this group are v1-stable candidates.
+
 ```python
 st.title(body, *, key=None) -> None
 st.header(body, *, key=None) -> None
@@ -95,6 +98,9 @@ st.exception(exc) -> None
 st.status(label, state="running", expanded=False)
 st.spinner(text="Working...")
 ```
+
+`st.status` and `st.spinner` are pre-v1 experimental while status grouping
+behavior is tested in real terminal apps.
 
 ```python
 try:
@@ -143,6 +149,9 @@ st.bar_chart({"baseline": 42, "quantized": 24})
 ```
 
 ## Layout
+
+All layout and grouping helpers in this section are pre-v1 experimental. They
+are terminal grouping primitives, not browser layout compatibility APIs.
 
 ```python
 st.container()
@@ -382,7 +391,7 @@ if "token" not in st.session_state:
 
 ## Stability Before v1
 
-The signatures above are intentionally covered by tests in v0.7.0. The
+The signatures above are intentionally covered by tests in v0.8.0. The
 classification table marks each top-level API as either `v1-stable` or
 `pre-v1 experimental`; see [API Stability](api-stability.md) for the full
 compatibility promise before v1.0.0 and the post-v1 deprecation policy.
