@@ -12,18 +12,27 @@ Feedback that is most helpful right now:
 
 - Terminal reports from real shells, SSH sessions, containers, headless
   environments, narrow terminals, wide terminals, unusual fonts, and different
-  color themes.
-- Keyboard issues: focus order, `Tab`/`Shift+Tab`, button activation, text or
+  color themes. Include whether the app was local, over SSH, in a container, or
+  inside an editor terminal.
+- Keyboard bugs: focus order, `Tab`/`Shift+Tab`, button activation, text or
   number input submission, checkbox toggles, selectbox/radio movement, slider
-  keys, and expander toggles.
+  keys, expander toggles, and any keys captured by the terminal instead of the
+  app.
+- Narrow rendering bugs: clipped labels, wrapped buttons, unreadable tables,
+  chart output that loses meaning, form layout issues, expander children that
+  become hard to scan, and help/footer text that crowds the app.
 - Install and package issues: `pip install stui-terminal`, `stui` command not
   found, `python -m stui`, editable installs, bundled examples, `stui example
   copy`, and `stui init`.
-- API confusion: names, return values, callbacks, `args`/`kwargs`, stable
-  `key` behavior, disabled widgets, forms, reruns, `st.stop`, and
-  `session_state`.
+- API signature confusion: names, parameter order, return values, callbacks,
+  `args`/`kwargs`, stable `key` behavior, disabled widgets, form submit
+  semantics, reruns, `st.stop`, and `session_state`.
+- Docs or example gaps: unclear README snippets, missing API reference detail,
+  examples that only work from a checkout, `stui init` template confusion, or a
+  kitchen-sink example that does not match the documented stable-candidate API.
 - Desired examples: local tools, SSH workflows, data scripts, model/debug
-  panels, DevOps dashboards, forms, charts, layouts, and kitchen-sink coverage.
+  panels, DevOps dashboards, forms, charts, layouts, narrow terminal examples,
+  and kitchen-sink coverage.
 - Places where README, release notes, or examples make a feature look broader
   than it really is.
 - Bugs that can be reproduced with a short `stui run` script.

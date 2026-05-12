@@ -1,3 +1,4 @@
+import json
 from os import terminal_size
 from pathlib import Path
 
@@ -59,7 +60,7 @@ def test_version_option() -> None:
     result = CliRunner().invoke(cli.app, ["--version"])
 
     assert result.exit_code == 0
-    assert "stui 0.5.0" in result.output
+    assert "stui 0.6.0" in result.output
 
 
 def test_doctor_command() -> None:
@@ -77,11 +78,45 @@ def test_doctor_command() -> None:
     assert "TERM:" in result.output
     assert "COLORTERM:" in result.output
     assert "TERM_PROGRAM:" in result.output
+    assert "STUI_THEME:" in result.output
+    assert "NO_COLOR:" in result.output
     assert "capabilities:" in result.output
     assert "stdout_tty=" in result.output
     assert "stderr_tty=" in result.output
+    assert "no_color_requested=" in result.output
     assert "examples:" in result.output
     assert "example source:" in result.output
+
+
+def test_doctor_reports_terminal_environment(monkeypatch) -> None:
+    monkeypatch.setattr(
+        cli.shutil,
+        "get_terminal_size",
+        lambda fallback: terminal_size((100, 30)),
+    )
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["doctor"],
+        env={
+            "TERM": "xterm-256color",
+            "COLORTERM": "truecolor",
+            "TERM_PROGRAM": "Apple_Terminal",
+            "STUI_THEME": "high-contrast",
+            "NO_COLOR": "1",
+        },
+    )
+
+    assert result.exit_code == 0
+    assert "terminal size: 100x30 (ok)" in result.output
+    assert "theme: high-contrast" in result.output
+    assert "TERM: xterm-256color" in result.output
+    assert "COLORTERM: truecolor" in result.output
+    assert "TERM_PROGRAM: Apple_Terminal" in result.output
+    assert "STUI_THEME: high-contrast" in result.output
+    assert "NO_COLOR: yes" in result.output
+    assert "color=truecolor" in result.output
+    assert "no_color_requested=yes" in result.output
 
 
 def test_doctor_warns_for_small_terminal(monkeypatch) -> None:
@@ -98,7 +133,42 @@ def test_doctor_warns_for_small_terminal(monkeypatch) -> None:
         "terminal size: 60x20 (small; recommended at least 80x24)"
         in result.output
     )
-    assert "warning: terminal is smaller than the recommended minimum" in result.output
+    assert "warning: terminal is too small" in result.output
+
+
+def test_doctor_json_output(monkeypatch) -> None:
+    monkeypatch.setattr(
+        cli.shutil,
+        "get_terminal_size",
+        lambda fallback: terminal_size((72, 24)),
+    )
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["doctor", "--json"],
+        env={
+            "TERM": "dumb",
+            "COLORTERM": "",
+            "TERM_PROGRAM": "",
+            "STUI_THEME": "not-a-theme",
+            "NO_COLOR": "1",
+        },
+    )
+
+    assert result.exit_code == 0
+    diagnostics = json.loads(result.output)
+    assert diagnostics["stui"] == "0.6.0"
+    assert diagnostics["terminal"]["columns"] == 72
+    assert diagnostics["terminal"]["lines"] == 24
+    assert diagnostics["terminal"]["too_small"] is True
+    assert diagnostics["theme"] == "default"
+    assert diagnostics["environment"]["TERM"] == "dumb"
+    assert diagnostics["environment"]["STUI_THEME"] == "not-a-theme"
+    assert diagnostics["environment"]["NO_COLOR"] == "1"
+    assert diagnostics["capabilities"]["color"] == "none/dumb"
+    assert diagnostics["capabilities"]["no_color_requested"] is True
+    assert any("terminal is too small" in item for item in diagnostics["warnings"])
+    assert any("TERM=dumb" in item for item in diagnostics["warnings"])
 
 
 def test_color_capability_reports_truecolor_256_and_dumb() -> None:

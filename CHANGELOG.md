@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 This project is currently pre-1.0, so APIs may change while the MVP is being
 shaped.
 
+## 0.6.0 - 2026-05-12
+
+### Added
+
+- Added v0.6.0 release notes for the compatibility and API-stability readiness
+  pass.
+- Added README links to the API reference, v1 API stability checklist, and
+  terminal compatibility checklist.
+- Added clearer feedback asks for terminal reports, keyboard bugs,
+  narrow-rendering bugs, API signature confusion, docs gaps, and example gaps.
+
+### Changed
+
+- Reframed README API status around v0.6.0 stable-candidate and experimental
+  labels.
+- Expanded install, example, and `stui init` docs, including the `python -m
+  stui` fallback for environments where the `stui` script is not on `PATH`.
+- Updated `docs/v1-readiness.md` with API stability status, known limitations,
+  terminal compatibility status, and remaining v1 gates.
+- Updated `ROADMAP.md` with the v0.6, v0.7, v0.8, and v1 path.
+- Kept public announcement-style launch pushes explicitly saved for v1.0.0.
+
 ## 0.5.0 - 2026-05-12
 
 ### Added

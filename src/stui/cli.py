@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json as json_module
 import os
 import platform
 import shutil
@@ -196,6 +197,87 @@ def _terminal_size_status(columns: int, lines: int) -> str:
     return "ok"
 
 
+def _package_version(name: str) -> str:
+    try:
+        return metadata.version(name)
+    except metadata.PackageNotFoundError:
+        return "not installed"
+
+
+def _doctor_diagnostics() -> dict[str, object]:
+    terminal_size = shutil.get_terminal_size(fallback=(0, 0))
+    example_infos = _example_infos()
+    bundled_count = sum(info.bundled for info in example_infos)
+    repo_count = sum(info.repo_path is not None for info in example_infos)
+    term = os.environ.get("TERM", "")
+    color_term = os.environ.get("COLORTERM", "")
+    term_program = os.environ.get("TERM_PROGRAM", "")
+    stui_theme = os.environ.get("STUI_THEME", "")
+    no_color = os.environ.get("NO_COLOR", "")
+    color_capability = _color_capability(term, color_term)
+    size_status = _terminal_size_status(terminal_size.columns, terminal_size.lines)
+    warnings = []
+    if size_status != "ok":
+        warnings.append(
+            "terminal is too small; layout or chart rendering may be clipped"
+        )
+    if term.lower() == "dumb":
+        warnings.append("TERM=dumb; interactive rendering and color may be limited")
+
+    first_source = None
+    if example_infos:
+        first = example_infos[0]
+        first_source = {
+            "source": "bundled" if first.bundled else "repo-only",
+            "location": "stui.examples" if first.bundled else str(first.repo_path),
+        }
+
+    return {
+        "stui": __version__,
+        "package": _package_version("stui-terminal"),
+        "python": {
+            "version": sys.version.split()[0],
+            "platform": platform.system(),
+            "machine": platform.machine(),
+        },
+        "packages": {
+            "textual": _package_version("textual"),
+            "rich": _package_version("rich"),
+            "typer": _package_version("typer"),
+        },
+        "terminal": {
+            "columns": terminal_size.columns,
+            "lines": terminal_size.lines,
+            "status": size_status,
+            "minimum_columns": MIN_TERMINAL_COLUMNS,
+            "minimum_lines": MIN_TERMINAL_LINES,
+            "too_small": size_status != "ok",
+        },
+        "theme": resolve_theme(stui_theme),
+        "environment": {
+            "TERM": term,
+            "COLORTERM": color_term,
+            "TERM_PROGRAM": term_program,
+            "STUI_THEME": stui_theme,
+            "NO_COLOR": no_color,
+        },
+        "capabilities": {
+            "color": color_capability,
+            "stdin_tty": sys.stdin.isatty(),
+            "stdout_tty": sys.stdout.isatty(),
+            "stderr_tty": sys.stderr.isatty(),
+            "unicode": sys.stdout.encoding or "unknown",
+            "no_color_requested": bool(no_color),
+        },
+        "examples": {
+            "bundled": bundled_count,
+            "repo": repo_count,
+            "first_source": first_source,
+        },
+        "warnings": warnings,
+    }
+
+
 @app.callback()
 def main(
     version: Annotated[
@@ -228,62 +310,65 @@ def run(script: Path) -> None:
 
 
 @app.command()
-def doctor() -> None:
+def doctor(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print diagnostics as JSON."),
+    ] = False,
+) -> None:
     """Print environment details useful for debugging stui installs."""
 
-    def package_version(name: str) -> str:
-        try:
-            return metadata.version(name)
-        except metadata.PackageNotFoundError:
-            return "not installed"
+    diagnostics = _doctor_diagnostics()
+    if json_output:
+        typer.echo(json_module.dumps(diagnostics, indent=2, sort_keys=True))
+        return
 
-    terminal_size = shutil.get_terminal_size(fallback=(0, 0))
-    example_infos = _example_infos()
-    bundled_count = sum(info.bundled for info in example_infos)
-    repo_count = sum(info.repo_path is not None for info in example_infos)
-    term = os.environ.get("TERM", "")
-    color_term = os.environ.get("COLORTERM", "")
-    term_program = os.environ.get("TERM_PROGRAM", "")
-    color_capability = _color_capability(term, color_term)
-    capabilities = [
-        f"color={color_capability}",
-        f"stdin_tty={_bool_status(sys.stdin.isatty())}",
-        f"stdout_tty={_bool_status(sys.stdout.isatty())}",
-        f"stderr_tty={_bool_status(sys.stderr.isatty())}",
-        f"unicode={sys.stdout.encoding or 'unknown'}",
-    ]
-    typer.echo(f"stui: {__version__}")
-    typer.echo(f"package: {package_version('stui-terminal')}")
+    python_info = diagnostics["python"]
+    packages = diagnostics["packages"]
+    terminal = diagnostics["terminal"]
+    environment = diagnostics["environment"]
+    capabilities = diagnostics["capabilities"]
+    examples = diagnostics["examples"]
+
+    typer.echo(f"stui: {diagnostics['stui']}")
+    typer.echo(f"package: {diagnostics['package']}")
     typer.echo(
-        f"python: {sys.version.split()[0]} "
-        f"({platform.system()} {platform.machine()})"
+        f"python: {python_info['version']} "
+        f"({python_info['platform']} {python_info['machine']})"
     )
-    typer.echo(f"textual: {package_version('textual')}")
-    typer.echo(f"rich: {package_version('rich')}")
-    typer.echo(f"typer: {package_version('typer')}")
-    size_status = _terminal_size_status(terminal_size.columns, terminal_size.lines)
+    typer.echo(f"textual: {packages['textual']}")
+    typer.echo(f"rich: {packages['rich']}")
+    typer.echo(f"typer: {packages['typer']}")
     typer.echo(
-        f"terminal size: {terminal_size.columns}x{terminal_size.lines} "
-        f"({size_status})"
+        f"terminal size: {terminal['columns']}x{terminal['lines']} "
+        f"({terminal['status']})"
     )
-    typer.echo(f"theme: {resolve_theme()}")
-    typer.echo(f"TERM: {term or 'unknown'}")
-    typer.echo(f"COLORTERM: {color_term or 'unknown'}")
-    typer.echo(f"TERM_PROGRAM: {term_program or 'unknown'}")
-    typer.echo(f"capabilities: {', '.join(capabilities)}")
-    if size_status != "ok":
+    typer.echo(f"theme: {diagnostics['theme']}")
+    typer.echo(f"TERM: {environment['TERM'] or 'unknown'}")
+    typer.echo(f"COLORTERM: {environment['COLORTERM'] or 'unknown'}")
+    typer.echo(f"TERM_PROGRAM: {environment['TERM_PROGRAM'] or 'unknown'}")
+    typer.echo(f"STUI_THEME: {environment['STUI_THEME'] or 'unset'}")
+    typer.echo(f"NO_COLOR: {_bool_status(bool(environment['NO_COLOR']))}")
+    typer.echo(
+        "capabilities: "
+        f"color={capabilities['color']}, "
+        f"stdin_tty={_bool_status(bool(capabilities['stdin_tty']))}, "
+        f"stdout_tty={_bool_status(bool(capabilities['stdout_tty']))}, "
+        f"stderr_tty={_bool_status(bool(capabilities['stderr_tty']))}, "
+        f"unicode={capabilities['unicode']}, "
+        f"no_color_requested={_bool_status(bool(capabilities['no_color_requested']))}"
+    )
+    for warning in diagnostics["warnings"]:
+        typer.echo(f"warning: {warning}.")
+    typer.echo(
+        f"examples: {examples['bundled']} bundled, {examples['repo']} repo"
+    )
+    first_source = examples["first_source"]
+    if first_source:
         typer.echo(
-            "warning: terminal is smaller than the recommended minimum; "
-            "layout or chart rendering may be clipped."
+            f"example source: {first_source['source']} "
+            f"({first_source['location']})"
         )
-    typer.echo(
-        f"examples: {bundled_count} bundled, {repo_count} repo"
-    )
-    if example_infos:
-        first = example_infos[0]
-        source = "bundled" if first.bundled else "repo-only"
-        location = "stui.examples" if first.bundled else str(first.repo_path)
-        typer.echo(f"example source: {source} ({location})")
 
 
 @app.command("examples")

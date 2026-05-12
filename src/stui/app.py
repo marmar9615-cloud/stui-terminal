@@ -60,6 +60,11 @@ from .runtime import Runtime
 from .widgets.slider import StuiSlider
 
 SUPPORTED_THEMES = {"default", "high-contrast"}
+MAX_WIDGET_LABEL_WIDTH = 72
+MAX_STATIC_LABEL_WIDTH = 120
+MAX_TABLE_COLUMNS = 8
+MIN_TABLE_COLUMN_WIDTH = 6
+MAX_TABLE_COLUMN_WIDTH = 24
 
 HIGH_CONTRAST_CSS = """
     Screen {
@@ -148,11 +153,22 @@ def dom_id_for_key(key: str) -> str:
     return f"stui-{digest}"
 
 
+def _clip_text(value: object, width: int) -> str:
+    text = str(value)
+    if width < 1:
+        return ""
+    if len(text) <= width:
+        return text
+    if width <= 3:
+        return "." * width
+    return f"{text[: width - 3]}..."
+
+
 class StuiButton(Button):
     def __init__(self, element: ButtonElement) -> None:
         self.stui_key = element.key
         super().__init__(
-            element.label,
+            _clip_text(element.label, MAX_WIDGET_LABEL_WIDTH),
             id=dom_id_for_key(element.key),
             disabled=element.disabled,
             tooltip=element.help
@@ -189,7 +205,7 @@ class StuiCheckbox(Checkbox):
     def __init__(self, element: CheckboxElement) -> None:
         self.stui_key = element.key
         super().__init__(
-            element.label,
+            _clip_text(element.label, MAX_WIDGET_LABEL_WIDTH),
             value=element.value,
             id=dom_id_for_key(element.key),
             disabled=element.disabled,
@@ -238,7 +254,7 @@ class StuiSelectbox(Static, can_focus=True):
 
     def _render_value(self) -> str:
         value = self.stui_options[self.stui_index]
-        return f"[ {value} ]"
+        return f"[ {_clip_text(value, MAX_WIDGET_LABEL_WIDTH)} ]"
 
 
 class StuiRadioSet(RadioSet):
@@ -251,7 +267,10 @@ class StuiRadioSet(RadioSet):
     def __init__(self, element: RadioElement) -> None:
         self.stui_key = element.key
         buttons = [
-            RadioButton(str(option), value=index == element.index)
+            RadioButton(
+                _clip_text(option, MAX_WIDGET_LABEL_WIDTH),
+                value=index == element.index,
+            )
             for index, option in enumerate(element.options)
         ]
         self.stui_options = element.options
@@ -287,7 +306,7 @@ class StuiExpander(Vertical, can_focus=True):
         self.stui_expanded = element.expanded
         marker = "-" if element.expanded else "+"
         label = Static(
-            f"[{marker}] {element.label}",
+            f"[{marker}] {_clip_text(element.label, MAX_STATIC_LABEL_WIDTH)}",
             classes="stui-expander-label",
         )
         super().__init__(
@@ -607,12 +626,10 @@ class StuiApp(App[None]):
         if isinstance(element, JsonElement):
             return Static(RichJSON(element.text), classes="json")
         if isinstance(element, TableElement):
-            table = RichTable(show_lines=False)
-            for header in element.headers:
-                table.add_column(header, overflow="fold")
-            for row in element.rows:
-                table.add_row(*row)
-            return Static(table, classes="table")
+            return Static(
+                self._render_table(element, self.size.width),
+                classes="table",
+            )
         if isinstance(element, ExceptionElement):
             return Static(
                 Panel(
@@ -630,7 +647,10 @@ class StuiApp(App[None]):
             if element.text is None:
                 return Vertical(progress_bar, classes="stui-progress")
             return Vertical(
-                Static(element.text, classes="stui-progress-label"),
+                Static(
+                    _clip_text(element.text, MAX_STATIC_LABEL_WIDTH),
+                    classes="stui-progress-label",
+                ),
                 progress_bar,
                 classes="stui-progress",
             )
@@ -658,7 +678,7 @@ class StuiApp(App[None]):
             kind = element.kind.lower()
             return Static(
                 Panel(
-                    element.body,
+                    Text(str(element.body), overflow="fold"),
                     title=element.kind,
                     title_align="left",
                     border_style=self._alert_style(kind),
@@ -674,7 +694,10 @@ class StuiApp(App[None]):
                 "Type text. Enter submits. Tab and Shift+Tab move focus."
             )
             return Vertical(
-                Static(element.label, classes="stui-field-label"),
+                Static(
+                    _clip_text(element.label, MAX_STATIC_LABEL_WIDTH),
+                    classes="stui-field-label",
+                ),
                 text_input,
                 classes="stui-field",
             )
@@ -684,7 +707,10 @@ class StuiApp(App[None]):
                 "Type a number. Enter submits. Tab and Shift+Tab move focus."
             )
             return Vertical(
-                Static(element.label, classes="stui-field-label"),
+                Static(
+                    _clip_text(element.label, MAX_STATIC_LABEL_WIDTH),
+                    classes="stui-field-label",
+                ),
                 number_input,
                 classes="stui-field",
             )
@@ -701,7 +727,10 @@ class StuiApp(App[None]):
                 "Tab and Shift+Tab move focus."
             )
             return Vertical(
-                Static(element.label, classes="stui-field-label"),
+                Static(
+                    _clip_text(element.label, MAX_STATIC_LABEL_WIDTH),
+                    classes="stui-field-label",
+                ),
                 selectbox,
                 classes="stui-field",
             )
@@ -711,7 +740,10 @@ class StuiApp(App[None]):
                 "Arrow keys choose. Tab and Shift+Tab move focus."
             )
             return Vertical(
-                Static(element.label, classes="stui-field-label"),
+                Static(
+                    _clip_text(element.label, MAX_STATIC_LABEL_WIDTH),
+                    classes="stui-field-label",
+                ),
                 radio,
                 classes="stui-field",
             )
@@ -809,14 +841,66 @@ class StuiApp(App[None]):
         return value
 
     @staticmethod
+    def _render_table(element: TableElement, available_width: int = 80) -> RichTable:
+        headers, rows = StuiApp._trim_table(
+            element.headers,
+            element.rows,
+            available_width,
+        )
+        column_count = max(1, len(headers))
+        usable_width = max(20, available_width or 80)
+        column_width = max(
+            MIN_TABLE_COLUMN_WIDTH,
+            min(MAX_TABLE_COLUMN_WIDTH, usable_width // column_count - 3),
+        )
+        table = RichTable(show_lines=False)
+        for header in headers:
+            table.add_column(
+                _clip_text(header, column_width),
+                overflow="fold",
+                max_width=column_width,
+            )
+        for row in rows:
+            table.add_row(*(_clip_text(cell, column_width * 2) for cell in row))
+        return table
+
+    @staticmethod
+    def _trim_table(
+        headers: tuple[str, ...],
+        rows: tuple[tuple[str, ...], ...],
+        available_width: int = 80,
+    ) -> tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]:
+        if len(headers) <= 1:
+            return headers or ("value",), rows
+        width = max(20, available_width or 80)
+        visible_columns = max(1, width // MIN_TABLE_COLUMN_WIDTH)
+        visible_columns = min(MAX_TABLE_COLUMNS, visible_columns, len(headers))
+        if visible_columns >= len(headers):
+            return headers, rows
+        kept_columns = max(1, visible_columns - 1)
+        trimmed_headers = (*headers[:kept_columns], "...")
+        hidden_count = len(headers) - kept_columns
+        trimmed_rows = tuple(
+            (*row[:kept_columns], f"+{hidden_count} cols")
+            for row in rows
+        )
+        return trimmed_headers, trimmed_rows
+
+    @staticmethod
     def _render_metric(element: MetricElement) -> Panel:
         body = Text()
-        body.append(element.label, style="dim")
+        body.append(_clip_text(element.label, MAX_STATIC_LABEL_WIDTH), style="dim")
         body.append("\n")
-        body.append(element.value, style="bold #ffffff")
+        body.append(
+            _clip_text(element.value, MAX_STATIC_LABEL_WIDTH),
+            style="bold #ffffff",
+        )
         if element.delta is not None:
             style = "green" if not element.delta.startswith("-") else "red"
-            body.append(f"  {element.delta}", style=style)
+            body.append(
+                f"  {_clip_text(element.delta, MAX_WIDGET_LABEL_WIDTH)}",
+                style=style,
+            )
         return Panel(
             body,
             border_style="#343444",
@@ -835,10 +919,10 @@ class StuiApp(App[None]):
 
         max_abs = max(abs(point.value) for point in points) or 1
         label_width = min(
-            16,
+            12,
             max(1, max(len(point.label) for point in points)),
         )
-        plot_width = min(max(element.width or 28, 3), 60)
+        plot_width = min(max(element.width or 28, 1), 60)
         half_width = max(1, plot_width // 2)
         has_negative = any(point.value < 0 for point in points)
         has_positive = any(point.value > 0 for point in points)
@@ -857,7 +941,8 @@ class StuiApp(App[None]):
             else:
                 bar = "█" * bar_len if point.value else "·"
             style = "red" if point.value < 0 else "green"
-            chart.append(point.label[:label_width].rjust(label_width), style="dim")
+            label = _clip_text(point.label, label_width)
+            chart.append(label.rjust(label_width), style="dim")
             chart.append(" │ ", style="dim")
             chart.append(bar, style=style)
             chart.append(f" {point.value:g}")
@@ -878,15 +963,16 @@ class StuiApp(App[None]):
             return Text("No chart data", style="dim")
 
         label_width = min(
-            16,
+            12,
             max(1, max(len(item.label) for item in series)),
         )
-        plot_width = min(max(element.width or 28, 2), 60)
+        plot_width = min(max(element.width or 28, 1), 60)
         chart = Text()
         for index, item in enumerate(series):
             values = tuple(value for value in item.values if math.isfinite(value))
             sparkline = StuiApp._sparkline(values, plot_width)
-            chart.append(item.label[:label_width].rjust(label_width), style="dim")
+            label = _clip_text(item.label, label_width)
+            chart.append(label.rjust(label_width), style="dim")
             chart.append(" │ ", style="dim")
             chart.append(sparkline, style="cyan")
             chart.append(f" {values[-1]:g}" if values else " 0")

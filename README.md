@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml/badge.svg)](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml)
 
-`stui` v0.5.0 is a tiny Streamlit-inspired framework for building
+`stui` v0.6.0 is a tiny Streamlit-inspired framework for building
 terminal-native Python apps. Write a short script, run it in your terminal, and
 get a Textual UI with stateful controls.
 
@@ -48,6 +48,14 @@ python -m pip install stui-terminal
 
 ```python
 import stui as st
+```
+
+Check the installed version and terminal environment before filing terminal or
+keyboard issues:
+
+```bash
+python -m stui --version
+python -m stui doctor
 ```
 
 For local development from a checkout, use an editable install with the dev
@@ -131,7 +139,7 @@ Run it with:
 stui run app.py
 ```
 
-Start from the included examples when you want a larger reference:
+Start from the repository examples when you want a larger reference:
 
 ```bash
 stui run examples/counter.py
@@ -155,6 +163,10 @@ stui run ./counter.py
 stui init ./new_app.py
 stui init ./dashboard.py --template dashboard
 ```
+
+`stui init` currently supports the `basic`, `dashboard`, and `forms` templates.
+Use `python -m stui ...` for the same commands when the `stui` script directory
+is not on `PATH`.
 
 ## Copy-Paste Examples
 
@@ -316,21 +328,32 @@ import stui as st
 The public API is intentionally compact and Streamlit-inspired, not
 Streamlit-compatible.
 
-| Area | APIs | Status in v0.5.0 |
+For the working API reference, see
+[docs/api-reference.md](docs/api-reference.md). The v1 stability checklist is
+tracked in
+[docs/v1-readiness.md#stable-api-candidate](docs/v1-readiness.md#stable-api-candidate),
+and the terminal support checklist lives in
+[docs/terminal-compatibility.md](docs/terminal-compatibility.md).
+
+| Area | APIs | Status in v0.6.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | Stable candidate |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | Stable candidate |
-| Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | Static display helpers |
-| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | Stateful widgets with keys and callbacks |
+| Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | Stable candidate; tables/dataframes are static |
+| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | Stable candidate with keys, disabled state, and callbacks |
 | Forms | `st.form`, `st.form_submit_button` | Deferred commit to `session_state` until submit |
-| Grouping | `st.container`, `st.expander` | Terminal grouping; expanders toggle with Enter/Space |
-| Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Compact terminal summaries, not plotting replacements |
-| State and flow | `st.session_state`, `st.rerun`, `st.stop` | Stable candidate with rerun limits and explicit stop support |
-| CLI and examples | `stui run`, `stui examples`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | v0.5.0 documented DX surface |
+| Grouping | `st.container`, `st.expander` | Stable candidate; terminal grouping, not a full layout engine |
+| Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Experimental terminal summaries, not plotting replacements |
+| State and flow | `st.session_state`, `st.rerun`, `st.stop` | Stable candidate with explicit rerun/stop semantics |
+| CLI and examples | `stui run`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | Stable candidate for v1 docs |
 
 Inputs support stable `key` values and optional callbacks where the function
 signature documents them. Tables and charts are simple static displays and do
 not require pandas or plotting dependencies.
+
+APIs not shown in this table should be treated as private implementation
+details. New display/layout experiments may still change before v1 unless they
+are promoted in the v1 readiness checklist and covered by release notes.
 
 ## Compatibility
 
@@ -522,13 +545,13 @@ stui run examples/kitchen_sink.py
 
 ## Roadmap
 
-- v0.5: developer experience and documentation clarity: install, quickstart,
-  first app, CLI commands, API table, keyboard behavior, feedback channels, and
-  v1 readiness.
-- v0.6: terminal compatibility and polish: tested terminal matrix,
-  narrow-width behavior, clearer error recovery, and release-process hardening.
-- v0.7: release-candidate cleanup: API signatures, examples, packaging
-  verification, and final docs alignment.
+- v0.6: compatibility and API-stability readiness: API reference links,
+  stable/experimental labels, install/examples/init docs, terminal report asks,
+  and v1 gate tracking.
+- v0.7: release-candidate cleanup: final API signatures, return values,
+  callbacks, disabled behavior, examples, and package verification.
+- v0.8: release hardening: terminal matrix evidence, narrow-width fixes,
+  installed-package smoke tests, and release-candidate notes.
 - v1: a small stable API with no known state/rerun bugs, verified PyPI install,
   supported Python versions aligned with CI, and honest non-goals. Public
   launch announcements wait for v1.0.0.
