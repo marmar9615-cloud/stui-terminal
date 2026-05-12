@@ -30,12 +30,76 @@ If a change adds API surface, it is not a patch release.
 Run from the repository root:
 
 ```bash
+. .venv/bin/activate
+python -m pip install -e ".[dev]"
+ruff check .
 python3.11 -m pytest
+python -m build
+python -m twine check dist/*
+stui --version
+python -m stui --version
+./scripts/check.sh
 git diff --check
 ```
 
-For package publishing, also follow `docs/publishing.md` and run the build and
-twine checks listed there.
+For package publishing, also follow `docs/publishing.md`.
+
+## Installed-Package Verification
+
+Before publishing, verify the current public package still installs cleanly:
+
+```bash
+python3.11 -m venv /tmp/stui-current
+/tmp/stui-current/bin/python -m pip install --upgrade pip
+/tmp/stui-current/bin/python -m pip install --index-url https://pypi.org/simple --no-cache-dir stui-terminal
+/tmp/stui-current/bin/python -c "import stui; print(stui.__version__)"
+/tmp/stui-current/bin/stui --version
+/tmp/stui-current/bin/stui doctor --json
+/tmp/stui-current/bin/stui examples
+/tmp/stui-current/bin/stui example list
+/tmp/stui-current/bin/stui example copy basic /tmp/stui-basic.py
+/tmp/stui-current/bin/stui init /tmp/stui-app.py
+```
+
+After publishing, repeat the same check with the exact released version, for
+example `stui-terminal==0.9.0`.
+
+## Tag, CI, Publish, Release
+
+1. Commit only after local verification is green.
+2. Create and push the release tag, for example `v0.9.0`.
+3. Wait for CI on `main` and the tag.
+4. Dispatch the `Publish` workflow from the release tag with exactly one publish
+   flag enabled.
+5. Approve the protected PyPI environment only after CI, build, Twine, security,
+   and fresh-wheel checks are green.
+6. Confirm PyPI JSON and the Simple API show the new release.
+7. Verify a clean install from PyPI with the exact version.
+8. Create the GitHub Release from the matching `RELEASE_NOTES_*.md` file.
+
+## v0.9 And v1 Release Gates
+
+Before tagging v0.9.0 or v1.0.0, confirm:
+
+- Version metadata, README, `CHANGELOG.md`, release notes, and
+  `docs/v1-readiness.md` all name the same release.
+- Stable and experimental API labels agree across README,
+  `docs/api-reference.md`, `docs/api-stability.md`, and public API tests.
+- `stui-terminal` remains the PyPI distribution name; `stui` remains the import
+  package and CLI command.
+- The public docs preserve the non-affiliation and non-compatibility language:
+  not official Streamlit, not affiliated with Streamlit, and not a Streamlit
+  compatibility layer.
+- No browser, server, websocket, port-forwarding, Streamlit runtime, GPL slider
+  code, or `textual-slider` dependency has been introduced.
+- Installed-package flows work without a repository checkout: `stui examples`,
+  `stui example list`, `stui example copy`, and `stui init`.
+- Terminal compatibility evidence or explicit test-needed labels are current in
+  `docs/terminal-compatibility.md`.
+- Public launch-style announcement copy is not generated for pre-v1 releases.
+
+For v1.0.0 specifically, also confirm the final checklist in
+[`docs/v1-readiness.md`](v1-readiness.md#final-v10-checklist).
 
 ## Public Copy
 

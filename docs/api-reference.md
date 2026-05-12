@@ -389,14 +389,20 @@ if "token" not in st.session_state:
     st.stop()
 ```
 
-## Stability Before v1
+## v0.9 Final Candidate Status
 
-The signatures above are intentionally covered by tests in v0.8.0. The
+The signatures above are intentionally covered by tests in v0.9.0. The
 classification table marks each top-level API as either `v1-stable` or
 `pre-v1 experimental`; see [API Stability](api-stability.md) for the full
 compatibility promise before v1.0.0 and the post-v1 deprecation policy.
 
-These areas need the most feedback before they can be called v1-stable:
+The v0.9.0 release candidate treats the `v1-stable` rows as the proposed v1
+surface. Any change to those names before v1.0.0 should be treated as a release
+candidate blocker unless it fixes a correctness, terminal, or security issue
+and is documented in the changelog and release notes.
+
+These areas stay pre-v1 experimental for the v1 candidate freeze and need the
+most feedback before they can be called v1-stable:
 
 - Forms: deferred submit behavior and callback timing.
 - Grouping: `st.container`, `st.columns`, and `st.expander` as terminal
@@ -407,3 +413,10 @@ These areas need the most feedback before they can be called v1-stable:
 - Help and status: `st.help`, `st.status`, and `st.spinner` formatting and
   grouping behavior.
 - Flow control: clear expectations for `st.rerun` and `st.stop` in real apps.
+
+APIs and feature areas explicitly deferred from the v1 candidate surface are
+listed in [API Stability](api-stability.md#deferred-for-v1). They include
+`st.sidebar`, `st.tabs`, `st.file_uploader`, `st.cache_data`,
+`st.cache_resource`, `st.components`, editable dataframes,
+plotting-library parity, custom column ratios/gaps, and any browser/server runtime,
+websocket, or port-forwarding runtime.

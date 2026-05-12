@@ -9,6 +9,31 @@ shaped.
 
 No unreleased changes.
 
+## 0.9.0 - 2026-05-12
+
+### Added
+
+- Added v0.9.0 final pre-v1 candidate release notes.
+- Added explicit v1 candidate freeze wording for the stable API surface and
+  deferred API areas.
+- Added explicit README sections for terminal compatibility expectations,
+  installed-package examples/init/copy flows, limitations, non-goals, and v1
+  candidate status.
+- Added final v1.0 checklist and post-v1 items to the readiness docs.
+
+### Changed
+
+- Bumped release metadata to `0.9.0` for the final pre-v1 candidate.
+- Updated README, publishing docs, API reference, and v1 readiness docs from
+  the v0.8.0 hardening checkpoint to the v0.9.0 final pre-v1 candidate.
+- Reframed the roadmap from v0.8 hardening into v0.9 gates, v1 release
+  criteria, and post-v1 candidates.
+- Tightened release checklist gates for API labels, package/import/CLI naming,
+  installed-package examples, terminal evidence, and pre-v1 announcement
+  boundaries.
+- Kept remaining v1 gates focused on evidence, package verification, and
+  documented limits instead of feature expansion.
+
 ## 0.8.0 - 2026-05-12
 
 ### Added

@@ -7,10 +7,10 @@ timeline or compatibility with Streamlit.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## v0.8 API Contract And Docs Hardening
+## v0.9 Final v1-Candidate Closeout
 
-- Keep the v1 candidate API list frozen unless a documented issue forces a
-  change.
+- Keep the v1 candidate API list frozen unless a documented correctness,
+  terminal, or security issue forces a change.
 - Treat the API reference as the current public contract: signatures, return
   values, callbacks, `args`/`kwargs`, generated and explicit `key` behavior,
   disabled behavior, form submit behavior, `st.rerun`, and `st.stop`.
@@ -24,7 +24,7 @@ Streamlit compatibility layer.
 - Keep release notes, changelog, README, feedback docs, and v1 readiness docs
   aligned without generating public launch posts.
 
-## v0.8 Release-Candidate Hardening
+## v0.9 Release Gates
 
 - Verify terminal compatibility across supported Python versions and common
   environments: macOS terminals, Linux terminals or containers, SSH/headless
@@ -52,7 +52,7 @@ Streamlit compatibility layer.
 
 The stable-candidate API is the top-level `stui` surface marked `v1-stable` in
 [`docs/api-stability.md`](docs/api-stability.md). These names should keep their
-call shape and core behavior through the v0.8/v0.9 line unless a correctness
+call shape and core behavior through v1.0.0 unless a correctness
 issue forces a change.
 
 The pre-v1 experimental API is still public enough to try, but the project is
@@ -86,24 +86,14 @@ The command surface is expected to remain stable for v1 docs:
   scrolling unless a real terminal workflow cannot be expressed with headings,
   containers, columns, and expanders.
 
-## v0.9 Final Pre-v1 Closeout
+## v1 Stable Release
 
-- Freeze README, API reference, v1 readiness docs, changelog, and release notes
-  against the artifact that will be published.
-- Resolve or document remaining blockers around terminal compatibility,
-  narrow-width rendering, package verification, and state/rerun correctness.
-- Confirm supported Python versions match CI, `pyproject.toml`, README, and
-  release notes.
-- Re-run the CLI install/init/example workflow from a clean environment and
-  built artifacts, not only from the editable checkout.
-- Keep public announcement-style launch pushes saved for v1.0.0.
-
-## v1 Stable API
-
-- Freeze the documented small API surface once there are no known state/rerun
-  correctness bugs.
+- Ship the documented small API surface only once there are no known state/rerun
+  correctness bugs or every remaining issue is explicitly deferred.
 - Treat the APIs in `docs/v1-readiness.md` as the v1 stability candidate until
   the project intentionally adds or removes an item.
+- Verify PyPI install, built artifacts, examples/init/copy commands, docs, CI,
+  and terminal compatibility evidence together before calling v1 complete.
 - Keep Python support aligned with CI and document any support changes in the
   changelog.
 - Keep the package install path stable: PyPI distribution `stui-terminal`,
@@ -111,6 +101,17 @@ The command surface is expected to remain stable for v1 docs:
 - Publish public launch announcements only after v1.0.0 is released, install
   verified from PyPI, and the docs/examples match the shipped package. The
   public announcement push is saved for v1.0.0.
+
+## Post-v1 Candidates
+
+- Promote experimental APIs only after real terminal feedback supports their
+  current behavior.
+- Revisit richer dataframe interactions, chart variants, tabs, sidebars, and
+  broader layout primitives after the v1 API has settled.
+- Expand terminal compatibility evidence across more terminals and operating
+  systems without overstating unverified environments.
+- Add normal deprecation warnings and migration notes before removing stable v1
+  APIs in a future major release.
 
 ## Not Planned Yet
 

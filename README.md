@@ -2,9 +2,10 @@
 
 [![CI](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml/badge.svg)](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml)
 
-`stui` v0.8.0 is a tiny Streamlit-inspired framework for building
-terminal-native Python apps. Write a short script, run it in your terminal, and
-get a Textual UI with stateful controls.
+`stui` v0.9.0 is the final v1-candidate release of a tiny
+Streamlit-inspired framework for building terminal-native Python apps. Write a
+short script, run it in your terminal, and get a Textual UI with stateful
+controls.
 
 It is built for local tools, demos, data scripts, model debug panels, SSH
 sessions, and headless environments where opening a browser, binding a port, or
@@ -50,12 +51,13 @@ python -m pip install stui-terminal
 import stui as st
 ```
 
-Check the installed version and terminal environment before filing terminal or
-keyboard issues:
+Check the installed version, diagnostics, and terminal environment before
+filing terminal or keyboard issues:
 
 ```bash
 python -m stui --version
 python -m stui doctor
+python -m stui doctor --json
 ```
 
 For local development from a checkout, use an editable install with the dev
@@ -114,6 +116,7 @@ Check your install and terminal details:
 ```bash
 stui --version
 stui doctor
+stui doctor --json
 ```
 
 ## Build Your First App
@@ -160,15 +163,18 @@ stui run examples/kitchen_sink.py
 ```
 
 Those `examples/...` paths are repository files. Installed packages also expose
-bundled examples that can be listed or copied:
+bundled examples that can be listed or copied into any working directory:
 
 ```bash
 stui examples
 stui example list
+stui example copy basic ./basic.py
+stui run ./basic.py
 stui example copy counter ./counter.py
 stui run ./counter.py
 stui init ./new_app.py
 stui init ./dashboard.py --template dashboard
+stui init ./forms_app.py --template forms
 ```
 
 `stui init` currently supports the `basic`, `dashboard`, and `forms` templates.
@@ -182,9 +188,16 @@ not require a checkout after they are copied:
 stui example copy forms ./forms_app.py
 python -m stui run ./forms_app.py
 
+stui init ./signup.py --template forms
+python -m stui run ./signup.py
+
 stui init ./ops_dashboard.py --template dashboard
 python -m stui run ./ops_dashboard.py
 ```
+
+The v0.9.0 candidate treats these example/init/copy commands as part of the
+v1 documentation contract. If an installed-package flow does not work without a
+repository checkout, that is a release-blocking docs or packaging bug.
 
 For more detail, see the [API reference](docs/api-reference.md),
 [API stability labels](docs/api-stability.md), [terminal compatibility
@@ -294,10 +307,12 @@ stui example list
 stui example copy counter ./counter.py
 stui init ./new_app.py
 stui init ./dashboard.py --template dashboard
+stui init ./forms_app.py --template forms
 
 # Print version and install/terminal diagnostics.
 stui --version
 stui doctor
+stui doctor --json
 
 # Install the project for local development from a checkout.
 python3.11 -m venv .venv
@@ -359,7 +374,7 @@ and [docs/v1-readiness.md#stable-api-candidate](docs/v1-readiness.md#stable-api-
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v0.8.0 |
+| Area | APIs | Status in v0.9.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable candidates |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable candidates |
@@ -370,15 +385,36 @@ The terminal support checklist lives in
 | Layout/grouping | `st.container`, `st.columns`, `st.expander` | Pre-v1 experimental terminal grouping primitives; columns stack on narrow terminals |
 | Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Pre-v1 experimental terminal summaries, not plotting replacements |
 | State and flow | `st.session_state`, `st.rerun`, `st.stop` | Mixed: `st.session_state` is v1-stable; `st.rerun` and `st.stop` are pre-v1 experimental flow control |
+| Package metadata | `st.__version__` | v1-stable package version string |
 | CLI and examples | `stui run`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | Stable candidate for v1 docs |
 
 Inputs support stable `key` values and optional callbacks where the function
 signature documents them. Tables and charts are simple static displays and do
 not require pandas or plotting dependencies.
 
+### Stable API Candidate
+
+The v0.9.0 final candidate keeps the v1-stable candidate surface intentionally
+small: text/status output, `st.code`, core inputs, `st.session_state`, and the
+documented CLI/example commands. These names should keep their call shape,
+return type, and basic behavior through v1 unless a correctness, terminal, or
+security issue forces a change.
+
+### Experimental API
+
+The documented experimental APIs are public enough to try, but they are not
+promised as frozen v1 behavior yet. This includes forms, grouping/layout
+helpers, selection/numeric widgets, status/help helpers, static data display
+beyond `st.code`, metrics/charts, and flow control. Release notes should call
+out any change with a migration note when practical.
+
 APIs not shown in this table should be treated as private implementation
 details. New display/layout experiments may still change before v1 unless they
 are promoted in the v1 readiness checklist and covered by release notes.
+Deferred APIs for v1 include `st.sidebar`, `st.tabs`, `st.file_uploader`,
+`st.cache_data`, `st.cache_resource`, `st.components`, editable dataframes,
+custom column ratios/gaps, plotting-library parity, and browser/server runtime
+features.
 
 ## Compatibility
 
@@ -397,9 +433,9 @@ Runtime expectations:
   normal interactive `TERM` such as `xterm-256color`.
 
 See [Terminal Compatibility](docs/terminal-compatibility.md) for the current
-evidence matrix and report format. v0.8.0 still treats terminal support as
-evidence-driven, so unknown terminals are labeled as test-needed instead of
-claimed as supported.
+evidence matrix and report format. v0.9.0 is still evidence-driven: common
+modern terminals are expected targets, but environments without project-owned
+evidence remain labeled test-needed instead of claimed as fully supported.
 
 ## Common Mistakes
 
@@ -588,7 +624,8 @@ stui run examples/kitchen_sink.py
 - The app reruns the script as interactions change state, so examples should
   keep top-level work lightweight.
 - Error handling is still early and meant for development feedback.
-- The package is an MVP and has not stabilized a long-term compatibility policy.
+- The package is a v1 candidate, but experimental APIs may still change before
+  v1.0.0.
 - Public announcement pushes are saved for v1.0.0, after PyPI install, docs,
   examples, CI, and terminal compatibility are verified together.
 
@@ -604,18 +641,16 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## Roadmap
+## v1 Candidate Status
 
-- v0.8: release-candidate hardening: stable and experimental API labels are
-  explicit, CLI install/init/example docs are aligned, terminal compatibility
-  links are prominent, limitations stay visible, and release notes/changelog are
-  prepared.
-- v0.9: final pre-v1 closeout: freeze docs against the built artifact, resolve
-  or document remaining blockers, verify installed-package flows, and prepare
-  the v1 checklist.
-- v1: a small stable API with no known state/rerun bugs, verified PyPI install,
-  supported Python versions aligned with CI, and honest non-goals. Public
-  launch announcements wait for v1.0.0.
+v0.9.0 is the final pre-v1 candidate. The release process should freeze docs
+against the built artifact, verify clean install/init/example flows, confirm
+supported Python versions against CI, and leave any unresolved terminal or API
+limits visible in the v1 checklist.
+
+v1.0.0 should ship only after the stable API candidate, PyPI install path,
+examples, docs, CI, and terminal compatibility evidence are verified together.
+Public launch announcements wait for that v1.0.0 verification.
 
 See [ROADMAP.md](ROADMAP.md) and
 [docs/v1-readiness.md](docs/v1-readiness.md) for the full path to v1.

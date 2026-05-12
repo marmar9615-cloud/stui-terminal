@@ -99,6 +99,38 @@ EXPECTED_API_CLASSIFICATIONS = {
     "write": "v1-stable",
 }
 
+EXPECTED_STABLE_APIS = {
+    api
+    for api, classification in EXPECTED_API_CLASSIFICATIONS.items()
+    if classification == "v1-stable"
+}
+
+EXPECTED_EXPERIMENTAL_APIS = {
+    api
+    for api, classification in EXPECTED_API_CLASSIFICATIONS.items()
+    if classification == "pre-v1 experimental"
+}
+
+EXPECTED_EXPERIMENTAL_FREEZE_DECISIONS = {
+    "columns",
+    "help",
+    "spinner",
+    "status",
+}
+
+EXPECTED_DEFERRED_API_AREAS = [
+    "st.sidebar",
+    "st.tabs",
+    "st.file_uploader",
+    "st.cache_data",
+    "st.cache_resource",
+    "st.components",
+    "custom column ratios/gaps",
+    "editable dataframes",
+    "plotting-library parity",
+    "browser/server runtime",
+]
+
 PRIVATE_INTERNAL_NAMES = [
     "ApiUsageError",
     "ButtonElement",
@@ -231,6 +263,40 @@ def _documented_api_classifications(path: Path) -> dict[str, str]:
     return classifications
 
 
+def _documented_deferred_api_areas(path: Path) -> list[str]:
+    text = path.read_text(encoding="utf-8")
+    start = "<!-- API_DEFERRED_START -->"
+    end = "<!-- API_DEFERRED_END -->"
+    table = text.split(start, 1)[1].split(end, 1)[0]
+    deferred: list[str] = []
+
+    for line in table.splitlines():
+        if not line.startswith("| ") or line.startswith("| ---"):
+            continue
+        columns = [column.strip() for column in line.strip("|").split("|")]
+        if columns[0] == "API or area":
+            continue
+        deferred.append(columns[0].strip("`"))
+
+    return deferred
+
+
+def _v1_stable_candidate_apis(path: Path) -> set[str]:
+    text = path.read_text(encoding="utf-8")
+    start = "## Stable API Candidate"
+    end = "The pre-v1 experimental API is public"
+    table = text.split(start, 1)[1].split(end, 1)[0]
+    return set(re.findall(r"`st\.([a-z_]+|__version__)`", table))
+
+
+def _v1_experimental_mentions(path: Path) -> set[str]:
+    text = path.read_text(encoding="utf-8")
+    start = "Experimental or intentionally modest before v1:"
+    end = "## Stable API Candidate"
+    section = text.split(start, 1)[1].split(end, 1)[0]
+    return set(re.findall(r"`st\.([a-z_]+)`", section))
+
+
 def _readme_api_rows(path: Path) -> list[tuple[list[str], str]]:
     text = path.read_text(encoding="utf-8")
     table_match = re.search(
@@ -291,12 +357,37 @@ def test_public_exports_match_documented_api_classification() -> None:
     assert set(st.__all__) == set(stability_doc)
 
 
+def test_v1_readiness_stable_table_matches_stable_classification() -> None:
+    stable_candidates = _v1_stable_candidate_apis(ROOT / "docs/v1-readiness.md")
+
+    assert stable_candidates == EXPECTED_STABLE_APIS
+    assert stable_candidates.isdisjoint(EXPECTED_EXPERIMENTAL_APIS)
+
+
+def test_experimental_freeze_decisions_are_documented() -> None:
+    readiness_mentions = _v1_experimental_mentions(ROOT / "docs/v1-readiness.md")
+
+    assert EXPECTED_EXPERIMENTAL_FREEZE_DECISIONS <= EXPECTED_EXPERIMENTAL_APIS
+    assert EXPECTED_EXPERIMENTAL_FREEZE_DECISIONS <= readiness_mentions
+
+
+def test_deferred_v1_api_areas_are_explicit() -> None:
+    deferred = _documented_deferred_api_areas(ROOT / "docs/api-stability.md")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    reference = (ROOT / "docs/api-reference.md").read_text(encoding="utf-8")
+    readiness = (ROOT / "docs/v1-readiness.md").read_text(encoding="utf-8")
+
+    assert deferred == EXPECTED_DEFERRED_API_AREAS
+    for area in EXPECTED_DEFERRED_API_AREAS:
+        assert area in readme
+        assert area in reference
+        assert area in readiness
+
+
 def test_readme_api_table_matches_public_api_stability_labels() -> None:
     rows = _readme_api_rows(ROOT / "README.md")
     documented = {api for apis, _status in rows for api in apis}
-    public_without_version = set(st.__all__) - {"__version__"}
-
-    assert documented == public_without_version
+    assert documented == set(st.__all__)
 
     for apis, status in rows:
         classifications = {EXPECTED_API_CLASSIFICATIONS[api] for api in apis}

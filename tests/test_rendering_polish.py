@@ -10,6 +10,7 @@ from stui.elements import (
     LineChartElement,
     LineChartSeries,
     SelectboxElement,
+    StatusElement,
     TableElement,
 )
 from stui.runtime import Runtime
@@ -37,6 +38,29 @@ def test_wide_table_trims_columns_for_narrow_width() -> None:
     exported = console.export_text()
     assert "+9" in exported
     assert "col" in exported
+
+
+def test_dataframe_wide_dict_trims_without_dropping_row_values(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.dataframe({f"column_{index}": [index] for index in range(20)})
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+    table = elements[0]
+    assert isinstance(table, TableElement)
+
+    headers, rows = StuiApp._trim_table(table.headers, table.rows, 30)
+
+    assert headers == ("column_0", "column_1", "column_2", "column_3", "...")
+    assert rows == (("0", "1", "2", "3", "+16 cols"),)
 
 
 def test_table_warns_in_ultra_narrow_width() -> None:
@@ -113,6 +137,35 @@ except RuntimeError as exc:
             assert len(list(app.query(".stui-help"))) == 1
             assert len(list(app.query(".exception"))) == 1
             assert not list(app.query(".error"))
+
+    asyncio.run(scenario())
+
+
+def test_status_spinner_help_and_table_render_in_narrow_terminal(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+with st.status("Loading narrow data", state="complete", expanded=True):
+    st.table({f"col_{index}": [index] for index in range(10)})
+with st.spinner("Finalizing"):
+    st.help("Small terminal help text")
+""",
+    )
+    runtime = Runtime(script)
+    app = StuiApp(runtime)
+
+    async def scenario() -> None:
+        async with app.run_test(size=(18, 14)) as pilot:
+            await pilot.pause()
+            assert isinstance(runtime.elements[0], StatusElement)
+            assert not list(app.query(".error"))
+            assert len(list(app.query(".stui-status"))) >= 1
+            assert len(list(app.query(".stui-spinner"))) >= 1
+            assert len(list(app.query(".stui-help"))) == 1
 
     asyncio.run(scenario())
 

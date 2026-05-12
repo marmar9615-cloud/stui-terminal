@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from stui.elements import ButtonElement, SliderElement
+from stui.elements import ButtonElement, ErrorElement, SliderElement
 from stui.runtime import Runtime
 
 
@@ -60,3 +60,24 @@ st.button("Go", key="custom-go")
         if isinstance(element, (SliderElement, ButtonElement))
     ]
     assert keys == ["custom-x", "custom-go"]
+
+
+def test_duplicate_explicit_keys_across_widget_types_render_error(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.button("Go", key="shared")
+st.text_input("Name", key="shared")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert len(elements) == 1
+    assert isinstance(elements[0], ErrorElement)
+    assert 'Duplicate widget key "shared"' in elements[0].traceback

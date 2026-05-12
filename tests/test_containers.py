@@ -3,10 +3,12 @@ from pathlib import Path
 
 from stui.app import StuiApp
 from stui.elements import (
+    ButtonElement,
     ColumnsElement,
     ContainerElement,
     ErrorElement,
     ExpanderElement,
+    SliderElement,
     TextElement,
     WriteElement,
 )
@@ -110,6 +112,38 @@ with right:
     assert expander.children is not None
     assert isinstance(expander.children[0], WriteElement)
     assert expander.children[0].text == "open"
+
+
+def test_columns_preserve_nested_interactive_content(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+with st.container():
+    left, right = st.columns(2)
+    with left:
+        st.button("Left", key="left")
+    with right:
+        with st.expander("Tools", expanded=True):
+            st.slider("Amount", 0, 10, 5, key="amount")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    container = elements[0]
+    assert isinstance(container, ContainerElement)
+    columns = container.children[0]
+    assert isinstance(columns, ColumnsElement)
+    assert isinstance(columns.columns[0][0], ButtonElement)
+    assert columns.columns[0][0].key == "left"
+    expander = columns.columns[1][0]
+    assert isinstance(expander, ExpanderElement)
+    assert expander.children is not None
+    assert isinstance(expander.children[0], SliderElement)
+    assert expander.children[0].key == "amount"
 
 
 def test_columns_reject_non_positive_counts(tmp_path: Path) -> None:

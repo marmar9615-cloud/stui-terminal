@@ -175,11 +175,12 @@ def _missing_script_message(script: Path) -> str:
         and _example_name(parts[-1]) in _bundled_examples()
     ):
         stem = Path(parts[-1]).stem
+        copy_dest = Path(*parts)
         message += (
             "\n\nBundled examples are available after installation, but they are "
             "not created in your current directory automatically. Run "
-            f"`stui example copy {stem} ./{Path(parts[-1]).name}` first, then "
-            f"`stui run ./{Path(parts[-1]).name}`."
+            f"`stui example copy {stem} {copy_dest}` first, then "
+            f"`stui run {copy_dest}`."
         )
     return message
 

@@ -15,6 +15,12 @@ release explicitly documents it here and in `docs/api-reference.md`.
 
 ## Compatibility Before v1.0.0
 
+v0.9.0 is the final pre-v1 candidate line. The project should treat the
+`v1-stable` rows below as frozen for v1.0.0 unless a correctness bug, terminal
+limitation, or security issue makes a change necessary. Any such change needs a
+changelog entry, release-note coverage, and synchronized README/API reference
+updates.
+
 `v1-stable` means the API is a stable candidate for v1. The project intends to
 keep the name, call shape, return type, and basic behavior compatible through
 the remaining 0.x releases unless a correctness bug, terminal limitation, or
@@ -27,6 +33,11 @@ in release notes with a migration path when practical.
 `internal/private` means the API is not supported for user code. It may move,
 rename, or disappear without deprecation, even when it is importable for tests or
 implementation reasons.
+
+`deferred for v1` means a familiar Streamlit-style name or feature area is
+intentionally not part of the v1 candidate API. It should not be added casually
+without updating this page, the API reference, the README API table, the v1
+readiness checklist, and public API tests.
 
 `candidate for removal/rename before v1` means a public name is known to need a
 decision before v1.0.0. There are no current top-level `stui.__all__` exports in
@@ -94,6 +105,26 @@ contract:
 
 Tests may import these names to verify behavior, but user code should rely on
 the top-level `stui` API documented above.
+
+## Deferred For v1
+
+These APIs and feature areas are explicitly deferred from the v1 stable
+candidate surface:
+
+<!-- API_DEFERRED_START -->
+| API or area | v1 status | Notes |
+| --- | --- | --- |
+| `st.sidebar` | deferred for v1 | No sidebar layout primitive in the terminal-first v1 surface. |
+| `st.tabs` | deferred for v1 | No tabbed layout primitive in the v1 surface. |
+| `st.file_uploader` | deferred for v1 | File upload is out of scope for the local terminal MVP. |
+| `st.cache_data` | deferred for v1 | Caching decorators are out of scope for the v1 API freeze. |
+| `st.cache_resource` | deferred for v1 | Caching decorators are out of scope for the v1 API freeze. |
+| `st.components` | deferred for v1 | Browser component embedding is intentionally unsupported. |
+| custom column ratios/gaps | deferred for v1 | `st.columns` remains a count-only experimental terminal primitive. |
+| editable dataframes | deferred for v1 | `st.dataframe` remains static display only. |
+| plotting-library parity | deferred for v1 | Charts remain compact terminal summaries. |
+| browser/server runtime | deferred for v1 | No browser, server, websocket, or port-forwarding runtime is planned for v1. |
+<!-- API_DEFERRED_END -->
 
 ## Post-v1 Deprecations
 

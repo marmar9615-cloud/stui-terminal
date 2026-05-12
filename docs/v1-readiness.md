@@ -7,18 +7,25 @@ that can be installed from PyPI, explained quickly, and trusted for local tools.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## Status After v0.8.0
+## Status After v0.9.0
 
-v0.8.0 is a release-candidate hardening checkpoint, not the v1 API freeze. It
-moves the public docs from broad readiness language to a clearer contract:
-stable-candidate APIs have documented signatures and return values, pre-v1
-experimental APIs are labeled before users mistake them for Streamlit
-compatibility, and install/init/example commands are tied to the package as
-well as to the repository checkout.
+v0.9.0 is the final pre-v1 candidate checkpoint, not the v1 launch. It freezes
+the public v1 candidate list, keeps experimental APIs labeled, aligns
+install/init/example docs with installed-package behavior, and turns remaining
+v1 work into explicit release gates instead of broad readiness language.
 
-The v1 gate remains open. Before v1.0.0, the project still needs a terminal
-compatibility evidence pass, narrow-width polish, package verification from
-built artifacts, and release-candidate checks against the shipped PyPI artifact.
+On the v0.9 final candidate branch, the public API list is frozen as the v1
+candidate list. The freeze covers the top-level names in `stui.__all__`, their
+stability classifications, and the documented function signatures. Bug fixes may
+still tighten behavior before v1, but adding, removing, renaming, or changing a
+top-level public API requires synchronized updates to `README.md`,
+`docs/api-reference.md`, `docs/api-stability.md`, this page, release notes, and
+`tests/test_public_api.py`.
+
+The v1 gate remains open until terminal compatibility evidence, narrow-width
+polish, package verification from built artifacts, and release-candidate checks
+against the to-be-published artifact are complete or explicitly documented as
+post-v1 work.
 
 Public launch-style announcement pushes are saved for v1.0.0, after the stable
 API, PyPI install path, examples, docs, CI, and terminal compatibility checks
@@ -26,15 +33,15 @@ are verified together.
 
 ## API Stability Status
 
-The project should keep the public API small. v0.8.0 treats the table below as
-the candidate v1 reference, while still allowing corrections before the v1
-release candidate line.
+The project should keep the public API small. v0.9.0 treats the table below as
+the candidate v1 reference and freezes that list as the v1 candidate API
+surface.
 
 Stable-candidate APIs should not change casually. If a signature or return value
-changes after v0.8.0, the changelog should call it out plainly and the README
+changes after v0.9.0, the changelog should call it out plainly and the README
 examples should be updated in the same release.
 
-Experimental or intentionally modest areas:
+Pre-v1 experimental APIs:
 
 - `st.metric`, `st.bar_chart`, and `st.line_chart` are compact terminal
   summaries, not replacements for plotting libraries.
@@ -49,10 +56,19 @@ Experimental or intentionally modest areas:
   primitives. They do not promise Streamlit-compatible mutation, animation, or
   full pager-style help behavior.
 
+Explicitly deferred APIs and feature areas:
+
+- `st.sidebar`, `st.tabs`, `st.file_uploader`, `st.cache_data`,
+  `st.cache_resource`, and `st.components` are not in the v1 candidate API.
+- custom column ratios/gaps, editable dataframes, plotting-library parity, and
+  browser/server runtime, websocket, or port-forwarding runtime features are
+  deferred from v1.
+
 ## API Contract Status
 
-v0.8.0 considers the public contract documented, but not frozen. The current
-contract lives in [`docs/api-reference.md`](api-reference.md) and covers:
+v0.9.0 considers the public contract documented and frozen as the v1 candidate.
+The current contract lives in [`docs/api-reference.md`](api-reference.md) and
+covers:
 
 - Public imports exported from `stui.__all__`.
 - Function signatures and return values for text, status, display, widgets,
@@ -106,15 +122,17 @@ Experimental or intentionally modest before v1:
 ## Stable API Candidate
 
 The v1 API should stay compact. These APIs are candidates for the stable v1
-surface once their behavior is documented and covered by tests:
+surface. On the v0.9 final candidate branch, this stable-candidate table must
+match the `v1-stable` rows in `docs/api-stability.md` and
+`docs/api-reference.md`:
 
 | Area | APIs |
 | --- | --- |
-| Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` |
+| Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider`, `st.code` |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` |
-| Display | `st.code` |
 | Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox` |
 | State | `st.session_state` |
+| Package metadata | `st.__version__` |
 | CLI | `stui run`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` |
 
 The pre-v1 experimental API is public and documented, but not part of the
@@ -174,9 +192,11 @@ stui run app.py
 python -m stui run app.py
 stui examples
 stui example list
+stui example copy basic ./basic.py
 stui example copy counter ./counter.py
 stui init ./new_app.py
 stui init ./dashboard.py --template dashboard
+stui init ./forms_app.py --template forms
 ```
 
 The documented starter templates are `basic`, `dashboard`, and `forms`.
@@ -208,7 +228,7 @@ The v1 docs should include and test installed or discoverable examples for:
 
 ## Keyboard Documentation
 
-v0.8.0 verifies and documents the current keyboard behavior in the README. v1
+v0.9.0 verifies and documents the current keyboard behavior in the README. v1
 must keep that documentation current for the default Textual UI:
 
 - `q` quits and `r` manually reruns the script.
@@ -226,7 +246,7 @@ and may vary by terminal.
 ## Terminal Compatibility
 
 The v1 release notes should state the terminal environments tested for the
-release. v0.8.0 keeps linking users here and asks for structured reports, but
+release. v0.9.0 keeps linking users here and asks for structured reports, but
 does not claim a finished compatibility matrix. At minimum, v1 should be
 checked in:
 
@@ -279,26 +299,23 @@ The README, release notes, and API docs should keep these limits explicit:
   and form submit semantics are documented as the current contract, but must
   stay synchronized with implementation changes before v1.
 
-## Remaining v1 Gates
+## Final v1.0 Checklist
 
-- Keep the API reference synchronized with implementation changes through the
-  v0.9 release-candidate line.
-- Capture terminal compatibility evidence for macOS, Linux, SSH/headless or
-  container workflows, narrow terminals, and wide terminals.
-- Fix or document narrow-rendering issues for tables, charts, forms, expanders,
-  and long labels.
-- Verify clean installs and example flows from the built wheel/source
-  distribution, not only from an editable checkout.
-- Run release-candidate checks against the package that will be published.
-- Decide whether metrics/charts remain experimental at v1 or graduate with
-  clearly documented terminal-summary limits.
-- Keep changelog, release notes, README, roadmap, and feedback docs aligned.
-- Save public launch-style announcement pushes until v1.0.0 is published and
-  verified.
+| Gate | Status after v0.9.0 | v1 decision |
+| --- | --- | --- |
+| Stable API list | Frozen as the v1 candidate list. | Do not change unless a correctness, terminal, or safety issue appears. |
+| Experimental APIs | Labeled in README, API reference, API stability docs, v1 readiness docs, and tests. | Keep experimental through v1 unless real feedback justifies promotion. |
+| Deferred Streamlit-style APIs | Explicitly deferred in API stability docs and README. | Do not add to v1. |
+| State/rerun/widget correctness | Covered by regression tests for known issues. | Fix reproducible blockers; document non-blocking limitations. |
+| Installed-package flow | Required for v0.9.0 and v1 release gates. | Verify from PyPI again before v1.0.0. |
+| Terminal compatibility | Evidence-driven matrix remains open. | Document unknowns instead of overclaiming support. |
+| Narrow rendering | Covered by regression tests for known table/chart/layout edges. | Fix reproducible blockers; document non-blocking limitations. |
+| Release process | Checklist and publishing docs are explicit. | Follow the same gates for v1.0.0. |
+| Public announcement | Deferred. | Generate and post only after v1.0.0 is published and verified. |
 
 ## v0.9 And v1 Plan
 
-v0.9 should be the final pre-v1 closeout:
+v0.9 is the final pre-v1 closeout:
 
 - Run or collect final manual terminal checks in the environments listed in
   [`docs/terminal-compatibility.md`](terminal-compatibility.md).
@@ -317,6 +334,19 @@ v1 should be the small stable release:
 - Verify PyPI install, examples, docs, CI, and terminal compatibility together.
 - Publish public launch-style announcements only after v1.0.0 is released and
   verified.
+
+## Post-v1 Items
+
+- Decide whether any experimental APIs graduate in a v1.x minor release after
+  real terminal feedback.
+- Revisit richer dataframe interactions, chart variants, tabs, sidebars, and
+  broader layout only when a concrete terminal workflow justifies them.
+- Expand terminal compatibility evidence from user reports and CI/container
+  artifacts without overstating untested environments.
+- Add deprecation warnings and migration notes before removing any stable v1 API
+  in a future major release.
+- Keep larger hosted, browser, cloud, auth, sync, and component-marketplace
+  ideas out of scope unless the project intentionally changes direction.
 
 ## Release Process
 

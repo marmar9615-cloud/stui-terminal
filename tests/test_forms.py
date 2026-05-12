@@ -330,3 +330,79 @@ st.write("state =", st.session_state.get("person_name", "missing"))
         "name = Grace",
         "state = Grace",
     ]
+
+
+def test_multiple_form_widget_types_defer_until_single_submit(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+with st.form("settings"):
+    enabled = st.checkbox("Enabled", value=False, key="enabled")
+    level = st.slider("Level", 0, 10, 2, key="level")
+    mode = st.selectbox("Mode", ["fast", "careful"], key="mode")
+    submitted = st.form_submit_button("Apply")
+
+st.write("submitted =", submitted)
+st.write("values =", enabled, level, mode)
+st.write(
+    "state =",
+    st.session_state.get("enabled", "missing"),
+    st.session_state.get("level", "missing"),
+    st.session_state.get("mode", "missing"),
+)
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    runtime.set_widget_value("enabled", True)
+    runtime.set_widget_value("level", 7)
+    runtime.set_widget_value("mode", "careful")
+    runtime.run_script()
+
+    assert rendered_texts(runtime) == [
+        "submitted = False",
+        "values = True 7 careful",
+        "state = missing missing missing",
+    ]
+
+    runtime.press_button("form_submit_button:settings:Apply:0")
+    runtime.run_script()
+
+    assert rendered_texts(runtime) == [
+        "submitted = True",
+        "values = True 7 careful",
+        "state = True 7 careful",
+    ]
+
+
+def test_form_submit_button_press_does_not_leak_to_next_run_after_error(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+with st.form("actions"):
+    submitted = st.form_submit_button("Save")
+
+if submitted and st.session_state.get("fail", True):
+    raise RuntimeError("submit failed")
+
+st.write("submitted =", submitted)
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.press_button("form_submit_button:actions:Save:0")
+    elements = runtime.run_script()
+    runtime.session_state.fail = False
+    runtime.run_script()
+
+    assert isinstance(elements[0], ErrorElement)
+    assert rendered_texts(runtime) == ["submitted = False"]

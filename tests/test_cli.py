@@ -1,10 +1,16 @@
 import json
+import os
+import subprocess
+import sys
 from os import terminal_size
 from pathlib import Path
 
 from typer.testing import CliRunner
 
+import stui
 from stui import cli
+from stui.elements import ErrorElement
+from stui.runtime import Runtime
 
 
 def test_run_launches_existing_script(monkeypatch, tmp_path: Path) -> None:
@@ -49,8 +55,8 @@ def test_run_missing_repo_example_guides_installed_users() -> None:
     assert "file does not exist: examples/basic.py" in result.output
     assert "Bundled examples are available after installation" in result.output
     assert "stui example copy basic" in normalized_output
-    assert "./basic.py" in normalized_output
-    assert "stui run ./basic.py" in normalized_output
+    assert "examples/basic.py" in normalized_output
+    assert "stui run examples/basic.py" in normalized_output
 
 
 def test_run_missing_unknown_repo_example_stays_plain() -> None:
@@ -84,7 +90,28 @@ def test_version_option() -> None:
     result = CliRunner().invoke(cli.app, ["--version"])
 
     assert result.exit_code == 0
-    assert "stui 0.8.0" in result.output
+    assert f"stui {stui.__version__}" in result.output
+
+
+def test_python_module_version_option() -> None:
+    env = os.environ.copy()
+    src_path = str(Path(__file__).resolve().parents[1] / "src")
+    env["PYTHONPATH"] = (
+        src_path
+        if not env.get("PYTHONPATH")
+        else f"{src_path}{os.pathsep}{env['PYTHONPATH']}"
+    )
+    result = subprocess.run(
+        [sys.executable, "-m", "stui", "--version"],
+        check=False,
+        capture_output=True,
+        env=env,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert f"stui {stui.__version__}" in result.stdout
+    assert result.stderr == ""
 
 
 def test_doctor_command() -> None:
@@ -181,7 +208,7 @@ def test_doctor_json_output(monkeypatch) -> None:
 
     assert result.exit_code == 0
     diagnostics = json.loads(result.output)
-    assert diagnostics["stui"] == "0.8.0"
+    assert diagnostics["stui"] == stui.__version__
     assert diagnostics["terminal"]["columns"] == 72
     assert diagnostics["terminal"]["lines"] == 24
     assert diagnostics["terminal"]["too_small"] is True
@@ -267,7 +294,18 @@ def test_example_copy_writes_bundled_example(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert "Copied basic.py" in result.output
-    assert "st.title" in dest.read_text(encoding="utf-8")
+    assert 'st.title("stui demo")' in dest.read_text(encoding="utf-8")
+
+
+def test_example_copy_basic_app_runs_without_script_errors(tmp_path: Path) -> None:
+    dest = tmp_path / "basic.py"
+
+    copy_result = CliRunner().invoke(cli.app, ["example", "copy", "basic", str(dest)])
+    runtime = Runtime(dest)
+    elements = runtime.run_script()
+
+    assert copy_result.exit_code == 0
+    assert not any(isinstance(element, ErrorElement) for element in elements)
 
 
 def test_example_copy_rejects_unknown_example() -> None:
@@ -351,6 +389,34 @@ def test_init_dashboard_template(tmp_path: Path) -> None:
     assert "from the dashboard template" in result.output
 
 
+def test_init_dashboard_template_runs_without_script_errors(tmp_path: Path) -> None:
+    script = tmp_path / "dashboard.py"
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["init", str(script), "--template", "dashboard"],
+    )
+    runtime = Runtime(script)
+    elements = runtime.run_script()
+
+    assert result.exit_code == 0
+    assert not any(isinstance(element, ErrorElement) for element in elements)
+
+
+def test_init_forms_template_long_option(tmp_path: Path) -> None:
+    script = tmp_path / "signup.py"
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["init", str(script), "--template", "forms"],
+    )
+
+    assert result.exit_code == 0
+    content = script.read_text(encoding="utf-8")
+    assert 'st.title("Signup form")' in content
+    assert "st.checkbox" in content
+
+
 def test_init_forms_template_short_option(tmp_path: Path) -> None:
     script = tmp_path / "signup.py"
 
@@ -360,6 +426,20 @@ def test_init_forms_template_short_option(tmp_path: Path) -> None:
     content = script.read_text(encoding="utf-8")
     assert 'st.title("Signup form")' in content
     assert "st.checkbox" in content
+
+
+def test_init_forms_template_runs_without_script_errors(tmp_path: Path) -> None:
+    script = tmp_path / "signup.py"
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["init", str(script), "--template", "forms"],
+    )
+    runtime = Runtime(script)
+    elements = runtime.run_script()
+
+    assert result.exit_code == 0
+    assert not any(isinstance(element, ErrorElement) for element in elements)
 
 
 def test_init_rejects_unknown_template(tmp_path: Path) -> None:
