@@ -11,8 +11,16 @@ Streamlit compatibility layer.
 Feedback that is most helpful right now:
 
 - Reports about existing widgets, reruns, callbacks, and `session_state`.
-- Reports about the v0.3.0 primitives: forms, containers, static
-  expanders, metrics, and simple terminal-native bar charts.
+- Reports about the v0.4 primitives: deferred forms, containers,
+  keyboard-toggleable expanders, metrics, bar charts, and line charts.
+- Form examples where submit behavior feels wrong, surprising, or too different
+  from what a terminal app needs.
+- Expander examples where static open/closed rendering is enough, or where
+  keyboard interaction is necessary.
+- Chart examples where narrow terminals, fonts, color themes, or data shape make
+  `st.bar_chart` hard to read.
+- Installed-package examples: whether `stui examples`, `stui example copy`, and
+  `stui init` are enough before v1.
 - Terminal rendering issues in real shells, SSH sessions, and headless
   environments.
 - Places where the current examples or README made a feature look broader than
@@ -28,7 +36,7 @@ Feedback that can shape near-term design:
   types are useful in a terminal without color.
 - Richer dataframe support: which table interactions matter first for
   inspection and debugging.
-- Layout primitives: what should come after containers and static expanders.
+- Layout primitives: what should come after containers and expanders.
 - Forms: where submit-style flows feel natural or surprising in a top-to-bottom
   rerun model.
 - Caching and session persistence: what data should persist, for how long, and

@@ -58,7 +58,7 @@ def test_version_option() -> None:
     result = CliRunner().invoke(cli.app, ["--version"])
 
     assert result.exit_code == 0
-    assert "stui 0.3.0" in result.output
+    assert "stui 0.4.0" in result.output
 
 
 def test_doctor_command() -> None:
@@ -66,35 +66,114 @@ def test_doctor_command() -> None:
 
     assert result.exit_code == 0
     assert "stui:" in result.output
+    assert "package:" in result.output
     assert "python:" in result.output
     assert "textual:" in result.output
     assert "rich:" in result.output
     assert "typer:" in result.output
     assert "terminal size:" in result.output
     assert "theme:" in result.output
+    assert "capabilities:" in result.output
+    assert "examples:" in result.output
+    assert "example source:" in result.output
 
 
 def test_examples_command() -> None:
     result = CliRunner().invoke(cli.app, ["examples"])
 
     assert result.exit_code == 0
-    assert "stui run examples/basic.py" in result.output
-    assert "stui run examples/dashboard.py" in result.output
-    assert "stui run examples/kitchen_sink.py" in result.output
+    assert "basic [bundled + repo" in result.output
+    assert "run:  stui run" in result.output
+    assert "copy: stui example copy basic ./examples/basic.py" in result.output
+    assert "kitchen_sink [bundled + repo" in result.output
 
 
 def test_examples_command_does_not_claim_missing_wheel_examples(monkeypatch) -> None:
-    class MissingExamplesPath:
-        def exists(self) -> bool:
-            return False
-
-        def __truediv__(self, _name: str):
-            return self
-
-    monkeypatch.setattr(cli, "_examples_dir", MissingExamplesPath)
+    monkeypatch.setattr(cli, "_examples_dir", lambda: Path("/missing/examples"))
+    monkeypatch.setattr(cli, "_bundled_examples", lambda: set())
 
     result = CliRunner().invoke(cli.app, ["examples"])
 
     assert result.exit_code == 0
-    assert "source repository" in result.output
+    assert "No bundled examples were found." in result.output
     assert "stui run examples/basic.py" not in result.output
+
+
+def test_examples_command_marks_repo_only_examples(monkeypatch, tmp_path: Path) -> None:
+    repo_examples = tmp_path / "examples"
+    repo_examples.mkdir()
+    (repo_examples / "repo_only.py").write_text("import stui as st\n", encoding="utf-8")
+    monkeypatch.setattr(cli, "_examples_dir", lambda: repo_examples)
+    monkeypatch.setattr(cli, "_bundled_examples", lambda: set())
+
+    result = CliRunner().invoke(cli.app, ["examples"])
+
+    assert result.exit_code == 0
+    assert "repo_only [repo-only" in result.output
+    assert "copy:" not in result.output
+
+
+def test_example_copy_writes_bundled_example(tmp_path: Path) -> None:
+    dest = tmp_path / "basic.py"
+
+    result = CliRunner().invoke(cli.app, ["example", "copy", "basic", str(dest)])
+
+    assert result.exit_code == 0
+    assert "Copied basic.py" in result.output
+    assert "st.title" in dest.read_text(encoding="utf-8")
+
+
+def test_example_copy_rejects_overwrite_without_force(tmp_path: Path) -> None:
+    dest = tmp_path / "basic.py"
+    dest.write_text("# keep me\n", encoding="utf-8")
+
+    result = CliRunner().invoke(cli.app, ["example", "copy", "basic", str(dest)])
+
+    assert result.exit_code != 0
+    assert "destination exists:" in result.output
+    assert dest.read_text(encoding="utf-8") == "# keep me\n"
+
+
+def test_example_copy_force_overwrites(tmp_path: Path) -> None:
+    dest = tmp_path / "basic.py"
+    dest.write_text("# replace me\n", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["example", "copy", "basic", str(dest), "--force"],
+    )
+
+    assert result.exit_code == 0
+    assert "st.title" in dest.read_text(encoding="utf-8")
+
+
+def test_init_creates_app(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+
+    result = CliRunner().invoke(cli.app, ["init", str(script)])
+
+    assert result.exit_code == 0
+    content = script.read_text(encoding="utf-8")
+    assert 'st.title("My stui app")' in content
+    assert "stui run app.py" in content
+
+
+def test_init_rejects_overwrite_without_force(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text("# keep me\n", encoding="utf-8")
+
+    result = CliRunner().invoke(cli.app, ["init", str(script)])
+
+    assert result.exit_code != 0
+    assert "file exists:" in result.output
+    assert script.read_text(encoding="utf-8") == "# keep me\n"
+
+
+def test_init_force_overwrites(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text("# replace me\n", encoding="utf-8")
+
+    result = CliRunner().invoke(cli.app, ["init", str(script), "--force"])
+
+    assert result.exit_code == 0
+    assert 'st.title("My stui app")' in script.read_text(encoding="utf-8")

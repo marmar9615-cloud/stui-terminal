@@ -41,6 +41,7 @@ from .elements import (
     ExpanderElement,
     HeaderElement,
     JsonElement,
+    LineChartElement,
     MarkdownElement,
     MetricElement,
     NumberInputElement,
@@ -109,6 +110,13 @@ HIGH_CONTRAST_CSS = """
     .stui-slider {
         border: tall #ffffff;
         background: #000000;
+    }
+
+    .stui-expander:focus {
+        border: tall #ffff00;
+        background: #000000;
+        color: #ffffff;
+        text-style: bold;
     }
 
     .alert-success, .alert-info, .alert-warning, .alert-error, .traceback {
@@ -245,6 +253,39 @@ class StuiRadioSet(RadioSet):
             id=dom_id_for_key(element.key),
             disabled=element.disabled,
         )
+
+
+class StuiExpander(Vertical, can_focus=True):
+    BINDINGS = [
+        Binding("enter", "toggle", "Toggle", show=False),
+        Binding("space", "toggle", "Toggle", show=False),
+    ]
+
+    class Changed(Message):
+        def __init__(self, expander: StuiExpander, expanded: bool) -> None:
+            super().__init__()
+            self.expander = expander
+            self.expanded = expanded
+
+    def __init__(self, element: ExpanderElement, *children) -> None:
+        self.stui_key = element.key
+        self.stui_expanded = element.expanded
+        marker = "-" if element.expanded else "+"
+        label = Static(
+            f"[{marker}] {element.label}",
+            classes="stui-expander-label",
+        )
+        super().__init__(
+            label,
+            *children,
+            id=dom_id_for_key(element.key),
+            classes="stui-expander",
+        )
+        self.tooltip = "Enter or Space toggles. Tab and Shift+Tab move focus."
+
+    def action_toggle(self) -> None:
+        self.stui_expanded = not self.stui_expanded
+        self.post_message(self.Changed(self, self.stui_expanded))
 
 
 class StuiApp(App[None]):
@@ -417,6 +458,11 @@ class StuiApp(App[None]):
         margin: 1 0;
     }
 
+    .stui-expander:focus {
+        border: round #8ab4ff;
+        background: #202033;
+    }
+
     .stui-expander-label {
         color: #d7ddff;
         text-style: bold;
@@ -577,22 +623,19 @@ class StuiApp(App[None]):
             return Static(self._render_metric(element), classes="metric")
         if isinstance(element, BarChartElement):
             return Static(self._render_bar_chart(element), classes="bar-chart")
+        if isinstance(element, LineChartElement):
+            return Static(self._render_line_chart(element), classes="bar-chart")
         if isinstance(element, ContainerElement):
             children = [self._build_widget(child) for child in element.children]
             return Vertical(*children, classes="stui-container")
         if isinstance(element, ExpanderElement):
-            marker = "-" if element.expanded else "+"
-            label = Static(
-                f"[{marker}] {element.label}",
-                classes="stui-expander-label",
-            )
             if not element.expanded:
-                return Vertical(label, classes="stui-expander")
+                return StuiExpander(element)
             children = [
                 self._build_widget(child)
                 for child in (element.children or [])
             ]
-            return Vertical(label, *children, classes="stui-expander")
+            return StuiExpander(element, *children)
         if isinstance(element, DividerElement):
             width = max(8, min(40, self.size.width - 4))
             return Static("─" * width, classes="divider")
@@ -687,6 +730,15 @@ class StuiApp(App[None]):
         self.runtime.run_script()
         await self.render_runtime()
 
+    async def on_stui_expander_changed(self, event: StuiExpander.Changed) -> None:
+        key = getattr(event.expander, "stui_key", None)
+        if key is None:
+            return
+        event.stop()
+        self.runtime.set_widget_value(key, event.expanded)
+        self.runtime.run_script()
+        await self.render_runtime()
+
     async def _restore_focus(self) -> None:
         key = self.runtime.last_focused_key
         if key is None:
@@ -759,15 +811,28 @@ class StuiApp(App[None]):
 
         max_abs = max(abs(point.value) for point in points) or 1
         label_width = min(
-            18,
-            max(len(point.label) for point in points),
+            16,
+            max(1, max(len(point.label) for point in points)),
         )
-        plot_width = min(max(element.width or 28, 4), 80)
+        plot_width = min(max(element.width or 28, 3), 60)
+        half_width = max(1, plot_width // 2)
+        has_negative = any(point.value < 0 for point in points)
+        has_positive = any(point.value > 0 for point in points)
         chart = Text()
         for index, point in enumerate(points):
-            bar_len = round((abs(point.value) / max_abs) * plot_width)
-            bar = "█" * max(1, bar_len) if point.value else "·"
-            style = "green" if point.value >= 0 else "red"
+            bar_len = round((abs(point.value) / max_abs) * half_width)
+            bar_len = max(1, bar_len) if point.value else 0
+            if has_negative and has_positive:
+                left = (
+                    ("█" * bar_len).rjust(half_width)
+                    if point.value < 0
+                    else " " * half_width
+                )
+                right = "█" * bar_len if point.value > 0 else ""
+                bar = f"{left}│{right or '·'}"
+            else:
+                bar = "█" * bar_len if point.value else "·"
+            style = "red" if point.value < 0 else "green"
             chart.append(point.label[:label_width].rjust(label_width), style="dim")
             chart.append(" │ ", style="dim")
             chart.append(bar, style=style)
@@ -775,6 +840,53 @@ class StuiApp(App[None]):
             if index != len(points) - 1:
                 chart.append("\n")
         return chart
+
+    @staticmethod
+    def _render_line_chart(element: LineChartElement) -> Text:
+        series = tuple(
+            item
+            for item in element.series
+            if any(math.isfinite(value) for value in item.values)
+        )
+        if element.height is not None:
+            series = series[: element.height]
+        if not series:
+            return Text("No chart data", style="dim")
+
+        label_width = min(
+            16,
+            max(1, max(len(item.label) for item in series)),
+        )
+        plot_width = min(max(element.width or 28, 2), 60)
+        chart = Text()
+        for index, item in enumerate(series):
+            values = tuple(value for value in item.values if math.isfinite(value))
+            sparkline = StuiApp._sparkline(values, plot_width)
+            chart.append(item.label[:label_width].rjust(label_width), style="dim")
+            chart.append(" │ ", style="dim")
+            chart.append(sparkline, style="cyan")
+            chart.append(f" {values[-1]:g}" if values else " 0")
+            if index != len(series) - 1:
+                chart.append("\n")
+        return chart
+
+    @staticmethod
+    def _sparkline(values: tuple[float, ...], width: int) -> str:
+        if not values:
+            return "·"
+        if len(values) > width:
+            step = (len(values) - 1) / max(1, width - 1)
+            values = tuple(values[round(index * step)] for index in range(width))
+        low = min(values)
+        high = max(values)
+        if high == low:
+            return "─" * max(1, len(values))
+        ticks = "▁▂▃▄▅▆▇█"
+        scale = len(ticks) - 1
+        return "".join(
+            ticks[round(((value - low) / (high - low)) * scale)]
+            for value in values
+        )
 
     @staticmethod
     def _alert_style(kind: str) -> str:

@@ -83,6 +83,19 @@ class BarChartElement:
 
 
 @dataclass(frozen=True)
+class LineChartSeries:
+    label: str
+    values: tuple[float, ...]
+
+
+@dataclass(frozen=True)
+class LineChartElement:
+    series: tuple[LineChartSeries, ...]
+    width: int | None = None
+    height: int | None = None
+
+
+@dataclass(frozen=True)
 class TableElement:
     headers: tuple[str, ...]
     rows: tuple[tuple[str, ...], ...]
@@ -96,6 +109,7 @@ class ContainerElement:
 @dataclass(frozen=True)
 class ExpanderElement:
     label: str
+    key: str
     expanded: bool = False
     children: list[Any] | None = None
 
@@ -201,6 +215,7 @@ Element: TypeAlias = (
     | ProgressElement
     | MetricElement
     | BarChartElement
+    | LineChartElement
     | TableElement
     | ContainerElement
     | ExpanderElement

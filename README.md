@@ -136,10 +136,14 @@ stui run examples/dashboard.py
 stui run examples/forms.py
 stui run examples/layouts.py
 stui run examples/charts.py
+stui run examples/kitchen_sink.py
 ```
 
 Those `examples/...` paths are repository files. After installing only from a
-wheel, read or download the examples from the GitHub repository first.
+wheel, run `stui examples` to see whether local example files are available. If
+they are not included in the installed package, read or download the examples
+from the GitHub repository first. Packaging installed examples is tracked for
+v0.4 before the API is considered v1-ready.
 
 ## Copy-Paste Examples
 
@@ -282,9 +286,10 @@ Streamlit-compatible.
 | Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | Available in 0.2.x |
 | Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | Available in 0.2.x |
 | State and flow | `st.session_state`, `st.rerun` | Available in 0.2.x |
-| Forms | `st.form`, `st.form_submit_button` | Available in 0.3.0 |
-| Grouping | `st.container`, `st.expander` | Available in 0.3.0 |
-| Metrics and charts | `st.metric`, `st.bar_chart` | Available in 0.3.0 |
+| Forms | `st.form`, `st.form_submit_button` | Available; v0.4 defers form widget state until submit |
+| Grouping | `st.container`, `st.expander` | Available; v0.4 expanders toggle with Enter/Space and persist state |
+| Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Available; charts are compact terminal summaries |
+| CLI and examples | `stui run`, `stui examples`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | Available |
 
 Inputs support stable `key` values and optional callbacks where the function
 signature documents them. Tables and charts are simple static displays and do
@@ -313,9 +318,9 @@ Runtime expectations:
 - Expecting a browser dashboard. `stui` renders inside your terminal.
 - Reusing Streamlit-only APIs such as sidebars, file upload, caching decorators,
   or arbitrary components. They are not part of this small API.
-- Assuming v0.3.0 APIs are present in an older install. Check
+- Assuming newer APIs are present in an older install. Check
   `python -c "import stui; print(stui.__version__)"` before using forms,
-  grouping primitives, metrics, or charts.
+  grouping primitives, metrics, charts, or packaged examples.
 - Doing slow network or model work at top level. Scripts rerun after
   interactions, so keep top-level work light and cache expensive work yourself.
 - Forgetting stable `key` values when creating similar widgets in loops.
@@ -422,7 +427,8 @@ stui run examples/dashboard.py
 
 ### Forms
 
-`examples/forms.py` shows the v0.3.0 form flow.
+`examples/forms.py` shows the v0.4 form flow: form widget display values can
+change during reruns, but keyed values commit to `session_state` on submit.
 
 ```bash
 stui run examples/forms.py
@@ -430,7 +436,7 @@ stui run examples/forms.py
 
 ### Layouts
 
-`examples/layouts.py` shows v0.3.0 container and static expander patterns.
+`examples/layouts.py` shows container and keyboard-toggleable expander patterns.
 
 ```bash
 stui run examples/layouts.py
@@ -438,8 +444,8 @@ stui run examples/layouts.py
 
 ### Charts
 
-`examples/charts.py` shows v0.3.0 `metric` and `bar_chart` helpers with source
-data shown in a table.
+`examples/charts.py` shows `metric`, `bar_chart`, and `line_chart` helpers with
+source data shown in a table.
 
 ```bash
 stui run examples/charts.py
@@ -447,8 +453,8 @@ stui run examples/charts.py
 
 ### Kitchen Sink
 
-`examples/kitchen_sink.py` exercises the stable API surface, including v0.3.0
-terminal-app primitives.
+`examples/kitchen_sink.py` exercises the stable API surface, including the
+terminal-app primitives added in the 0.3 and 0.4 release lines.
 
 ```bash
 stui run examples/kitchen_sink.py
@@ -458,10 +464,13 @@ stui run examples/kitchen_sink.py
 
 - No browser, web server, websocket, or port-forwarding runtime.
 - No Streamlit dependency and no promise of Streamlit compatibility.
-- Forms are an MVP: widgets inside a form still update session state before
-  submit; `st.form_submit_button` provides the one-shot submitted signal.
-- Expanders are static in v0.3.0; interactive expand/collapse is deferred.
+- Forms still rerun the Textual app when a form widget changes, but v0.4 keeps
+  pending form values out of `session_state` until submit.
+- Expanders are keyboard-toggleable with Enter/Space and persist their state;
+  this is still a modest terminal grouping primitive, not a full layout system.
 - Charts are compact terminal summaries, not plotting-library replacements.
+  `st.bar_chart` supports signed values and zero-only data; `st.line_chart` is
+  a simple static sparkline for numeric lists or dictionaries of numeric series.
 - No sidebars, file upload, browser components, or caching decorators yet.
 - Tables are static display only; there is no full dataframe editing or sorting.
 - Slider input supports numeric values only.
@@ -472,12 +481,17 @@ stui run examples/kitchen_sink.py
 
 ## Roadmap
 
-- Add richer dataframe display.
-- Explore fuller form semantics if users need deferred widget updates.
-- Explore `st.columns` and richer layout once grouping primitives settle.
-- Improve focus behavior, accessibility hints, and keyboard discoverability.
-- Expand example coverage for data scripts, model controls, DevOps panels, and internal tools.
-- Keep the implementation clean-room, readable, and based on Textual first-party widgets where possible.
+- v0.4: correctness, widget interactions, form/expander/chart hardening, and
+  installed example access.
+- v0.5: developer experience, API reference docs, keyboard docs, real terminal
+  screenshots, and stronger examples.
+- v0.6: terminal compatibility, narrow-width polish, error recovery, and release
+  process hardening.
+- v1: a small stable API with no known state/rerun bugs, verified PyPI install,
+  supported Python versions aligned with CI, and honest non-goals.
+
+See [ROADMAP.md](ROADMAP.md) and
+[docs/v1-readiness.md](docs/v1-readiness.md) for the full path to v1.
 
 ## Contributing
 

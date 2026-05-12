@@ -26,6 +26,8 @@ from .elements import (
     ExpanderElement,
     HeaderElement,
     JsonElement,
+    LineChartElement,
+    LineChartSeries,
     MarkdownElement,
     MetricElement,
     NumberInputElement,
@@ -46,6 +48,7 @@ from .widgets.slider import snap_value
 _current_runtime: contextvars.ContextVar[Runtime | None] = contextvars.ContextVar(
     "stui_current_runtime", default=None
 )
+_MISSING = object()
 
 
 class RerunException(Exception):
@@ -54,6 +57,10 @@ class RerunException(Exception):
 
 class DuplicateWidgetKeyError(Exception):
     """Raised when a script reuses an explicit widget key in one run."""
+
+
+class ApiUsageError(Exception):
+    """Raised for user-facing API misuse that should render without a traceback."""
 
 
 class Form:
@@ -94,6 +101,7 @@ class Runtime:
         self.explicit_widget_keys_seen: set[str] = set()
         self.form_keys_seen: set[str] = set()
         self.active_form_stack: list[str] = []
+        self.form_pending_values: dict[str, dict[str, Any]] = {}
         self.pending_button_presses: set[str] = set()
         self.pending_changed_widgets: set[str] = set()
         self.pending_widget_values: dict[str, Any] = {}
@@ -102,6 +110,9 @@ class Runtime:
         self._active_changed_widgets: set[str] = set()
         self._active_widget_values: dict[str, Any] = {}
         self._committed_widget_values: dict[str, Any] = {}
+        self._form_widget_callbacks: dict[
+            str, dict[str, tuple[Callable[..., Any], tuple[Any, ...], dict[str, Any]]]
+        ] = {}
 
     def run_script(self) -> list[Element]:
         for _ in range(10):
@@ -114,6 +125,10 @@ class Runtime:
             except RerunException:
                 continue
             except DuplicateWidgetKeyError as exc:
+                self.session_state.restore(session_snapshot)
+                self._restore_committed_widget_values()
+                self.elements = [ErrorElement(str(exc))]
+            except ApiUsageError as exc:
                 self.session_state.restore(session_snapshot)
                 self._restore_committed_widget_values()
                 self.elements = [ErrorElement(str(exc))]
@@ -187,6 +202,21 @@ class Runtime:
             )
         )
 
+    def line_chart(
+        self,
+        data: Any,
+        *,
+        width: int | None = None,
+        height: int | None = None,
+    ) -> None:
+        self._append_element(
+            LineChartElement(
+                series=_normalize_line_chart_series(data),
+                width=_normalize_optional_size(width, "width", "line_chart"),
+                height=_normalize_optional_size(height, "height", "line_chart"),
+            )
+        )
+
     def table(self, data: Any) -> None:
         headers, rows = _normalize_table(data)
         self._append_element(TableElement(headers=headers, rows=rows))
@@ -218,10 +248,32 @@ class Runtime:
         self._append_element(ContainerElement(children))
         return ElementBlock(self, children)
 
-    def expander(self, label: str, expanded: bool = False) -> ElementBlock:
+    def expander(
+        self,
+        label: str,
+        expanded: bool = False,
+        *,
+        key: str | None = None,
+    ) -> ElementBlock:
+        expander_label = str(label)
+        expander_key = self.next_widget_key("expander", expander_label, key)
+        current = bool(
+            self._changed_widget_value(
+                expander_key,
+                self.session_state.get(expander_key, expanded),
+                disabled=False,
+            )
+        )
+        self.session_state[expander_key] = current
+        self._remember_committed_widget_value(expander_key, current, disabled=False)
         children: list[Element] = []
         self._append_element(
-            ExpanderElement(label=str(label), expanded=expanded, children=children)
+            ExpanderElement(
+                label=expander_label,
+                key=expander_key,
+                expanded=current,
+                children=children,
+            )
         )
         return ElementBlock(self, children)
 
@@ -238,7 +290,7 @@ class Runtime:
         kwargs: dict[str, Any] | None = None,
     ) -> bool:
         if not self.active_form_stack:
-            raise RuntimeError(
+            raise ApiUsageError(
                 "st.form_submit_button must be used inside st.form(...)."
             )
         form_key = self.active_form_stack[-1]
@@ -250,8 +302,10 @@ class Runtime:
         self._append_element(
             ButtonElement(label=label, key=widget_key, disabled=disabled)
         )
-        if pressed and on_click is not None:
-            on_click(*(args or ()), **(kwargs or {}))
+        if pressed:
+            self._commit_form(form_key)
+            if on_click is not None:
+                on_click(*(args or ()), **(kwargs or {}))
         return pressed
 
     def button(
@@ -291,14 +345,13 @@ class Runtime:
     ) -> int | float:
         widget_key = self.next_widget_key("slider", label, key)
         default = min_value if value is None else value
-        current = self._changed_widget_value(
+        current = self._widget_value(
             widget_key,
             self.session_state.get(widget_key, default),
             disabled=disabled,
         )
         snapped = snap_value(current, min_value, max_value, step)
-        self.session_state[widget_key] = snapped
-        self._remember_committed_widget_value(widget_key, snapped, disabled=disabled)
+        changed = self._finalize_widget_value(widget_key, snapped, disabled=disabled)
         self._append_element(
             SliderElement(
                 label=label,
@@ -311,12 +364,7 @@ class Runtime:
                 disabled=disabled,
             )
         )
-        if (
-            not disabled
-            and self.consume_changed_widget(widget_key)
-            and on_change is not None
-        ):
-            on_change(*(args or ()), **(kwargs or {}))
+        self._handle_widget_callback(widget_key, changed, on_change, args, kwargs)
         return snapped
 
     def text_input(
@@ -333,14 +381,13 @@ class Runtime:
     ) -> str:
         widget_key = self.next_widget_key("text_input", label, key)
         current = str(
-            self._changed_widget_value(
+            self._widget_value(
                 widget_key,
                 self.session_state.get(widget_key, value),
                 disabled=disabled,
             )
         )
-        self.session_state[widget_key] = current
-        self._remember_committed_widget_value(widget_key, current, disabled=disabled)
+        changed = self._finalize_widget_value(widget_key, current, disabled=disabled)
         self._append_element(
             TextInputElement(
                 label=label,
@@ -350,12 +397,7 @@ class Runtime:
                 disabled=disabled,
             )
         )
-        if (
-            not disabled
-            and self.consume_changed_widget(widget_key)
-            and on_change is not None
-        ):
-            on_change(*(args or ()), **(kwargs or {}))
+        self._handle_widget_callback(widget_key, changed, on_change, args, kwargs)
         return current
 
     def checkbox(
@@ -371,14 +413,13 @@ class Runtime:
     ) -> bool:
         widget_key = self.next_widget_key("checkbox", label, key)
         current = bool(
-            self._changed_widget_value(
+            self._widget_value(
                 widget_key,
                 self.session_state.get(widget_key, value),
                 disabled=disabled,
             )
         )
-        self.session_state[widget_key] = current
-        self._remember_committed_widget_value(widget_key, current, disabled=disabled)
+        changed = self._finalize_widget_value(widget_key, current, disabled=disabled)
         self._append_element(
             CheckboxElement(
                 label=label,
@@ -387,12 +428,7 @@ class Runtime:
                 disabled=disabled,
             )
         )
-        if (
-            not disabled
-            and self.consume_changed_widget(widget_key)
-            and on_change is not None
-        ):
-            on_change(*(args or ()), **(kwargs or {}))
+        self._handle_widget_callback(widget_key, changed, on_change, args, kwargs)
         return current
 
     def number_input(
@@ -411,7 +447,7 @@ class Runtime:
     ) -> int | float:
         widget_key = self.next_widget_key("number_input", label, key)
         current = _coerce_number(
-            self._changed_widget_value(
+            self._widget_value(
                 widget_key,
                 self.session_state.get(widget_key, value),
                 disabled=disabled,
@@ -420,8 +456,7 @@ class Runtime:
             prefer_float=isinstance(step, float),
         )
         current = _clamp_number(current, min_value, max_value)
-        self.session_state[widget_key] = current
-        self._remember_committed_widget_value(widget_key, current, disabled=disabled)
+        changed = self._finalize_widget_value(widget_key, current, disabled=disabled)
         self._append_element(
             NumberInputElement(
                 label=label,
@@ -433,12 +468,7 @@ class Runtime:
                 disabled=disabled,
             )
         )
-        if (
-            not disabled
-            and self.consume_changed_widget(widget_key)
-            and on_change is not None
-        ):
-            on_change(*(args or ()), **(kwargs or {}))
+        self._handle_widget_callback(widget_key, changed, on_change, args, kwargs)
         return current
 
     def selectbox(
@@ -513,7 +543,7 @@ class Runtime:
             )
             return None
         safe_index = min(max(index, 0), len(options) - 1)
-        current = self._changed_widget_value(
+        current = self._widget_value(
             widget_key,
             self.session_state.get(widget_key, options[safe_index]),
             disabled=disabled,
@@ -521,8 +551,7 @@ class Runtime:
         if current not in options:
             current = options[safe_index]
         current_index = options.index(current)
-        self.session_state[widget_key] = current
-        self._remember_committed_widget_value(widget_key, current, disabled=disabled)
+        changed = self._finalize_widget_value(widget_key, current, disabled=disabled)
         element_cls = SelectboxElement if widget_type == "selectbox" else RadioElement
         self._append_element(
             element_cls(
@@ -533,12 +562,7 @@ class Runtime:
                 disabled=disabled,
             )
         )
-        if (
-            not disabled
-            and self.consume_changed_widget(widget_key)
-            and on_change is not None
-        ):
-            on_change(*(args or ()), **(kwargs or {}))
+        self._handle_widget_callback(widget_key, changed, on_change, args, kwargs)
         return current
 
     def next_widget_key(
@@ -560,7 +584,7 @@ class Runtime:
 
     def enter_form(self, key: str) -> None:
         if self.active_form_stack:
-            raise RuntimeError("Nested st.form blocks are not supported.")
+            raise ApiUsageError("Nested st.form blocks are not supported.")
         if key in self.form_keys_seen:
             raise DuplicateWidgetKeyError(
                 f'Duplicate form key "{key}". '
@@ -615,6 +639,61 @@ class Runtime:
             return current
         return self._active_widget_values.get(key, current)
 
+    def _widget_value(
+        self,
+        key: str,
+        current: Any,
+        *,
+        disabled: bool,
+    ) -> Any:
+        form_key = self._active_form_key()
+        if form_key is None:
+            return self._changed_widget_value(key, current, disabled=disabled)
+        if disabled:
+            return current
+        if key in self._active_changed_widgets:
+            return self._active_widget_values.get(key, current)
+        return self.form_pending_values.get(form_key, {}).get(key, current)
+
+    def _finalize_widget_value(
+        self,
+        key: str,
+        value: Any,
+        *,
+        disabled: bool,
+    ) -> bool:
+        changed = not disabled and self.consume_changed_widget(key)
+        form_key = self._active_form_key()
+        if form_key is None:
+            self.session_state[key] = value
+            if changed:
+                self._committed_widget_values[key] = value
+            return changed
+        if changed:
+            self.form_pending_values.setdefault(form_key, {})[key] = value
+        return changed
+
+    def _handle_widget_callback(
+        self,
+        key: str,
+        changed: bool,
+        callback: Callable[..., Any] | None,
+        args: tuple[Any, ...] | None,
+        kwargs: dict[str, Any] | None,
+    ) -> None:
+        if callback is None:
+            return
+        form_key = self._active_form_key()
+        if form_key is not None:
+            self._form_widget_callbacks.setdefault(form_key, {})[key] = (
+                callback,
+                args or (),
+                kwargs or {},
+            )
+            return
+        if changed:
+            callback(*(args or ()), **(kwargs or {}))
+
     def _remember_committed_widget_value(
         self,
         key: str,
@@ -624,6 +703,21 @@ class Runtime:
     ) -> None:
         if not disabled and key in self._active_changed_widgets:
             self._committed_widget_values[key] = value
+
+    def _active_form_key(self) -> str | None:
+        if not self.active_form_stack:
+            return None
+        return self.active_form_stack[-1]
+
+    def _commit_form(self, form_key: str) -> None:
+        callbacks = self._form_widget_callbacks.get(form_key, {})
+        for key, value in self.form_pending_values.pop(form_key, {}).items():
+            previous = self.session_state.get(key, _MISSING)
+            self.session_state[key] = value
+            self._committed_widget_values[key] = value
+            if previous != value and key in callbacks:
+                callback, args, kwargs = callbacks[key]
+                callback(*args, **kwargs)
 
     def _restore_committed_widget_values(self) -> None:
         for key, value in self._committed_widget_values.items():
@@ -640,6 +734,7 @@ class Runtime:
         self._active_changed_widgets = set(self.pending_changed_widgets)
         self._active_widget_values = dict(self.pending_widget_values)
         self._committed_widget_values = {}
+        self._form_widget_callbacks = {}
         self.pending_button_presses.clear()
         self.pending_changed_widgets.clear()
         self.pending_widget_values.clear()
@@ -711,11 +806,15 @@ def _clamp_number(
     return value
 
 
-def _normalize_optional_size(value: int | None, name: str) -> int | None:
+def _normalize_optional_size(
+    value: int | None,
+    name: str,
+    chart_name: str = "bar_chart",
+) -> int | None:
     if value is None:
         return None
     if not isinstance(value, int) or isinstance(value, bool):
-        raise TypeError(f"bar_chart {name} must be an int or None.")
+        raise TypeError(f"{chart_name} {name} must be an int or None.")
     return max(1, value)
 
 
@@ -747,6 +846,31 @@ def _normalize_chart_points(data: Any) -> tuple[BarChartPoint, ...]:
             )
             return tuple(point for point in points if point is not None)
     return (BarChartPoint("value", 0.0),)
+
+
+def _normalize_line_chart_series(data: Any) -> tuple[LineChartSeries, ...]:
+    if _is_number(data):
+        return (LineChartSeries("value", (float(data),)),)
+    if isinstance(data, dict):
+        series = [
+            LineChartSeries(str(key), _numeric_values(value))
+            for key, value in data.items()
+        ]
+        return tuple(item for item in series if item.values) or (
+            LineChartSeries("value", (0.0,)),
+        )
+    values = _numeric_values(data)
+    if values:
+        return (LineChartSeries("value", values),)
+    return (LineChartSeries("value", (0.0,)),)
+
+
+def _numeric_values(data: Any) -> tuple[float, ...]:
+    if _is_number(data):
+        return (float(data),)
+    if isinstance(data, (list, tuple)):
+        return tuple(float(value) for value in data if _is_number(value))
+    return ()
 
 
 def _chart_point_from_row(index: int, row: dict[Any, Any]) -> BarChartPoint | None:

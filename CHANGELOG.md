@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 This project is currently pre-1.0, so APIs may change while the MVP is being
 shaped.
 
+## 0.4.0 - 2026-05-12
+
+### Added
+
+- Added `st.line_chart` as a compact static sparkline helper for numeric lists
+  and dictionaries of numeric series.
+- Added keyboard-toggleable `st.expander` state with explicit/generated keys.
+- Added bundled package examples plus `stui example copy` and `stui init`.
+- Added `docs/v1-readiness.md` for the path from pre-1.0 releases to a stable
+  v1 API.
+
+### Changed
+
+- Deferred form widget values from `session_state` until
+  `st.form_submit_button` commits the form, while preserving current displayed
+  pending values across reruns.
+- Form widget callbacks now run after submit commit and before the submitted
+  script branch continues.
+- Hardened `st.bar_chart` rendering for negative values, zero-only data,
+  non-finite values, clearer labels, and small chart widths.
+- Improved `stui doctor` example diagnostics and installed-package guidance.
+- Strengthened static policy checks around publish artifacts and trusted
+  publishing.
+
 ## 0.3.0 - 2026-05-12
 
 ### Added

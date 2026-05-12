@@ -103,6 +103,15 @@ def bar_chart(
     get_current_runtime().bar_chart(data, width=width, height=height)
 
 
+def line_chart(
+    data: Any,
+    *,
+    width: int | None = None,
+    height: int | None = None,
+) -> None:
+    get_current_runtime().line_chart(data, width=width, height=height)
+
+
 def table(data: Any) -> None:
     get_current_runtime().table(data)
 
@@ -140,20 +149,21 @@ def container():
     return get_current_runtime().container()
 
 
-def expander(label: str, expanded: bool = False):
-    """Render a static expandable-looking group.
+def expander(label: str, expanded: bool = False, *, key: str | None = None):
+    """Render an expandable group.
 
-    MVP note: v0.3.0 expanders render either open or closed based on the
-    initial expanded flag; interactive toggling is intentionally deferred.
+    The expanded/collapsed state is stored in session_state under either the
+    explicit key or a generated key based on the label and call position.
     """
-    return get_current_runtime().expander(label, expanded=expanded)
+    return get_current_runtime().expander(label, expanded=expanded, key=key)
 
 
 def form(key: str):
     """Group widgets under a form key.
 
-    MVP note: widgets inside forms still update session_state normally; the
-    submit button only gates a one-shot submitted return value.
+    Form widgets keep pending values local to the form until
+    st.form_submit_button is pressed. The current Textual app still reruns
+    after a form widget interaction, but session_state is deferred.
     """
     return get_current_runtime().form(key)
 

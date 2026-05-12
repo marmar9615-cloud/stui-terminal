@@ -1,7 +1,13 @@
 from pathlib import Path
 
 import stui as st
-from stui.elements import BarChartElement, MetricElement
+from stui.app import StuiApp
+from stui.elements import (
+    BarChartElement,
+    BarChartPoint,
+    LineChartElement,
+    MetricElement,
+)
 from stui.runtime import Runtime
 
 
@@ -16,6 +22,14 @@ def chart_elements(runtime: Runtime) -> list[BarChartElement]:
         element
         for element in runtime.elements
         if isinstance(element, BarChartElement)
+    ]
+
+
+def line_chart_elements(runtime: Runtime) -> list[LineChartElement]:
+    return [
+        element
+        for element in runtime.elements
+        if isinstance(element, LineChartElement)
     ]
 
 
@@ -138,4 +152,104 @@ st.bar_chart({"bad": math.nan})
     ]
     assert [(point.label, point.value) for point in charts[1].points] == [
         ("value", 0.0),
+    ]
+
+
+def test_bar_chart_keeps_negative_and_zero_only_data(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.bar_chart([-3, 0, 5], width=8)
+st.bar_chart([0, 0, 0])
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    charts = chart_elements(runtime)
+
+    assert [(point.label, point.value) for point in charts[0].points] == [
+        ("0", -3.0),
+        ("1", 0.0),
+        ("2", 5.0),
+    ]
+    assert [(point.label, point.value) for point in charts[1].points] == [
+        ("0", 0.0),
+        ("1", 0.0),
+        ("2", 0.0),
+    ]
+    signed_render = StuiApp._render_bar_chart(charts[0]).plain
+    zero_render = StuiApp._render_bar_chart(charts[1]).plain
+    assert "-3" in signed_render
+    assert "│" in signed_render
+    assert zero_render.count("·") == 3
+
+
+def test_bar_chart_render_handles_small_width_and_blank_labels() -> None:
+    chart = BarChartElement(
+        points=(
+            BarChartPoint("", 2.0),
+        ),
+        width=1,
+    )
+
+    rendered = StuiApp._render_bar_chart(chart).plain
+
+    assert "2" in rendered
+    assert "█" in rendered
+
+
+def test_line_chart_accepts_list_and_dict_series(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.line_chart([1, 3, 2, 5], width=8)
+st.line_chart({"alpha": [1, 2, 3], "beta": [3, float("nan"), 1]}, height=1)
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    charts = line_chart_elements(runtime)
+
+    assert st.line_chart is not None
+    assert charts[0].width == 8
+    assert [(series.label, series.values) for series in charts[0].series] == [
+        ("value", (1.0, 3.0, 2.0, 5.0)),
+    ]
+    assert [(series.label, series.values) for series in charts[1].series] == [
+        ("alpha", (1.0, 2.0, 3.0)),
+        ("beta", (3.0, 1.0)),
+    ]
+    assert StuiApp._render_line_chart(charts[0]).plain.endswith(" 5")
+    assert StuiApp._render_line_chart(charts[1]).plain.count("\n") == 0
+
+
+def test_line_chart_fallback_for_unsupported_and_all_invalid(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import math
+import stui as st
+
+st.line_chart(object())
+st.line_chart({"bad": [math.nan, math.inf]})
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    charts = line_chart_elements(runtime)
+
+    assert [(series.label, series.values) for series in charts[0].series] == [
+        ("value", (0.0,)),
+    ]
+    assert [(series.label, series.values) for series in charts[1].series] == [
+        ("value", (0.0,)),
     ]

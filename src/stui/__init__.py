@@ -15,6 +15,7 @@ from .api import (
     header,
     info,
     json,
+    line_chart,
     markdown,
     metric,
     number_input,
@@ -34,7 +35,7 @@ from .api import (
     write,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "__version__",
@@ -54,6 +55,7 @@ __all__ = [
     "header",
     "info",
     "json",
+    "line_chart",
     "markdown",
     "metric",
     "number_input",

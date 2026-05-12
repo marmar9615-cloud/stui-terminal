@@ -4,7 +4,8 @@ import os
 import platform
 import shutil
 import sys
-from importlib import metadata
+from dataclasses import dataclass
+from importlib import metadata, resources
 from pathlib import Path
 from typing import Annotated
 
@@ -32,9 +33,75 @@ EXAMPLE_NAMES = (
     "kitchen_sink.py",
 )
 
+INIT_TEMPLATE = '''import stui as st
+
+st.title("My stui app")
+st.write("Edit this file, then run:")
+st.code("stui run {filename}")
+
+name = st.text_input("Name", value="friend")
+
+if st.button("Greet"):
+    st.success(f"Hello, {{name}}!")
+'''
+
+
+@dataclass(frozen=True)
+class ExampleInfo:
+    name: str
+    bundled: bool
+    repo_path: Path | None
+
 
 def _examples_dir() -> Path:
     return Path(__file__).resolve().parents[2] / "examples"
+
+
+def _bundled_examples() -> set[str]:
+    try:
+        examples = resources.files("stui.examples")
+    except ModuleNotFoundError:
+        return set()
+    return {
+        child.name
+        for child in examples.iterdir()
+        if child.name.endswith(".py") and child.name != "__init__.py"
+    }
+
+
+def _example_name(name: str) -> str:
+    return name if name.endswith(".py") else f"{name}.py"
+
+
+def _example_infos() -> list[ExampleInfo]:
+    examples_dir = _examples_dir()
+    bundled = _bundled_examples()
+    repo = {
+        path.name
+        for path in examples_dir.glob("*.py")
+        if examples_dir.exists() and path.name != "__init__.py"
+    }
+    names = [name for name in EXAMPLE_NAMES if name in bundled or name in repo]
+    names.extend(sorted((bundled | repo) - set(names)))
+    return [
+        ExampleInfo(
+            name=name,
+            bundled=name in bundled,
+            repo_path=(examples_dir / name) if name in repo else None,
+        )
+        for name in names
+    ]
+
+
+def _read_bundled_example(name: str) -> str:
+    example_name = _example_name(name)
+    if example_name not in _bundled_examples():
+        raise typer.BadParameter(f"unknown bundled example: {name}")
+    return (
+        resources.files("stui.examples")
+        .joinpath(example_name)
+        .read_text(encoding="utf-8")
+    )
 
 
 def _version_callback(value: bool) -> None:
@@ -85,7 +152,20 @@ def doctor() -> None:
             return "not installed"
 
     terminal_size = shutil.get_terminal_size(fallback=(0, 0))
+    example_infos = _example_infos()
+    bundled_count = sum(info.bundled for info in example_infos)
+    repo_count = sum(info.repo_path is not None for info in example_infos)
+    color_term = os.environ.get("COLORTERM", "")
+    term_program = os.environ.get("TERM_PROGRAM", "")
+    truecolor = "truecolor" in color_term.lower() or "24bit" in color_term.lower()
+    capabilities = [
+        f"color={bool(os.environ.get('TERM') and os.environ.get('TERM') != 'dumb')}",
+        f"truecolor={truecolor}",
+        f"interactive={sys.stdin.isatty() and sys.stdout.isatty()}",
+        f"unicode={sys.stdout.encoding or 'unknown'}",
+    ]
     typer.echo(f"stui: {__version__}")
+    typer.echo(f"package: {package_version('stui-terminal')}")
     typer.echo(
         f"python: {sys.version.split()[0]} "
         f"({platform.system()} {platform.machine()})"
@@ -96,20 +176,98 @@ def doctor() -> None:
     typer.echo(f"terminal size: {terminal_size.columns}x{terminal_size.lines}")
     typer.echo(f"theme: {resolve_theme()}")
     typer.echo(f"TERM: {os.environ.get('TERM', 'unknown')}")
+    typer.echo(f"TERM_PROGRAM: {term_program or 'unknown'}")
+    typer.echo(f"capabilities: {', '.join(capabilities)}")
+    typer.echo(
+        f"examples: {bundled_count} bundled, {repo_count} repo"
+    )
+    if example_infos:
+        first = example_infos[0]
+        source = "bundled" if first.bundled else "repo-only"
+        location = "stui.examples" if first.bundled else str(first.repo_path)
+        typer.echo(f"example source: {source} ({location})")
 
 
 @app.command("examples")
 def list_examples() -> None:
-    """List repository example app names and run commands."""
+    """List bundled and repository example app names with run/copy commands."""
 
-    examples_dir = _examples_dir()
-    if not examples_dir.exists():
-        typer.echo("Example files are available in the source repository:")
+    infos = _example_infos()
+    if not infos:
+        typer.echo("No bundled examples were found.")
         typer.echo("  https://github.com/marmar9615-cloud/stui-terminal/tree/main/examples")
         return
 
-    typer.echo("Repository examples:")
-    for name in EXAMPLE_NAMES:
-        path = examples_dir / name
-        suffix = f" ({path})" if path.exists() else ""
-        typer.echo(f"  stui run examples/{name}{suffix}")
+    typer.echo("stui examples:")
+    for info in infos:
+        stem = Path(info.name).stem
+        if info.bundled and info.repo_path is not None:
+            source = f"bundled + repo ({info.repo_path})"
+        elif info.bundled:
+            source = "bundled"
+        else:
+            source = f"repo-only ({info.repo_path})"
+        typer.echo(f"  {stem} [{source}]")
+        if info.repo_path is not None:
+            typer.echo(f"    run:  stui run {info.repo_path}")
+        else:
+            typer.echo(
+                f"    run:  stui example copy {stem} ./examples/{info.name} "
+                f"&& stui run ./examples/{info.name}"
+            )
+        if info.bundled:
+            typer.echo(f"    copy: stui example copy {stem} ./examples/{info.name}")
+
+
+example_app = typer.Typer(add_completion=False, help="Work with bundled examples.")
+
+
+@example_app.command("copy")
+def copy_example(
+    name: str,
+    dest: Path,
+    force: Annotated[
+        bool,
+        typer.Option("--force", "-f", help="Overwrite DEST if it already exists."),
+    ] = False,
+) -> None:
+    """Copy a bundled example app to DEST."""
+
+    example_name = _example_name(name)
+    content = _read_bundled_example(example_name)
+    dest_path = dest.expanduser()
+    if dest_path.is_dir():
+        dest_path = dest_path / example_name
+        if dest_path.exists() and not force:
+            raise typer.BadParameter(f"destination exists: {dest_path}")
+    elif dest_path.exists() and not force:
+        raise typer.BadParameter(f"destination exists: {dest}")
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    dest_path.write_text(content, encoding="utf-8")
+    typer.echo(f"Copied {example_name} to {dest_path}")
+
+
+app.add_typer(example_app, name="example")
+
+
+@app.command("init")
+def init_app(
+    script: Path,
+    force: Annotated[
+        bool,
+        typer.Option("--force", "-f", help="Overwrite APP.py if it already exists."),
+    ] = False,
+) -> None:
+    """Create a small starter stui app."""
+
+    script_path = script.expanduser()
+    if script_path.suffix != ".py":
+        raise typer.BadParameter(f"script must be a .py file: {script}")
+    if script_path.exists() and not force:
+        raise typer.BadParameter(f"file exists: {script}")
+    script_path.parent.mkdir(parents=True, exist_ok=True)
+    script_path.write_text(
+        INIT_TEMPLATE.format(filename=script_path.name),
+        encoding="utf-8",
+    )
+    typer.echo(f"Created {script_path}")
