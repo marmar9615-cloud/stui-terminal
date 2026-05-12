@@ -11,6 +11,8 @@ Streamlit compatibility layer.
 Feedback that is most helpful right now:
 
 - Reports about existing widgets, reruns, callbacks, and `session_state`.
+- Reports about the v0.3.0 primitives: forms, containers, static
+  expanders, metrics, and simple terminal-native bar charts.
 - Terminal rendering issues in real shells, SSH sessions, and headless
   environments.
 - Places where the current examples or README made a feature look broader than
@@ -22,13 +24,13 @@ Feedback that is most helpful right now:
 
 Feedback that can shape near-term design:
 
-- Charts: which chart types are useful in a terminal, and what output should
-  remain readable without color.
+- Charts: whether the first bar chart helper is enough, and which chart
+  types are useful in a terminal without color.
 - Richer dataframe support: which table interactions matter first for
   inspection and debugging.
-- Layout primitives: which app layouts you need before reaching for a browser
-  dashboard.
-- Forms: how submit-style flows should work in a top-to-bottom rerun model.
+- Layout primitives: what should come after containers and static expanders.
+- Forms: where submit-style flows feel natural or surprising in a top-to-bottom
+  rerun model.
 - Caching and session persistence: what data should persist, for how long, and
   how explicit that behavior should be.
 - Theming: which parts of the terminal UI need project-level styling control.
@@ -54,6 +56,7 @@ These are not current project goals:
 - Streamlit compatibility mode.
 - Browser, server, websocket, or port-forwarding support.
 - Runtime dependency on Streamlit.
+- Full Streamlit forms, layout, or chart compatibility.
 - A large component ecosystem inside the core package before the MVP settles.
 - GPL slider/widget code or dependencies with licensing concerns.
 - Hosted cloud features, managed auth, or deployment infrastructure.

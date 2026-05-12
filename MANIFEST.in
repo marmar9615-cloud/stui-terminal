@@ -7,6 +7,7 @@ include RELEASE_NOTES_v0.2.0rc1.md
 include RELEASE_NOTES_v0.2.0.md
 include RELEASE_NOTES_v0.2.1.md
 include RELEASE_NOTES_v0.2.2.md
+include RELEASE_NOTES_v0.3.0.md
 include CONTRIBUTING.md
 include CODE_OF_CONDUCT.md
 include ROADMAP.md

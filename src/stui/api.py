@@ -90,6 +90,19 @@ def progress(value: int | float, text: Any | None = None) -> None:
     get_current_runtime().progress(value, text=text)
 
 
+def metric(label: Any, value: Any, delta: Any | None = None) -> None:
+    get_current_runtime().metric(label, value, delta=delta)
+
+
+def bar_chart(
+    data: Any,
+    *,
+    width: int | None = None,
+    height: int | None = None,
+) -> None:
+    get_current_runtime().bar_chart(data, width=width, height=height)
+
+
 def table(data: Any) -> None:
     get_current_runtime().table(data)
 
@@ -120,6 +133,46 @@ def error(body: Any) -> None:
 
 def write(*args: Any) -> None:
     get_current_runtime().write(*args)
+
+
+def container():
+    """Group following elements when used as a context manager."""
+    return get_current_runtime().container()
+
+
+def expander(label: str, expanded: bool = False):
+    """Render a static expandable-looking group.
+
+    MVP note: v0.3.0 expanders render either open or closed based on the
+    initial expanded flag; interactive toggling is intentionally deferred.
+    """
+    return get_current_runtime().expander(label, expanded=expanded)
+
+
+def form(key: str):
+    """Group widgets under a form key.
+
+    MVP note: widgets inside forms still update session_state normally; the
+    submit button only gates a one-shot submitted return value.
+    """
+    return get_current_runtime().form(key)
+
+
+def form_submit_button(
+    label: str = "Submit",
+    *,
+    disabled: bool = False,
+    on_click=None,
+    args: tuple[Any, ...] | None = None,
+    kwargs: dict[str, Any] | None = None,
+) -> bool:
+    return get_current_runtime().form_submit_button(
+        label,
+        disabled=disabled,
+        on_click=on_click,
+        args=args,
+        kwargs=kwargs,
+    )
 
 
 def button(

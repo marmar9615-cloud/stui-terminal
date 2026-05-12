@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import math
+import os
 
 from rich.json import JSON as RichJSON
 from rich.markdown import Markdown
@@ -27,16 +29,20 @@ from textual.widgets import (
 
 from .elements import (
     AlertElement,
+    BarChartElement,
     ButtonElement,
     CaptionElement,
     CheckboxElement,
     CodeElement,
+    ContainerElement,
     DividerElement,
     ErrorElement,
     ExceptionElement,
+    ExpanderElement,
     HeaderElement,
     JsonElement,
     MarkdownElement,
+    MetricElement,
     NumberInputElement,
     ProgressElement,
     RadioElement,
@@ -51,6 +57,82 @@ from .elements import (
 )
 from .runtime import Runtime
 from .widgets.slider import StuiSlider
+
+SUPPORTED_THEMES = {"default", "high-contrast"}
+
+HIGH_CONTRAST_CSS = """
+    Screen {
+        background: #000000;
+        color: #ffffff;
+    }
+
+    Header, Footer {
+        background: #000000;
+        color: #ffffff;
+    }
+
+    .title, .header, .subheader {
+        color: #ffff00;
+    }
+
+    .caption, .stui-field-label, .stui-progress-label {
+        color: #ffffff;
+    }
+
+    .divider {
+        color: #ffffff;
+    }
+
+    Button {
+        border: tall #ffffff;
+    }
+
+    Button:focus {
+        background: #ffff00;
+        color: #000000;
+        text-style: bold;
+    }
+
+    Input:focus, .stui-selectbox:focus, RadioSet:focus {
+        border: tall #ffff00;
+        background: #000000;
+        color: #ffffff;
+    }
+
+    Checkbox:focus, .stui-slider:focus {
+        border: tall #ffff00;
+        background: #000000;
+        color: #ffffff;
+        text-style: bold;
+    }
+
+    .stui-slider {
+        border: tall #ffffff;
+        background: #000000;
+    }
+
+    .alert-success, .alert-info, .alert-warning, .alert-error, .traceback {
+        color: #ffffff;
+    }
+
+    .disabled {
+        color: #bfbfbf;
+    }
+"""
+
+
+def resolve_theme(value: str | None = None) -> str:
+    raw_theme = value if value is not None else os.environ.get("STUI_THEME", "")
+    theme = raw_theme.strip().lower()
+    if theme in SUPPORTED_THEMES:
+        return theme
+    return "default"
+
+
+def css_for_theme(base_css: str, theme: str | None = None) -> str:
+    if resolve_theme(theme) == "high-contrast":
+        return f"{base_css}\n{HIGH_CONTRAST_CSS}"
+    return base_css
 
 
 def dom_id_for_key(key: str) -> str:
@@ -178,7 +260,7 @@ class StuiApp(App[None]):
     }
 
     #body {
-        padding: 1 2;
+        padding: 1 1;
     }
 
     .title {
@@ -236,7 +318,7 @@ class StuiApp(App[None]):
 
     Button {
         margin: 1 0;
-        min-width: 20;
+        min-width: 16;
     }
 
     Button:focus {
@@ -318,6 +400,28 @@ class StuiApp(App[None]):
     .table {
         margin: 1 0;
     }
+
+    .metric, .bar-chart {
+        margin: 1 0;
+    }
+
+    .stui-container {
+        border-left: solid #343444;
+        padding: 0 0 0 1;
+        margin: 1 0;
+    }
+
+    .stui-expander {
+        border: round #343444;
+        padding: 0 1;
+        margin: 1 0;
+    }
+
+    .stui-expander-label {
+        color: #d7ddff;
+        text-style: bold;
+        margin: 0 0 1 0;
+    }
     """
     BINDINGS = [
         Binding("q", "quit", "Quit"),
@@ -329,6 +433,8 @@ class StuiApp(App[None]):
     def __init__(self, runtime: Runtime) -> None:
         super().__init__()
         self.runtime = runtime
+        self.stui_theme = resolve_theme()
+        self.CSS = css_for_theme(type(self).CSS, self.stui_theme)
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
@@ -467,8 +573,29 @@ class StuiApp(App[None]):
                 progress_bar,
                 classes="stui-progress",
             )
+        if isinstance(element, MetricElement):
+            return Static(self._render_metric(element), classes="metric")
+        if isinstance(element, BarChartElement):
+            return Static(self._render_bar_chart(element), classes="bar-chart")
+        if isinstance(element, ContainerElement):
+            children = [self._build_widget(child) for child in element.children]
+            return Vertical(*children, classes="stui-container")
+        if isinstance(element, ExpanderElement):
+            marker = "-" if element.expanded else "+"
+            label = Static(
+                f"[{marker}] {element.label}",
+                classes="stui-expander-label",
+            )
+            if not element.expanded:
+                return Vertical(label, classes="stui-expander")
+            children = [
+                self._build_widget(child)
+                for child in (element.children or [])
+            ]
+            return Vertical(label, *children, classes="stui-expander")
         if isinstance(element, DividerElement):
-            return Static("─" * 40, classes="divider")
+            width = max(8, min(40, self.size.width - 4))
+            return Static("─" * width, classes="divider")
         if isinstance(element, AlertElement):
             kind = element.kind.lower()
             return Static(
@@ -540,7 +667,7 @@ class StuiApp(App[None]):
             return Static(
                 Panel(
                     Text(element.traceback, style="#ffd7d7"),
-                    title="Script error",
+                    title=self._script_error_title(element.traceback),
                     border_style="red",
                     title_align="left",
                     padding=(0, 1),
@@ -606,6 +733,50 @@ class StuiApp(App[None]):
         return value
 
     @staticmethod
+    def _render_metric(element: MetricElement) -> Panel:
+        body = Text()
+        body.append(element.label, style="dim")
+        body.append("\n")
+        body.append(element.value, style="bold #ffffff")
+        if element.delta is not None:
+            style = "green" if not element.delta.startswith("-") else "red"
+            body.append(f"  {element.delta}", style=style)
+        return Panel(
+            body,
+            border_style="#343444",
+            padding=(0, 1),
+        )
+
+    @staticmethod
+    def _render_bar_chart(element: BarChartElement) -> Text:
+        points = tuple(
+            point for point in element.points if math.isfinite(point.value)
+        )
+        if element.height is not None:
+            points = points[: element.height]
+        if not points:
+            return Text("No chart data", style="dim")
+
+        max_abs = max(abs(point.value) for point in points) or 1
+        label_width = min(
+            18,
+            max(len(point.label) for point in points),
+        )
+        plot_width = min(max(element.width or 28, 4), 80)
+        chart = Text()
+        for index, point in enumerate(points):
+            bar_len = round((abs(point.value) / max_abs) * plot_width)
+            bar = "█" * max(1, bar_len) if point.value else "·"
+            style = "green" if point.value >= 0 else "red"
+            chart.append(point.label[:label_width].rjust(label_width), style="dim")
+            chart.append(" │ ", style="dim")
+            chart.append(bar, style=style)
+            chart.append(f" {point.value:g}")
+            if index != len(points) - 1:
+                chart.append("\n")
+        return chart
+
+    @staticmethod
     def _alert_style(kind: str) -> str:
         return {
             "success": "green",
@@ -613,3 +784,9 @@ class StuiApp(App[None]):
             "warning": "yellow",
             "error": "red",
         }.get(kind, "white")
+
+    @staticmethod
+    def _script_error_title(traceback: str) -> str:
+        if traceback.startswith("Duplicate widget key"):
+            return "Duplicate widget key"
+        return "Script error"

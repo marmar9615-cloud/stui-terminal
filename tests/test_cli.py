@@ -58,7 +58,7 @@ def test_version_option() -> None:
     result = CliRunner().invoke(cli.app, ["--version"])
 
     assert result.exit_code == 0
-    assert "stui 0.2.2" in result.output
+    assert "stui 0.3.0" in result.output
 
 
 def test_doctor_command() -> None:
@@ -68,6 +68,10 @@ def test_doctor_command() -> None:
     assert "stui:" in result.output
     assert "python:" in result.output
     assert "textual:" in result.output
+    assert "rich:" in result.output
+    assert "typer:" in result.output
+    assert "terminal size:" in result.output
+    assert "theme:" in result.output
 
 
 def test_examples_command() -> None:
@@ -77,3 +81,20 @@ def test_examples_command() -> None:
     assert "stui run examples/basic.py" in result.output
     assert "stui run examples/dashboard.py" in result.output
     assert "stui run examples/kitchen_sink.py" in result.output
+
+
+def test_examples_command_does_not_claim_missing_wheel_examples(monkeypatch) -> None:
+    class MissingExamplesPath:
+        def exists(self) -> bool:
+            return False
+
+        def __truediv__(self, _name: str):
+            return self
+
+    monkeypatch.setattr(cli, "_examples_dir", MissingExamplesPath)
+
+    result = CliRunner().invoke(cli.app, ["examples"])
+
+    assert result.exit_code == 0
+    assert "source repository" in result.output
+    assert "stui run examples/basic.py" not in result.output

@@ -133,7 +133,13 @@ stui run examples/counter.py
 stui run examples/inputs.py
 stui run examples/data_display.py
 stui run examples/dashboard.py
+stui run examples/forms.py
+stui run examples/layouts.py
+stui run examples/charts.py
 ```
+
+Those `examples/...` paths are repository files. After installing only from a
+wheel, read or download the examples from the GitHub repository first.
 
 ## Copy-Paste Examples
 
@@ -258,7 +264,7 @@ python3.11 -m pytest
 - `home`: set the focused slider to its minimum value
 - `end`: set the focused slider to its maximum value
 
-## Current API
+## API
 
 Import the API as:
 
@@ -266,19 +272,23 @@ Import the API as:
 import stui as st
 ```
 
-The public API is intentionally compact:
+The public API is intentionally compact and Streamlit-inspired, not
+Streamlit-compatible.
 
-- Text: `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`,
-  `st.markdown`, `st.write`, `st.divider`
-- Status: `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception`
-- Display: `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe`
-- Inputs: `st.button`, `st.slider`, `st.text_input`, `st.checkbox`,
-  `st.number_input`, `st.selectbox`, `st.radio`
-- State and control flow: `st.session_state`, `st.rerun`
+| Area | APIs | Status |
+| --- | --- | --- |
+| Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | Available in 0.2.x |
+| Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | Available in 0.2.x |
+| Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | Available in 0.2.x |
+| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | Available in 0.2.x |
+| State and flow | `st.session_state`, `st.rerun` | Available in 0.2.x |
+| Forms | `st.form`, `st.form_submit_button` | Available in 0.3.0 |
+| Grouping | `st.container`, `st.expander` | Available in 0.3.0 |
+| Metrics and charts | `st.metric`, `st.bar_chart` | Available in 0.3.0 |
 
 Inputs support stable `key` values and optional callbacks where the function
-signature documents them. Tables are simple static displays and do not require
-pandas.
+signature documents them. Tables and charts are simple static displays and do
+not require pandas or plotting dependencies.
 
 ## Compatibility
 
@@ -292,7 +302,7 @@ Runtime expectations:
 - Terminal UI powered by Textual and Rich.
 - No Streamlit runtime dependency.
 - No browser tab, local web server, websocket, or port-forwarding flow.
-- Static table/dataframe display without dataframe editing, sorting, or charts.
+- Static table/dataframe display without dataframe editing or sorting.
 
 ## Common Mistakes
 
@@ -301,8 +311,11 @@ Runtime expectations:
 - Running `stui run` from a different Python environment than the one where the
   package was installed. Try `python -m stui run app.py`.
 - Expecting a browser dashboard. `stui` renders inside your terminal.
-- Reusing Streamlit-only APIs such as forms, columns, sidebars, charts, file
-  upload, or caching decorators. They are not part of this MVP API.
+- Reusing Streamlit-only APIs such as sidebars, file upload, caching decorators,
+  or arbitrary components. They are not part of this small API.
+- Assuming v0.3.0 APIs are present in an older install. Check
+  `python -c "import stui; print(stui.__version__)"` before using forms,
+  grouping primitives, metrics, or charts.
 - Doing slow network or model work at top level. Scripts rerun after
   interactions, so keep top-level work light and cache expensive work yourself.
 - Forgetting stable `key` values when creating similar widgets in loops.
@@ -407,10 +420,35 @@ small table into a compact terminal control panel.
 stui run examples/dashboard.py
 ```
 
+### Forms
+
+`examples/forms.py` shows the v0.3.0 form flow.
+
+```bash
+stui run examples/forms.py
+```
+
+### Layouts
+
+`examples/layouts.py` shows v0.3.0 container and static expander patterns.
+
+```bash
+stui run examples/layouts.py
+```
+
+### Charts
+
+`examples/charts.py` shows v0.3.0 `metric` and `bar_chart` helpers with source
+data shown in a table.
+
+```bash
+stui run examples/charts.py
+```
+
 ### Kitchen Sink
 
-`examples/kitchen_sink.py` exercises the stable 0.2.x API surface in one
-compact app.
+`examples/kitchen_sink.py` exercises the stable API surface, including v0.3.0
+terminal-app primitives.
 
 ```bash
 stui run examples/kitchen_sink.py
@@ -420,18 +458,23 @@ stui run examples/kitchen_sink.py
 
 - No browser, web server, websocket, or port-forwarding runtime.
 - No Streamlit dependency and no promise of Streamlit compatibility.
-- No charts, forms, columns, sidebars, or file upload yet.
+- Forms are an MVP: widgets inside a form still update session state before
+  submit; `st.form_submit_button` provides the one-shot submitted signal.
+- Expanders are static in v0.3.0; interactive expand/collapse is deferred.
+- Charts are compact terminal summaries, not plotting-library replacements.
+- No sidebars, file upload, browser components, or caching decorators yet.
 - Tables are static display only; there is no full dataframe editing or sorting.
 - Slider input supports numeric values only.
-- Layout is currently linear and script-driven.
+- Layout remains terminal-first and intentionally modest.
 - The app reruns the script as interactions change state, so examples should keep top-level work lightweight.
 - Error handling is still early and meant for development feedback.
 - The package is an MVP and has not stabilized a long-term compatibility policy.
 
 ## Roadmap
 
-- Add charts and richer dataframe display.
-- Add simple form-like batching once rerun semantics are clearer.
+- Add richer dataframe display.
+- Explore fuller form semantics if users need deferred widget updates.
+- Explore `st.columns` and richer layout once grouping primitives settle.
 - Improve focus behavior, accessibility hints, and keyboard discoverability.
 - Expand example coverage for data scripts, model controls, DevOps panels, and internal tools.
 - Keep the implementation clean-room, readable, and based on Textual first-party widgets where possible.

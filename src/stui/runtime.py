@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextvars
 import json as json_lib
+import math
 import runpy
 import sys
 import traceback
@@ -11,17 +12,22 @@ from typing import Any
 
 from .elements import (
     AlertElement,
+    BarChartElement,
+    BarChartPoint,
     ButtonElement,
     CaptionElement,
     CheckboxElement,
     CodeElement,
+    ContainerElement,
     DividerElement,
     Element,
     ErrorElement,
     ExceptionElement,
+    ExpanderElement,
     HeaderElement,
     JsonElement,
     MarkdownElement,
+    MetricElement,
     NumberInputElement,
     ProgressElement,
     RadioElement,
@@ -50,13 +56,44 @@ class DuplicateWidgetKeyError(Exception):
     """Raised when a script reuses an explicit widget key in one run."""
 
 
+class Form:
+    def __init__(self, runtime: Runtime, key: str) -> None:
+        self.runtime = runtime
+        self.key = key
+
+    def __enter__(self) -> Form:
+        self.runtime.enter_form(self.key)
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> bool:
+        self.runtime.exit_form(self.key)
+        return False
+
+
+class ElementBlock:
+    def __init__(self, runtime: Runtime, children: list[Element]) -> None:
+        self.runtime = runtime
+        self.children = children
+
+    def __enter__(self) -> ElementBlock:
+        self.runtime._push_element_block(self.children)
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> bool:
+        self.runtime._pop_element_block(self.children)
+        return False
+
+
 class Runtime:
     def __init__(self, script_path: str | Path) -> None:
         self.script_path = Path(script_path).resolve()
         self.session_state = SessionState()
         self.elements: list[Element] = []
+        self._element_stack: list[list[Element]] = [self.elements]
         self.widget_call_counts: dict[tuple[str, str], int] = {}
         self.explicit_widget_keys_seen: set[str] = set()
+        self.form_keys_seen: set[str] = set()
+        self.active_form_stack: list[str] = []
         self.pending_button_presses: set[str] = set()
         self.pending_changed_widgets: set[str] = set()
         self.pending_widget_values: dict[str, Any] = {}
@@ -95,67 +132,127 @@ class Runtime:
         return self.elements
 
     def title(self, body: Any, *, key: str | None = None) -> None:
-        self.elements.append(TitleElement(str(body), key=key))
+        self._append_element(TitleElement(str(body), key=key))
 
     def header(self, body: Any, *, key: str | None = None) -> None:
-        self.elements.append(HeaderElement(str(body), key=key))
+        self._append_element(HeaderElement(str(body), key=key))
 
     def subheader(self, body: Any, *, key: str | None = None) -> None:
-        self.elements.append(SubheaderElement(str(body), key=key))
+        self._append_element(SubheaderElement(str(body), key=key))
 
     def text(self, body: Any) -> None:
-        self.elements.append(TextElement(str(body)))
+        self._append_element(TextElement(str(body)))
 
     def caption(self, body: Any) -> None:
-        self.elements.append(CaptionElement(str(body)))
+        self._append_element(CaptionElement(str(body)))
 
     def markdown(self, body: Any) -> None:
-        self.elements.append(MarkdownElement(str(body)))
+        self._append_element(MarkdownElement(str(body)))
 
     def code(self, body: Any, language: str | None = None) -> None:
-        self.elements.append(CodeElement(str(body), language=language))
+        self._append_element(CodeElement(str(body), language=language))
 
     def json(self, obj: Any) -> None:
         text = json_lib.dumps(obj, indent=2, sort_keys=True, default=str)
-        self.elements.append(JsonElement(obj=obj, text=text))
+        self._append_element(JsonElement(obj=obj, text=text))
 
     def exception(self, exc: BaseException) -> None:
         rendered = "".join(
             traceback.format_exception(type(exc), exc, exc.__traceback__)
         )
-        self.elements.append(ExceptionElement(rendered))
+        self._append_element(ExceptionElement(rendered))
 
     def progress(self, value: int | float, text: Any | None = None) -> None:
         label = None if text is None else str(text)
-        self.elements.append(
+        self._append_element(
             ProgressElement(_normalize_progress(value), label)
+        )
+
+    def metric(self, label: Any, value: Any, delta: Any | None = None) -> None:
+        delta_text = None if delta is None else str(delta)
+        self._append_element(MetricElement(str(label), str(value), delta_text))
+
+    def bar_chart(
+        self,
+        data: Any,
+        *,
+        width: int | None = None,
+        height: int | None = None,
+    ) -> None:
+        self._append_element(
+            BarChartElement(
+                points=_normalize_chart_points(data),
+                width=_normalize_optional_size(width, "width"),
+                height=_normalize_optional_size(height, "height"),
+            )
         )
 
     def table(self, data: Any) -> None:
         headers, rows = _normalize_table(data)
-        self.elements.append(TableElement(headers=headers, rows=rows))
+        self._append_element(TableElement(headers=headers, rows=rows))
 
     def dataframe(self, data: Any) -> None:
         self.table(data)
 
     def divider(self) -> None:
-        self.elements.append(DividerElement())
+        self._append_element(DividerElement())
 
     def success(self, body: Any) -> None:
-        self.elements.append(AlertElement(str(body), "success"))
+        self._append_element(AlertElement(str(body), "success"))
 
     def info(self, body: Any) -> None:
-        self.elements.append(AlertElement(str(body), "info"))
+        self._append_element(AlertElement(str(body), "info"))
 
     def warning(self, body: Any) -> None:
-        self.elements.append(AlertElement(str(body), "warning"))
+        self._append_element(AlertElement(str(body), "warning"))
 
     def error(self, body: Any) -> None:
-        self.elements.append(AlertElement(str(body), "error"))
+        self._append_element(AlertElement(str(body), "error"))
 
     def write(self, *args: Any) -> None:
         text = " ".join(str(arg) for arg in args)
-        self.elements.append(WriteElement(tuple(args), text))
+        self._append_element(WriteElement(tuple(args), text))
+
+    def container(self) -> ElementBlock:
+        children: list[Element] = []
+        self._append_element(ContainerElement(children))
+        return ElementBlock(self, children)
+
+    def expander(self, label: str, expanded: bool = False) -> ElementBlock:
+        children: list[Element] = []
+        self._append_element(
+            ExpanderElement(label=str(label), expanded=expanded, children=children)
+        )
+        return ElementBlock(self, children)
+
+    def form(self, key: str) -> Form:
+        return Form(self, str(key))
+
+    def form_submit_button(
+        self,
+        label: str = "Submit",
+        *,
+        disabled: bool = False,
+        on_click: Callable[..., Any] | None = None,
+        args: tuple[Any, ...] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> bool:
+        if not self.active_form_stack:
+            raise RuntimeError(
+                "st.form_submit_button must be used inside st.form(...)."
+            )
+        form_key = self.active_form_stack[-1]
+        widget_key = self.next_widget_key(
+            "form_submit_button",
+            f"{form_key}:{label}",
+        )
+        pressed = False if disabled else self.consume_button_press(widget_key)
+        self._append_element(
+            ButtonElement(label=label, key=widget_key, disabled=disabled)
+        )
+        if pressed and on_click is not None:
+            on_click(*(args or ()), **(kwargs or {}))
+        return pressed
 
     def button(
         self,
@@ -170,7 +267,7 @@ class Runtime:
     ) -> bool:
         widget_key = self.next_widget_key("button", label, key)
         pressed = False if disabled else self.consume_button_press(widget_key)
-        self.elements.append(
+        self._append_element(
             ButtonElement(label=label, key=widget_key, help=help, disabled=disabled)
         )
         if pressed and on_click is not None:
@@ -202,7 +299,7 @@ class Runtime:
         snapped = snap_value(current, min_value, max_value, step)
         self.session_state[widget_key] = snapped
         self._remember_committed_widget_value(widget_key, snapped, disabled=disabled)
-        self.elements.append(
+        self._append_element(
             SliderElement(
                 label=label,
                 key=widget_key,
@@ -244,7 +341,7 @@ class Runtime:
         )
         self.session_state[widget_key] = current
         self._remember_committed_widget_value(widget_key, current, disabled=disabled)
-        self.elements.append(
+        self._append_element(
             TextInputElement(
                 label=label,
                 key=widget_key,
@@ -282,7 +379,7 @@ class Runtime:
         )
         self.session_state[widget_key] = current
         self._remember_committed_widget_value(widget_key, current, disabled=disabled)
-        self.elements.append(
+        self._append_element(
             CheckboxElement(
                 label=label,
                 key=widget_key,
@@ -325,7 +422,7 @@ class Runtime:
         current = _clamp_number(current, min_value, max_value)
         self.session_state[widget_key] = current
         self._remember_committed_widget_value(widget_key, current, disabled=disabled)
-        self.elements.append(
+        self._append_element(
             NumberInputElement(
                 label=label,
                 key=widget_key,
@@ -408,7 +505,7 @@ class Runtime:
         widget_key = self.next_widget_key(widget_type, label, key)
         if not options:
             self.session_state[widget_key] = None
-            self.elements.append(
+            self._append_element(
                 AlertElement(
                     f"{widget_type} '{label}' requires at least one option.",
                     "error",
@@ -427,7 +524,7 @@ class Runtime:
         self.session_state[widget_key] = current
         self._remember_committed_widget_value(widget_key, current, disabled=disabled)
         element_cls = SelectboxElement if widget_type == "selectbox" else RadioElement
-        self.elements.append(
+        self._append_element(
             element_cls(
                 label=label,
                 key=widget_key,
@@ -460,6 +557,31 @@ class Runtime:
             self.explicit_widget_keys_seen.add(widget_key)
             return widget_key
         return f"{widget_type}:{label}:{index}"
+
+    def enter_form(self, key: str) -> None:
+        if self.active_form_stack:
+            raise RuntimeError("Nested st.form blocks are not supported.")
+        if key in self.form_keys_seen:
+            raise DuplicateWidgetKeyError(
+                f'Duplicate form key "{key}". '
+                "Form keys must be unique within a single run."
+            )
+        self.form_keys_seen.add(key)
+        self.active_form_stack.append(key)
+
+    def exit_form(self, key: str) -> None:
+        if self.active_form_stack and self.active_form_stack[-1] == key:
+            self.active_form_stack.pop()
+
+    def _append_element(self, element: Element) -> None:
+        self._element_stack[-1].append(element)
+
+    def _push_element_block(self, children: list[Element]) -> None:
+        self._element_stack.append(children)
+
+    def _pop_element_block(self, children: list[Element]) -> None:
+        if self._element_stack and self._element_stack[-1] is children:
+            self._element_stack.pop()
 
     def press_button(self, key: str) -> None:
         self.pending_button_presses.add(key)
@@ -509,8 +631,11 @@ class Runtime:
 
     def _prepare_run(self) -> None:
         self.elements = []
+        self._element_stack = [self.elements]
         self.widget_call_counts = {}
         self.explicit_widget_keys_seen = set()
+        self.form_keys_seen = set()
+        self.active_form_stack = []
         self._active_button_presses = set(self.pending_button_presses)
         self._active_changed_widgets = set(self.pending_changed_widgets)
         self._active_widget_values = dict(self.pending_widget_values)
@@ -584,6 +709,86 @@ def _clamp_number(
     if max_value is not None:
         value = min(value, max_value)
     return value
+
+
+def _normalize_optional_size(value: int | None, name: str) -> int | None:
+    if value is None:
+        return None
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise TypeError(f"bar_chart {name} must be an int or None.")
+    return max(1, value)
+
+
+def _normalize_chart_points(data: Any) -> tuple[BarChartPoint, ...]:
+    if _is_number(data):
+        return (BarChartPoint("value", float(data)),)
+    if isinstance(data, dict):
+        points = [
+            BarChartPoint(str(key), float(value))
+            for key, value in data.items()
+            if _is_number(value)
+        ]
+        return tuple(points) or (BarChartPoint("value", 0.0),)
+    if isinstance(data, (list, tuple)):
+        if not data:
+            return ()
+        numeric_items = [
+            (index, item) for index, item in enumerate(data) if _is_number(item)
+        ]
+        if numeric_items:
+            return tuple(
+                BarChartPoint(str(index), float(value))
+                for index, value in numeric_items
+            )
+        if all(isinstance(item, dict) for item in data):
+            points = tuple(
+                _chart_point_from_row(index, row)
+                for index, row in enumerate(data)
+            )
+            return tuple(point for point in points if point is not None)
+    return (BarChartPoint("value", 0.0),)
+
+
+def _chart_point_from_row(index: int, row: dict[Any, Any]) -> BarChartPoint | None:
+    numeric_items = [(key, value) for key, value in row.items() if _is_number(value)]
+    if not numeric_items:
+        return None
+    label = _chart_label_from_row(index, row)
+    value = _chart_value_from_row(row, numeric_items)
+    return BarChartPoint(label, float(value))
+
+
+def _chart_label_from_row(index: int, row: dict[Any, Any]) -> str:
+    for preferred_key in ("label", "name", "key", "category"):
+        value = row.get(preferred_key)
+        if value is not None and not _is_number(value):
+            return str(value)
+    for value in row.values():
+        if not _is_number(value):
+            return str(value)
+    numeric_items = [(key, value) for key, value in row.items() if _is_number(value)]
+    if len(numeric_items) == 1:
+        return str(numeric_items[0][0])
+    return str(index)
+
+
+def _chart_value_from_row(
+    row: dict[Any, Any],
+    numeric_items: list[tuple[Any, Any]],
+) -> Any:
+    for preferred_key in ("value", "score", "count", "total", "y"):
+        value = row.get(preferred_key)
+        if _is_number(value):
+            return value
+    return numeric_items[-1][1]
+
+
+def _is_number(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
 
 
 def _normalize_table(data: Any) -> tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]:

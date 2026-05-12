@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 This project is currently pre-1.0, so APIs may change while the MVP is being
 shaped.
 
+## 0.3.0 - 2026-05-12
+
+### Added
+
+- Form primitives: `st.form` and `st.form_submit_button`.
+- Grouping primitives: `st.container` and static `st.expander`.
+- Terminal display primitives: `st.metric` and `st.bar_chart`.
+- High-contrast theme support through `STUI_THEME=high-contrast`.
+- Examples for forms, grouping/layouts, charts, and the expanded kitchen sink.
+- Tests for forms, grouping, metric/chart rendering, and theme behavior.
+
+### Changed
+
+- Expanded `stui doctor` with terminal size and resolved theme details.
+- Updated README, roadmap, feedback docs, release notes, and examples for
+  the v0.3.0 terminal-app primitives release.
+
 ## 0.2.2 - 2026-05-09
 
 ### Changed

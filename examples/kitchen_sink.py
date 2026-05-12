@@ -6,7 +6,9 @@ def mark_changed(name: str) -> None:
 
 
 st.title("Kitchen Sink")
-st.caption("One small app covering the stable stui 0.2 API surface.")
+st.caption(
+    "One small app covering stable APIs plus v0.3.0 terminal primitives."
+)
 
 if "runs" not in st.session_state:
     st.session_state.runs = 0
@@ -102,3 +104,29 @@ try:
     raise ValueError("example exception")
 except ValueError as exc:
     st.exception(exc)
+
+st.divider()
+st.subheader("v0.3.0 primitives")
+
+with st.form("kitchen-form"):
+    st.text_input("Form note", "batched update")
+    form_submitted = st.form_submit_button("Submit form")
+if form_submitted:
+    st.success("Form submitted")
+
+with st.container():
+    st.metric("Runs", st.session_state.runs, delta="+1" if form_submitted else None)
+    st.bar_chart([1, 3, 2, 5], width=20)
+
+with st.expander("Primitive snippets", expanded=True):
+    st.code(
+        """with st.form("settings"):
+    name = st.text_input("Name")
+    submitted = st.form_submit_button("Apply")
+
+with st.container():
+    st.metric("Runs", 3)
+    st.bar_chart([1, 3, 2, 5])
+""",
+        language="python",
+    )

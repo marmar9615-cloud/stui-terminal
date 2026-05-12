@@ -63,9 +63,41 @@ class ProgressElement:
 
 
 @dataclass(frozen=True)
+class MetricElement:
+    label: str
+    value: str
+    delta: str | None = None
+
+
+@dataclass(frozen=True)
+class BarChartPoint:
+    label: str
+    value: float
+
+
+@dataclass(frozen=True)
+class BarChartElement:
+    points: tuple[BarChartPoint, ...]
+    width: int | None = None
+    height: int | None = None
+
+
+@dataclass(frozen=True)
 class TableElement:
     headers: tuple[str, ...]
     rows: tuple[tuple[str, ...], ...]
+
+
+@dataclass(frozen=True)
+class ContainerElement:
+    children: list[Any]
+
+
+@dataclass(frozen=True)
+class ExpanderElement:
+    label: str
+    expanded: bool = False
+    children: list[Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -167,7 +199,11 @@ Element: TypeAlias = (
     | JsonElement
     | ExceptionElement
     | ProgressElement
+    | MetricElement
+    | BarChartElement
     | TableElement
+    | ContainerElement
+    | ExpanderElement
     | DividerElement
     | AlertElement
     | WriteElement
