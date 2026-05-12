@@ -7,35 +7,44 @@ timeline or compatibility with Streamlit.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## v0.4 Correctness And Interactions
+## v0.5 Developer Experience And Docs
 
-- Shipped deferred form `session_state` commits, keyboard-toggleable expanders,
-  chart hardening, `st.line_chart`, bundled examples, `stui example copy`, and
-  `stui init`.
-- Remaining v0.4 feedback should focus on whether these corrected semantics are
-  enough before the v1 API freeze.
+- Ship README clarity for install, 60-second quickstart, first app, CLI
+  commands, API status, keyboard shortcuts, terminal compatibility, limitations,
+  and the v1 path.
+- Keep v0.5 release notes, changelog, feedback docs, and v1 readiness docs
+  aligned with the package boundary: small API, terminal-native runtime, and no
+  Streamlit compatibility claim.
+- Make feedback requests more specific: terminal reports, keyboard issues,
+  install/package problems, API confusion, and examples users want before v1.
+- Preserve the announcement gate: public launch-style pushes are saved for
+  v1.0.0, not v0.5.0.
 
-## v0.5 DX And Docs
+## v0.6 Terminal Compatibility And Polish
 
-- Expand keyboard documentation for every interactive widget.
-- Add clearer example walkthroughs for local tools, SSH sessions, data scripts,
-  model/debug panels, and DevOps dashboards.
-- Improve `stui doctor` output when terminal size, theme, `TERM`, or install
-  path issues are likely to affect rendering.
-- Add screenshot or GIF documentation using real terminal output.
-- Make API reference docs explicit about signatures, return values, callbacks,
-  `key` behavior, and intentional differences from Streamlit.
-
-## v0.6 Compatibility And Polish
-
-- Verify terminal compatibility across the supported Python versions and common
-  terminal environments.
-- Polish narrow-width behavior for tables, charts, forms, and grouped content.
+- Verify terminal compatibility across supported Python versions and common
+  environments: macOS terminals, Linux terminals or containers, SSH/headless
+  sessions, narrow and wide terminal sizes, UTF-8, and normal interactive
+  `TERM` values.
+- Polish narrow-width behavior for tables, charts, forms, grouped content, and
+  long labels.
 - Stabilize error display and recovery when user scripts raise exceptions.
+- Improve `stui doctor` output when terminal size, theme, `TERM`, color
+  capability, TTY status, or install path issues are likely to affect rendering.
 - Revisit dataframe display, table selection, chart variants, `st.columns`, and
   richer layout only where real workflows show a clear need.
-- Prepare the release process, checklist, and PyPI verification path for a v1
-  release candidate.
+
+## v0.7 Release Candidate Cleanup
+
+- Freeze the v1 candidate API list and document signatures, return values,
+  callbacks, `key` behavior, disabled behavior, and intentional differences from
+  Streamlit.
+- Ensure every stable candidate API has a README or example path and focused
+  tests.
+- Verify clean PyPI-style installs, editable installs, bundled example copying,
+  source distribution, wheel, and `twine check`.
+- Finalize the v1 release checklist, terminal compatibility report format, and
+  changelog/release-note expectations.
 
 ## v1 Stable API
 
@@ -48,7 +57,8 @@ Streamlit compatibility layer.
 - Keep the package install path stable: PyPI distribution `stui-terminal`,
   import package `stui`, and CLI command `stui`.
 - Publish public launch announcements only after v1.0.0 is released, install
-  verified from PyPI, and the docs/examples match the shipped package.
+  verified from PyPI, and the docs/examples match the shipped package. The
+  public announcement push is saved for v1.0.0.
 
 ## Not Planned Yet
 

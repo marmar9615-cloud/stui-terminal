@@ -25,6 +25,7 @@ from .api import (
     selectbox,
     session_state,
     slider,
+    stop,
     subheader,
     success,
     table,
@@ -35,7 +36,7 @@ from .api import (
     write,
 )
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 __all__ = [
     "__version__",
@@ -65,6 +66,7 @@ __all__ = [
     "session_state",
     "selectbox",
     "slider",
+    "stop",
     "subheader",
     "table",
     "success",

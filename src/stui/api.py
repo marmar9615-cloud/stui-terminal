@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Any
 
-from .runtime import RerunException, get_current_runtime
+from .runtime import RerunException, StopException, get_current_runtime
 
 
 class SessionStateProxy:
@@ -353,3 +353,7 @@ def radio(
 
 def rerun() -> None:
     raise RerunException()
+
+
+def stop() -> None:
+    raise StopException()

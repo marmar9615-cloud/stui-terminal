@@ -53,12 +53,12 @@ class StuiSlider(Static, can_focus=True):
     """Clean-room terminal slider for stui's first vertical slice."""
 
     BINDINGS = [
-        Binding("left", "decrease", "Decrease", show=False),
+        Binding("left", "decrease", "Decrease"),
         Binding("h", "decrease", "Decrease", show=False),
-        Binding("right", "increase", "Increase", show=False),
+        Binding("right", "increase", "Increase"),
         Binding("l", "increase", "Increase", show=False),
-        Binding("home", "minimum", "Minimum", show=False),
-        Binding("end", "maximum", "Maximum", show=False),
+        Binding("home", "minimum", "Minimum"),
+        Binding("end", "maximum", "Maximum"),
     ]
 
     class Changed(Message):

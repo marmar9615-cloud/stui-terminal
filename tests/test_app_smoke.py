@@ -130,4 +130,26 @@ st.table([{"name": "Ada", "score": 10}])
             assert runtime.session_state["model"] == "tiny"
             assert runtime.session_state["mode"] == "fast"
 
+            await pilot.press("tab")
+            assert getattr(app.focused, "stui_key", None) == "count"
+
+            await pilot.press("tab")
+            assert getattr(app.focused, "stui_key", None) == "model"
+            await pilot.press("right")
+            await pilot.pause()
+            assert runtime.session_state["model"] == "base"
+            assert runtime.last_focused_key == "model"
+            assert getattr(app.focused, "stui_key", None) == "model"
+
+            await pilot.press("tab")
+            assert getattr(app.focused, "stui_key", None) == "mode"
+            await pilot.press("right")
+            await pilot.pause()
+            assert runtime.session_state["mode"] == "careful"
+            assert runtime.last_focused_key == "mode"
+            assert getattr(app.focused, "stui_key", None) == "mode"
+
+            await pilot.press("shift+tab")
+            assert getattr(app.focused, "stui_key", None) == "model"
+
     asyncio.run(scenario())

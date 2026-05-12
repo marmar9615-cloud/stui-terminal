@@ -1,3 +1,4 @@
+from os import terminal_size
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -58,7 +59,7 @@ def test_version_option() -> None:
     result = CliRunner().invoke(cli.app, ["--version"])
 
     assert result.exit_code == 0
-    assert "stui 0.4.0" in result.output
+    assert "stui 0.5.0" in result.output
 
 
 def test_doctor_command() -> None:
@@ -73,19 +74,48 @@ def test_doctor_command() -> None:
     assert "typer:" in result.output
     assert "terminal size:" in result.output
     assert "theme:" in result.output
+    assert "TERM:" in result.output
+    assert "COLORTERM:" in result.output
+    assert "TERM_PROGRAM:" in result.output
     assert "capabilities:" in result.output
+    assert "stdout_tty=" in result.output
+    assert "stderr_tty=" in result.output
     assert "examples:" in result.output
     assert "example source:" in result.output
+
+
+def test_doctor_warns_for_small_terminal(monkeypatch) -> None:
+    monkeypatch.setattr(
+        cli.shutil,
+        "get_terminal_size",
+        lambda fallback: terminal_size((60, 20)),
+    )
+
+    result = CliRunner().invoke(cli.app, ["doctor"])
+
+    assert result.exit_code == 0
+    assert (
+        "terminal size: 60x20 (small; recommended at least 80x24)"
+        in result.output
+    )
+    assert "warning: terminal is smaller than the recommended minimum" in result.output
+
+
+def test_color_capability_reports_truecolor_256_and_dumb() -> None:
+    assert cli._color_capability("xterm-256color", "") == "256-color"
+    assert cli._color_capability("xterm-256color", "truecolor") == "truecolor"
+    assert cli._color_capability("dumb", "") == "none/dumb"
 
 
 def test_examples_command() -> None:
     result = CliRunner().invoke(cli.app, ["examples"])
 
     assert result.exit_code == 0
-    assert "basic [bundled + repo" in result.output
-    assert "run:  stui run" in result.output
-    assert "copy: stui example copy basic ./examples/basic.py" in result.output
-    assert "kitchen_sink [bundled + repo" in result.output
+    assert "basic - Smallest useful app:" in result.output
+    assert "bundled + repo" in result.output
+    assert "repo run:     stui run" in result.output
+    assert "copy:         stui example copy basic ./examples/basic.py" in result.output
+    assert "kitchen_sink - Broad API tour" in result.output
 
 
 def test_examples_command_does_not_claim_missing_wheel_examples(monkeypatch) -> None:
@@ -109,8 +139,31 @@ def test_examples_command_marks_repo_only_examples(monkeypatch, tmp_path: Path) 
     result = CliRunner().invoke(cli.app, ["examples"])
 
     assert result.exit_code == 0
-    assert "repo_only [repo-only" in result.output
+    assert "repo_only - Example app. [repo-only" in result.output
     assert "copy:" not in result.output
+
+
+def test_examples_command_lists_bundled_without_repo(monkeypatch) -> None:
+    monkeypatch.setattr(cli, "_examples_dir", lambda: Path("/missing/examples"))
+    monkeypatch.setattr(cli, "_bundled_examples", lambda: {"basic.py"})
+
+    result = CliRunner().invoke(cli.app, ["examples"])
+
+    assert result.exit_code == 0
+    assert "basic - Smallest useful app:" in result.output
+    assert "[bundled]" in result.output
+    assert (
+        "bundled run:  stui example copy basic ./examples/basic.py "
+        "&& stui run ./examples/basic.py"
+    ) in result.output
+
+
+def test_example_list_prints_bundled_names() -> None:
+    result = CliRunner().invoke(cli.app, ["example", "list"])
+
+    assert result.exit_code == 0
+    assert "basic" in result.output
+    assert "dashboard" in result.output
 
 
 def test_example_copy_writes_bundled_example(tmp_path: Path) -> None:
@@ -121,6 +174,16 @@ def test_example_copy_writes_bundled_example(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert "Copied basic.py" in result.output
     assert "st.title" in dest.read_text(encoding="utf-8")
+
+
+def test_example_copy_rejects_unknown_example() -> None:
+    result = CliRunner().invoke(cli.app, ["example", "copy", "missing", "missing.py"])
+    normalized_output = " ".join(result.output.split())
+
+    assert result.exit_code != 0
+    assert "unknown bundled" in normalized_output
+    assert "'missing'" in normalized_output
+    assert "stui example list" in result.output
 
 
 def test_example_copy_rejects_overwrite_without_force(tmp_path: Path) -> None:
@@ -177,3 +240,42 @@ def test_init_force_overwrites(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert 'st.title("My stui app")' in script.read_text(encoding="utf-8")
+
+
+def test_init_dashboard_template(tmp_path: Path) -> None:
+    script = tmp_path / "dashboard.py"
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["init", str(script), "--template", "dashboard"],
+    )
+
+    assert result.exit_code == 0
+    content = script.read_text(encoding="utf-8")
+    assert 'st.title("Team dashboard")' in content
+    assert 'st.metric("Builds", "18", "+3")' in content
+    assert "from the dashboard template" in result.output
+
+
+def test_init_forms_template_short_option(tmp_path: Path) -> None:
+    script = tmp_path / "signup.py"
+
+    result = CliRunner().invoke(cli.app, ["init", str(script), "-t", "forms"])
+
+    assert result.exit_code == 0
+    content = script.read_text(encoding="utf-8")
+    assert 'st.title("Signup form")' in content
+    assert "st.checkbox" in content
+
+
+def test_init_rejects_unknown_template(tmp_path: Path) -> None:
+    result = CliRunner().invoke(
+        cli.app,
+        ["init", str(tmp_path / "app.py"), "--template", "unknown"],
+    )
+    normalized_output = " ".join(result.output.split())
+
+    assert result.exit_code != 0
+    assert "unknown template 'unknown'" in normalized_output
+    assert "basic, dashboard," in normalized_output
+    assert "forms" in normalized_output

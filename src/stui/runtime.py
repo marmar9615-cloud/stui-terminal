@@ -55,6 +55,10 @@ class RerunException(Exception):
     """Internal signal used by st.rerun in later API slices."""
 
 
+class StopException(Exception):
+    """Internal signal used by st.stop to end the current script pass."""
+
+
 class DuplicateWidgetKeyError(Exception):
     """Raised when a script reuses an explicit widget key in one run."""
 
@@ -118,12 +122,14 @@ class Runtime:
         for _ in range(10):
             self._prepare_run()
             token = _current_runtime.set(self)
-            path_added = self._push_script_dir()
+            sys_path_snapshot = self._push_script_dir()
             session_snapshot = self.session_state.snapshot()
             try:
                 runpy.run_path(str(self.script_path), run_name="__main__")
             except RerunException:
                 continue
+            except StopException:
+                pass
             except DuplicateWidgetKeyError as exc:
                 self.session_state.restore(session_snapshot)
                 self._restore_committed_widget_values()
@@ -132,12 +138,14 @@ class Runtime:
                 self.session_state.restore(session_snapshot)
                 self._restore_committed_widget_values()
                 self.elements = [ErrorElement(str(exc))]
-            except Exception:
+            except Exception as exc:
                 self.session_state.restore(session_snapshot)
                 self._restore_committed_widget_values()
-                self.elements = [ErrorElement(traceback.format_exc())]
+                self.elements = [
+                    ErrorElement(_format_script_exception(exc, self.script_path))
+                ]
             finally:
-                self._pop_script_dir(path_added)
+                self._restore_sys_path(sys_path_snapshot)
                 _current_runtime.reset(token)
             return self.elements
 
@@ -739,24 +747,16 @@ class Runtime:
         self.pending_changed_widgets.clear()
         self.pending_widget_values.clear()
 
-    def _push_script_dir(self) -> bool:
+    def _push_script_dir(self) -> list[str]:
+        sys_path_snapshot = list(sys.path)
         script_dir = str(self.script_path.parent)
         if sys.path and sys.path[0] == script_dir:
-            return False
+            return sys_path_snapshot
         sys.path.insert(0, script_dir)
-        return True
+        return sys_path_snapshot
 
-    def _pop_script_dir(self, path_added: bool) -> None:
-        if not path_added:
-            return
-        script_dir = str(self.script_path.parent)
-        if sys.path and sys.path[0] == script_dir:
-            sys.path.pop(0)
-            return
-        try:
-            sys.path.remove(script_dir)
-        except ValueError:
-            pass
+    def _restore_sys_path(self, sys_path_snapshot: list[str]) -> None:
+        sys.path[:] = sys_path_snapshot
 
 
 def get_current_runtime() -> Runtime:
@@ -764,6 +764,25 @@ def get_current_runtime() -> Runtime:
     if runtime is None:
         raise RuntimeError("stui API calls must run inside `stui run`.")
     return runtime
+
+
+def _format_script_exception(exc: BaseException, script_path: Path) -> str:
+    if isinstance(exc, FileNotFoundError):
+        return f"FileNotFoundError: {exc}"
+    if isinstance(exc, SyntaxError):
+        return "".join(traceback.format_exception_only(type(exc), exc)).rstrip()
+
+    extracted = traceback.extract_tb(exc.__traceback__)
+    script_frames = [
+        frame
+        for frame in extracted
+        if Path(frame.filename).resolve() == script_path
+    ]
+    frames = script_frames or list(extracted[-1:])
+    rendered_frames = ["Traceback (most recent call last):"]
+    rendered_frames.extend(traceback.format_list(frames))
+    rendered_frames.extend(traceback.format_exception_only(type(exc), exc))
+    return "".join(rendered_frames).rstrip()
 
 
 def _normalize_progress(value: int | float) -> int:

@@ -7,6 +7,22 @@ that can be installed from PyPI, explained quickly, and trusted for local tools.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
+## Status After v0.5.0
+
+v0.5.0 is a documentation and developer-experience checkpoint, not the v1 API
+freeze. It updates the public docs around install, quickstart, first app, CLI
+commands, API status, keyboard behavior, limitations, feedback requests, and the
+roadmap to v1.
+
+The v1 gate remains open. Before v1.0.0, the project still needs a terminal
+compatibility pass, narrow-width polish, error-recovery hardening, final API
+signature docs, package verification, and release-candidate checks against the
+shipped PyPI artifact.
+
+Public launch-style announcement pushes are saved for v1.0.0, after the stable
+API, PyPI install path, examples, docs, CI, and terminal compatibility checks
+are verified together.
+
 ## Stable API Candidate
 
 The v1 API should stay compact. These APIs are candidates for the stable v1
@@ -21,7 +37,7 @@ surface once their behavior is documented and covered by tests:
 | Forms | `st.form`, `st.form_submit_button` |
 | Grouping | `st.container`, `st.expander` |
 | Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` |
-| State and flow | `st.session_state`, `st.rerun` |
+| State and flow | `st.session_state`, `st.rerun`, `st.stop` |
 | CLI | `stui run`, `stui examples`, `stui doctor`, `stui --version` |
 
 Before v1, every stable API must have:
@@ -46,6 +62,7 @@ candidate checklist must include:
 - Widgets preserve user values after rerun, including inside containers, forms,
   and expanders.
 - `st.rerun` exits the current script pass cleanly and does not corrupt state.
+- `st.stop` exits the current script pass cleanly without showing a traceback.
 - Errors from user scripts are visible in the terminal app and do not leave the
   runtime in a misleading state.
 
@@ -89,14 +106,17 @@ The v1 docs should include and test installed or discoverable examples for:
 
 ## Keyboard Documentation
 
-v1 must document keyboard behavior for the default Textual UI:
+v0.5.0 documents the current keyboard behavior in the README. v1 must keep that
+documentation current for the default Textual UI:
 
-- Quit and manual rerun shortcuts.
-- Focus movement.
-- Button activation.
-- Slider movement and min/max shortcuts.
-- Selectbox, radio, checkbox, text input, form submit, and expander behavior
-  once those interactions are finalized.
+- `q` quits and `r` manually reruns the script.
+- `tab` and `shift+tab` move focus between widgets.
+- `enter` activates buttons and form submit buttons.
+- Text and number inputs commit edited values with `enter`.
+- Checkboxes toggle with `space`; expanders toggle with `enter` or `space`.
+- Sliders move with `left`/`right` and `h`/`l`; `home` and `end` jump to
+  bounds.
+- Selectboxes cycle with arrow keys, and radio groups choose with arrow keys.
 
 The docs should also say which interactions are delegated to Textual defaults
 and may vary by terminal.
@@ -104,7 +124,11 @@ and may vary by terminal.
 ## Terminal Compatibility
 
 The v1 release notes should state the terminal environments tested for the
-release. At minimum, v1 should be checked in:
+release. v0.5.0 links users here but does not claim a finished compatibility
+matrix. At minimum, v1 should be checked in:
+
+The working terminal report is tracked in
+[`docs/terminal-compatibility.md`](terminal-compatibility.md).
 
 - A modern local macOS terminal.
 - A Linux terminal in CI or a clean container.
@@ -113,6 +137,11 @@ release. At minimum, v1 should be checked in:
 
 Known rendering limits should be documented instead of hidden. Wide tables,
 large charts, and unusual fonts may need explicit caveats.
+
+Useful terminal reports should include OS, terminal emulator, shell, Python
+version, `stui` version, install method, `TERM`, `COLORTERM`, `TERM_PROGRAM`,
+terminal size, whether the session is local/SSH/container/headless, and the
+output of `stui doctor`.
 
 ## CI And Supported Python
 

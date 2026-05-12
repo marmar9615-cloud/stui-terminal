@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml/badge.svg)](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml)
 
-`stui` is a tiny Streamlit-inspired framework for building terminal-native
-Python apps. Write a short script, run it in your terminal, and get a Textual UI
-with stateful controls.
+`stui` v0.5.0 is a tiny Streamlit-inspired framework for building
+terminal-native Python apps. Write a short script, run it in your terminal, and
+get a Textual UI with stateful controls.
 
 It is built for local tools, demos, data scripts, model debug panels, SSH
 sessions, and headless environments where opening a browser, binding a port, or
@@ -17,7 +17,7 @@ project keeps its own smaller surface area.
 
 ## Preview
 
-![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v0.2.2/assets/stui-model-demo.png)
+![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/main/assets/stui-model-demo.png)
 
 ```text
 ┌─ stui ───────────────────────────────────────────┐
@@ -39,14 +39,12 @@ project keeps its own smaller surface area.
 
 Use Python 3.11 or newer.
 
-Install the PyPI distribution named `stui-terminal`:
+Install the PyPI distribution named `stui-terminal`. The import package and CLI
+are both still named `stui`:
 
 ```bash
 python -m pip install stui-terminal
 ```
-
-The PyPI distribution name is `stui-terminal`, but the import package and CLI
-are both `stui`:
 
 ```python
 import stui as st
@@ -96,6 +94,13 @@ If the `stui` command is not on your `PATH`, use the module entry point:
 python -m stui run app.py
 ```
 
+Check your install and terminal details:
+
+```bash
+stui --version
+stui doctor
+```
+
 ## Build Your First App
 
 `stui` scripts rerun when users interact with widgets. Use
@@ -139,11 +144,17 @@ stui run examples/charts.py
 stui run examples/kitchen_sink.py
 ```
 
-Those `examples/...` paths are repository files. After installing only from a
-wheel, run `stui examples` to see whether local example files are available. If
-they are not included in the installed package, read or download the examples
-from the GitHub repository first. Packaging installed examples is tracked for
-v0.4 before the API is considered v1-ready.
+Those `examples/...` paths are repository files. Installed packages also expose
+bundled examples that can be listed or copied:
+
+```bash
+stui examples
+stui example list
+stui example copy counter ./counter.py
+stui run ./counter.py
+stui init ./new_app.py
+stui init ./dashboard.py --template dashboard
+```
 
 ## Copy-Paste Examples
 
@@ -235,7 +246,25 @@ websockets, require port-forwarding, or depend on Streamlit at runtime.
 ## Commands
 
 ```bash
-# Install the project for local development.
+# Install the package from PyPI.
+python -m pip install stui-terminal
+
+# Run an app.
+stui run app.py
+python -m stui run app.py
+
+# List, copy, or create starter examples.
+stui examples
+stui example list
+stui example copy counter ./counter.py
+stui init ./new_app.py
+stui init ./dashboard.py --template dashboard
+
+# Print version and install/terminal diagnostics.
+stui --version
+stui doctor
+
+# Install the project for local development from a checkout.
 python3.11 -m venv .venv
 . .venv/bin/activate
 python -m pip install -e ".[dev]"
@@ -249,10 +278,6 @@ stui run examples/counter.py
 # Run the deterministic model-parameter demo.
 stui run examples/model_demo.py
 
-# List installed examples and print environment diagnostics.
-stui examples
-stui doctor
-
 # Run the test suite.
 python3.11 -m pytest
 ```
@@ -262,11 +287,23 @@ python3.11 -m pytest
 - `q`: quit the app
 - `r`: rerun the script
 - `tab`: focus the next widget
+- `shift+tab`: focus the previous widget
 - `enter`: press the focused button
+- `space`: toggle the focused checkbox
+- `enter` in text and number inputs: submit the edited value
+- `enter`, `right`, or `down`: move a selectbox to the next choice
+- `left` or `up`: move a selectbox to the previous choice
+- arrow keys in radio groups: choose another option
+- `enter` or `space`: toggle a focused expander
 - `left` or `h`: decrease the focused slider
 - `right` or `l`: increase the focused slider
 - `home`: set the focused slider to its minimum value
 - `end`: set the focused slider to its maximum value
+
+Some lower-level editing and focus behavior comes from Textual and can vary by
+terminal. See [Terminal Compatibility](docs/terminal-compatibility.md) and the
+[v1 compatibility gate](docs/v1-readiness.md#terminal-compatibility) for the
+current checklist.
 
 ## API
 
@@ -279,17 +316,17 @@ import stui as st
 The public API is intentionally compact and Streamlit-inspired, not
 Streamlit-compatible.
 
-| Area | APIs | Status |
+| Area | APIs | Status in v0.5.0 |
 | --- | --- | --- |
-| Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | Available in 0.2.x |
-| Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | Available in 0.2.x |
-| Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | Available in 0.2.x |
-| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | Available in 0.2.x |
-| State and flow | `st.session_state`, `st.rerun` | Available in 0.2.x |
-| Forms | `st.form`, `st.form_submit_button` | Available; v0.4 defers form widget state until submit |
-| Grouping | `st.container`, `st.expander` | Available; v0.4 expanders toggle with Enter/Space and persist state |
-| Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Available; charts are compact terminal summaries |
-| CLI and examples | `stui run`, `stui examples`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | Available |
+| Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | Stable candidate |
+| Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | Stable candidate |
+| Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | Static display helpers |
+| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | Stateful widgets with keys and callbacks |
+| Forms | `st.form`, `st.form_submit_button` | Deferred commit to `session_state` until submit |
+| Grouping | `st.container`, `st.expander` | Terminal grouping; expanders toggle with Enter/Space |
+| Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Compact terminal summaries, not plotting replacements |
+| State and flow | `st.session_state`, `st.rerun`, `st.stop` | Stable candidate with rerun limits and explicit stop support |
+| CLI and examples | `stui run`, `stui examples`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | v0.5.0 documented DX surface |
 
 Inputs support stable `key` values and optional callbacks where the function
 signature documents them. Tables and charts are simple static displays and do
@@ -308,6 +345,8 @@ Runtime expectations:
 - No Streamlit runtime dependency.
 - No browser tab, local web server, websocket, or port-forwarding flow.
 - Static table/dataframe display without dataframe editing or sorting.
+- Common modern terminals should work best with UTF-8, color support, and a
+  normal interactive `TERM` such as `xterm-256color`.
 
 ## Common Mistakes
 
@@ -478,17 +517,21 @@ stui run examples/kitchen_sink.py
 - The app reruns the script as interactions change state, so examples should keep top-level work lightweight.
 - Error handling is still early and meant for development feedback.
 - The package is an MVP and has not stabilized a long-term compatibility policy.
+- Public announcement pushes are saved for v1.0.0, after PyPI install, docs,
+  examples, CI, and terminal compatibility are verified together.
 
 ## Roadmap
 
-- v0.4: correctness, widget interactions, form/expander/chart hardening, and
-  installed example access.
-- v0.5: developer experience, API reference docs, keyboard docs, real terminal
-  screenshots, and stronger examples.
-- v0.6: terminal compatibility, narrow-width polish, error recovery, and release
-  process hardening.
+- v0.5: developer experience and documentation clarity: install, quickstart,
+  first app, CLI commands, API table, keyboard behavior, feedback channels, and
+  v1 readiness.
+- v0.6: terminal compatibility and polish: tested terminal matrix,
+  narrow-width behavior, clearer error recovery, and release-process hardening.
+- v0.7: release-candidate cleanup: API signatures, examples, packaging
+  verification, and final docs alignment.
 - v1: a small stable API with no known state/rerun bugs, verified PyPI install,
-  supported Python versions aligned with CI, and honest non-goals.
+  supported Python versions aligned with CI, and honest non-goals. Public
+  launch announcements wait for v1.0.0.
 
 See [ROADMAP.md](ROADMAP.md) and
 [docs/v1-readiness.md](docs/v1-readiness.md) for the full path to v1.

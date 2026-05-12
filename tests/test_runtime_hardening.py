@@ -72,6 +72,30 @@ st.write("count =", st.session_state.count)
     assert_no_current_runtime()
 
 
+def test_stop_halts_script_without_traceback_and_preserves_state(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.write("before")
+st.session_state.count = st.session_state.get("count", 0) + 1
+st.stop()
+st.write("after")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert [type(element) for element in elements] == [WriteElement]
+    assert elements[0].text == "before"
+    assert runtime.session_state.count == 1
+    assert_no_current_runtime()
+
+
 def test_script_dir_is_removed_from_sys_path_after_normal_run(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,
@@ -121,6 +145,26 @@ st.write("done")
     assert str(tmp_path) not in sys.path
 
 
+def test_script_dir_is_removed_when_script_mutates_sys_path(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import sys
+from pathlib import Path
+
+import stui as st
+
+sys.path.insert(0, str(Path(__file__).parent))
+st.write("ok")
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+
+    assert str(tmp_path) not in sys.path
+
+
 def test_script_exception_renders_error_without_corrupting_session_state(
     tmp_path: Path,
 ) -> None:
@@ -141,6 +185,79 @@ raise RuntimeError("boom")
     assert isinstance(elements[0], ErrorElement)
     assert "RuntimeError: boom" in elements[0].traceback
     assert runtime.session_state.count == 3
+
+
+def test_missing_script_renders_readable_error(tmp_path: Path) -> None:
+    runtime = Runtime(tmp_path / "missing.py")
+
+    elements = runtime.run_script()
+
+    assert isinstance(elements[0], ErrorElement)
+    assert "No such file or directory" in elements[0].traceback
+    assert "runpy" not in elements[0].traceback
+
+
+def test_syntax_error_renders_concise_error(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+if True
+    st.write("broken")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert isinstance(elements[0], ErrorElement)
+    assert "SyntaxError: expected ':'" in elements[0].traceback
+    assert "runpy" not in elements[0].traceback
+
+
+def test_import_error_renders_script_frame_without_runpy_noise(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+import missing_stui_test_module
+
+st.write("unreachable")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert isinstance(elements[0], ErrorElement)
+    assert "ModuleNotFoundError" in elements[0].traceback
+    assert "missing_stui_test_module" in elements[0].traceback
+    assert "app.py" in elements[0].traceback
+    assert "runpy" not in elements[0].traceback
+
+
+def test_can_rerun_successfully_after_script_exception(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+if st.session_state.get("fail", True):
+    raise RuntimeError("boom")
+
+st.write("recovered")
+""",
+    )
+    runtime = Runtime(script)
+
+    first = runtime.run_script()
+    runtime.session_state.fail = False
+    second = runtime.run_script()
+
+    assert isinstance(first[0], ErrorElement)
+    assert isinstance(second[0], WriteElement)
+    assert second[0].text == "recovered"
 
 
 def test_enabled_widget_change_survives_later_script_exception(

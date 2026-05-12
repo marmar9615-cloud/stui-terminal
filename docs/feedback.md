@@ -10,22 +10,22 @@ Streamlit compatibility layer.
 
 Feedback that is most helpful right now:
 
-- Reports about existing widgets, reruns, callbacks, and `session_state`.
-- Reports about the v0.4 primitives: deferred forms, containers,
-  keyboard-toggleable expanders, metrics, bar charts, and line charts.
-- Form examples where submit behavior feels wrong, surprising, or too different
-  from what a terminal app needs.
-- Expander examples where static open/closed rendering is enough, or where
-  keyboard interaction is necessary.
-- Chart examples where narrow terminals, fonts, color themes, or data shape make
-  `st.bar_chart` hard to read.
-- Installed-package examples: whether `stui examples`, `stui example copy`, and
-  `stui init` are enough before v1.
-- Terminal rendering issues in real shells, SSH sessions, and headless
-  environments.
-- Places where the current examples or README made a feature look broader than
-  it really is.
-- Small API naming or behavior issues that make simple scripts harder to read.
+- Terminal reports from real shells, SSH sessions, containers, headless
+  environments, narrow terminals, wide terminals, unusual fonts, and different
+  color themes.
+- Keyboard issues: focus order, `Tab`/`Shift+Tab`, button activation, text or
+  number input submission, checkbox toggles, selectbox/radio movement, slider
+  keys, and expander toggles.
+- Install and package issues: `pip install stui-terminal`, `stui` command not
+  found, `python -m stui`, editable installs, bundled examples, `stui example
+  copy`, and `stui init`.
+- API confusion: names, return values, callbacks, `args`/`kwargs`, stable
+  `key` behavior, disabled widgets, forms, reruns, `st.stop`, and
+  `session_state`.
+- Desired examples: local tools, SSH workflows, data scripts, model/debug
+  panels, DevOps dashboards, forms, charts, layouts, and kitchen-sink coverage.
+- Places where README, release notes, or examples make a feature look broader
+  than it really is.
 - Bugs that can be reproduced with a short `stui run` script.
 
 ## Next
@@ -75,8 +75,15 @@ When opening an issue or sending feedback, include:
 
 - Your operating system, terminal emulator, shell, and Python version.
 - The `stui` version and install method.
+- The output of `stui doctor`.
+- `TERM`, `COLORTERM`, `TERM_PROGRAM`, and terminal size if rendering or
+  keyboard behavior is involved.
 - A minimal script that reproduces the issue or demonstrates the missing
   workflow.
 - What you expected to happen and what happened instead.
 - Whether the app was local, over SSH, in a container, or in another constrained
   environment.
+
+Public announcement-style pushes are intentionally saved for v1.0.0. Pre-1.0
+feedback should focus on whether the package is clear, installable, usable in
+real terminals, and small enough to stabilize.

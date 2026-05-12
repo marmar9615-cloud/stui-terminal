@@ -155,7 +155,8 @@ class StuiButton(Button):
             element.label,
             id=dom_id_for_key(element.key),
             disabled=element.disabled,
-            tooltip=element.help or "Enter activates. Tab and Shift+Tab move focus.",
+            tooltip=element.help
+            or "Enter activates. Tab and Shift+Tab move focus.",
         )
 
 
@@ -198,9 +199,9 @@ class StuiCheckbox(Checkbox):
 class StuiSelectbox(Static, can_focus=True):
     BINDINGS = [
         Binding("enter", "choose_next", "Next choice", show=False),
-        Binding("right", "choose_next", "Next choice", show=False),
+        Binding("right", "choose_next", "Next choice"),
         Binding("down", "choose_next", "Next choice", show=False),
-        Binding("left", "choose_previous", "Previous choice", show=False),
+        Binding("left", "choose_previous", "Previous choice"),
         Binding("up", "choose_previous", "Previous choice", show=False),
     ]
 
@@ -241,6 +242,12 @@ class StuiSelectbox(Static, can_focus=True):
 
 
 class StuiRadioSet(RadioSet):
+    BINDINGS = [
+        Binding("down,right", "next_button", "Next option"),
+        Binding("up,left", "previous_button", "Previous option"),
+        Binding("enter,space", "toggle_button", "Toggle", show=False),
+    ]
+
     def __init__(self, element: RadioElement) -> None:
         self.stui_key = element.key
         buttons = [
@@ -254,10 +261,18 @@ class StuiRadioSet(RadioSet):
             disabled=element.disabled,
         )
 
+    def action_next_button(self) -> None:
+        super().action_next_button()
+        self.action_toggle_button()
+
+    def action_previous_button(self) -> None:
+        super().action_previous_button()
+        self.action_toggle_button()
+
 
 class StuiExpander(Vertical, can_focus=True):
     BINDINGS = [
-        Binding("enter", "toggle", "Toggle", show=False),
+        Binding("enter", "toggle", "Toggle"),
         Binding("space", "toggle", "Toggle", show=False),
     ]
 
@@ -472,8 +487,8 @@ class StuiApp(App[None]):
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("r", "rerun_script", "Rerun"),
-        Binding("tab", "focus_next", "Next"),
-        Binding("shift+tab", "focus_previous", "Previous"),
+        Binding("tab", "focus_next", "Next widget"),
+        Binding("shift+tab", "focus_previous", "Previous widget"),
     ]
 
     def __init__(self, runtime: Runtime) -> None:
@@ -655,7 +670,9 @@ class StuiApp(App[None]):
             return StuiButton(element)
         if isinstance(element, TextInputElement):
             text_input = StuiTextInput(element)
-            text_input.tooltip = "Enter submits. Tab and Shift+Tab move focus."
+            text_input.tooltip = (
+                "Type text. Enter submits. Tab and Shift+Tab move focus."
+            )
             return Vertical(
                 Static(element.label, classes="stui-field-label"),
                 text_input,
@@ -663,7 +680,9 @@ class StuiApp(App[None]):
             )
         if isinstance(element, NumberInputElement):
             number_input = StuiNumberInput(element)
-            number_input.tooltip = "Enter submits. Tab and Shift+Tab move focus."
+            number_input.tooltip = (
+                "Type a number. Enter submits. Tab and Shift+Tab move focus."
+            )
             return Vertical(
                 Static(element.label, classes="stui-field-label"),
                 number_input,
@@ -671,12 +690,15 @@ class StuiApp(App[None]):
             )
         if isinstance(element, CheckboxElement):
             checkbox = StuiCheckbox(element)
-            checkbox.tooltip = "Space toggles. Tab and Shift+Tab move focus."
+            checkbox.tooltip = (
+                "Space toggles. Tab and Shift+Tab move focus."
+            )
             return checkbox
         if isinstance(element, SelectboxElement):
             selectbox = StuiSelectbox(element)
             selectbox.tooltip = (
-                "Enter or arrow keys cycle choices. Tab and Shift+Tab move focus."
+                "Left/right arrows cycle choices. Enter chooses next. "
+                "Tab and Shift+Tab move focus."
             )
             return Vertical(
                 Static(element.label, classes="stui-field-label"),
@@ -685,7 +707,9 @@ class StuiApp(App[None]):
             )
         if isinstance(element, RadioElement):
             radio = StuiRadioSet(element)
-            radio.tooltip = "Arrow keys choose. Tab and Shift+Tab move focus."
+            radio.tooltip = (
+                "Arrow keys choose. Tab and Shift+Tab move focus."
+            )
             return Vertical(
                 Static(element.label, classes="stui-field-label"),
                 radio,

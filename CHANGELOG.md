@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 This project is currently pre-1.0, so APIs may change while the MVP is being
 shaped.
 
+## 0.5.0 - 2026-05-12
+
+### Added
+
+- Added public `st.stop()` to halt the current script pass without rendering a
+  traceback while preserving already-rendered elements and `session_state`.
+- Added concise script-focused runtime error formatting for missing files,
+  syntax errors, and import errors.
+- Added stronger `sys.path` restoration after script runs, including scripts
+  that mutate `sys.path` themselves.
+- Added `stui example list` and starter templates for
+  `stui init --template basic|dashboard|forms`.
+- Added `docs/terminal-compatibility.md` with an honest terminal matrix and
+  bug-reporting checklist.
+- Added clearer feedback requests for terminal reports, keyboard issues,
+  install/package problems, API confusion, and desired examples.
+
+### Changed
+
+- Improved keyboard behavior and help text for selectbox, radio, expander, and
+  slider controls.
+- Expanded `stui doctor` with terminal size status, `TERM`, `COLORTERM`, TTY
+  status for stdin/stdout/stderr, color capability, theme, dependency versions,
+  and small-terminal warnings.
+- Improved `stui examples` output with descriptions, bundled/repo source
+  labels, and exact copy/run commands.
+- Updated README install, 60-second quickstart, first app, CLI commands, API
+  table, keyboard shortcuts, terminal compatibility link, limitations, and v1
+  roadmap.
+- Updated `docs/v1-readiness.md` with the post-v0.5.0 status and the remaining
+  v1 gates.
+- Updated `ROADMAP.md` with the v0.5, v0.6, v0.7, and v1 path.
+- Kept public announcement-style launch pushes explicitly saved for v1.0.0.
+
 ## 0.4.0 - 2026-05-12
 
 ### Added
