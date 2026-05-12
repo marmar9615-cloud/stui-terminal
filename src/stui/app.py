@@ -12,7 +12,7 @@ from rich.table import Table as RichTable
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Vertical, VerticalScroll
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.css.query import NoMatches
 from textual.message import Message
 from textual.widgets import (
@@ -34,12 +34,14 @@ from .elements import (
     CaptionElement,
     CheckboxElement,
     CodeElement,
+    ColumnsElement,
     ContainerElement,
     DividerElement,
     ErrorElement,
     ExceptionElement,
     ExpanderElement,
     HeaderElement,
+    HelpElement,
     JsonElement,
     LineChartElement,
     MarkdownElement,
@@ -49,6 +51,8 @@ from .elements import (
     RadioElement,
     SelectboxElement,
     SliderElement,
+    SpinnerElement,
+    StatusElement,
     SubheaderElement,
     TableElement,
     TextElement,
@@ -65,6 +69,7 @@ MAX_STATIC_LABEL_WIDTH = 120
 MAX_TABLE_COLUMNS = 8
 MIN_TABLE_COLUMN_WIDTH = 6
 MAX_TABLE_COLUMN_WIDTH = 24
+MIN_RENDERED_COLUMN_WIDTH = 28
 
 HIGH_CONTRAST_CSS = """
     Screen {
@@ -472,6 +477,10 @@ class StuiApp(App[None]):
         margin: 0 0 1 0;
     }
 
+    .stui-status, .stui-spinner, .stui-help {
+        margin: 1 0;
+    }
+
     .table {
         margin: 1 0;
     }
@@ -484,6 +493,22 @@ class StuiApp(App[None]):
         border-left: solid #343444;
         padding: 0 0 0 1;
         margin: 1 0;
+    }
+
+    .stui-columns {
+        margin: 1 0;
+    }
+
+    .stui-column {
+        width: 1fr;
+        min-width: 0;
+        padding: 0 1 0 0;
+    }
+
+    .stui-columns-stacked .stui-column {
+        width: 100%;
+        padding: 0;
+        margin: 0 0 1 0;
     }
 
     .stui-expander {
@@ -654,6 +679,53 @@ class StuiApp(App[None]):
                 progress_bar,
                 classes="stui-progress",
             )
+        if isinstance(element, StatusElement):
+            panel = Static(
+                Panel(
+                    Text(_clip_text(element.label, MAX_STATIC_LABEL_WIDTH)),
+                    title=element.state,
+                    title_align="left",
+                    border_style=self._status_style(element.state),
+                    padding=(0, 1),
+                ),
+                classes=f"stui-status stui-status-{element.state}",
+            )
+            if not element.expanded:
+                return panel
+            children = [
+                self._build_widget(child)
+                for child in (element.children or [])
+            ]
+            return Vertical(panel, *children, classes="stui-status")
+        if isinstance(element, SpinnerElement):
+            panel = Static(
+                Panel(
+                    Text(_clip_text(element.text, MAX_STATIC_LABEL_WIDTH)),
+                    title="spinner",
+                    title_align="left",
+                    border_style="cyan",
+                    padding=(0, 1),
+                ),
+                classes="stui-spinner",
+            )
+            children = [
+                self._build_widget(child)
+                for child in (element.children or [])
+            ]
+            if not children:
+                return panel
+            return Vertical(panel, *children, classes="stui-spinner")
+        if isinstance(element, HelpElement):
+            return Static(
+                Panel(
+                    Text(element.body),
+                    title="help",
+                    title_align="left",
+                    border_style="#6f7cff",
+                    padding=(0, 1),
+                ),
+                classes="stui-help",
+            )
         if isinstance(element, MetricElement):
             return Static(self._render_metric(element), classes="metric")
         if isinstance(element, BarChartElement):
@@ -663,6 +735,17 @@ class StuiApp(App[None]):
         if isinstance(element, ContainerElement):
             children = [self._build_widget(child) for child in element.children]
             return Vertical(*children, classes="stui-container")
+        if isinstance(element, ColumnsElement):
+            columns = [
+                Vertical(
+                    *(self._build_widget(child) for child in column),
+                    classes="stui-column",
+                )
+                for column in element.columns
+            ]
+            if self._should_stack_columns(len(columns)):
+                return Vertical(*columns, classes="stui-columns stui-columns-stacked")
+            return Horizontal(*columns, classes="stui-columns")
         if isinstance(element, ExpanderElement):
             if not element.expanded:
                 return StuiExpander(element)
@@ -818,6 +901,12 @@ class StuiApp(App[None]):
         except NoMatches:
             return False
         return True
+
+    def _should_stack_columns(self, count: int) -> bool:
+        if count < 2:
+            return True
+        available_width = self.size.width or 80
+        return available_width // count < MIN_RENDERED_COLUMN_WIDTH
 
     @staticmethod
     def _parse_number_input(widget: StuiNumberInput, raw: str) -> int | float:
@@ -1006,6 +1095,14 @@ class StuiApp(App[None]):
             "warning": "yellow",
             "error": "red",
         }.get(kind, "white")
+
+    @staticmethod
+    def _status_style(state: str) -> str:
+        return {
+            "running": "blue",
+            "complete": "green",
+            "error": "red",
+        }.get(state, "white")
 
     @staticmethod
     def _script_error_title(traceback: str) -> str:

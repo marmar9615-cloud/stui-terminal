@@ -4,6 +4,7 @@ from .api import (
     caption,
     checkbox,
     code,
+    columns,
     container,
     dataframe,
     divider,
@@ -13,6 +14,7 @@ from .api import (
     form,
     form_submit_button,
     header,
+    help,
     info,
     json,
     line_chart,
@@ -25,6 +27,8 @@ from .api import (
     selectbox,
     session_state,
     slider,
+    spinner,
+    status,
     stop,
     subheader,
     success,
@@ -36,7 +40,7 @@ from .api import (
     write,
 )
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 __all__ = [
     "__version__",
@@ -45,6 +49,7 @@ __all__ = [
     "caption",
     "checkbox",
     "code",
+    "columns",
     "container",
     "dataframe",
     "divider",
@@ -54,6 +59,7 @@ __all__ = [
     "form",
     "form_submit_button",
     "header",
+    "help",
     "info",
     "json",
     "line_chart",
@@ -66,8 +72,10 @@ __all__ = [
     "session_state",
     "selectbox",
     "slider",
+    "spinner",
     "stop",
     "subheader",
+    "status",
     "table",
     "success",
     "text",

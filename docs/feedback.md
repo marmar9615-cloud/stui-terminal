@@ -27,9 +27,15 @@ Feedback that is most helpful right now:
 - API signature confusion: names, parameter order, return values, callbacks,
   `args`/`kwargs`, stable `key` behavior, disabled widgets, form submit
   semantics, reruns, `st.stop`, and `session_state`.
+- API contract mismatches: anything in `docs/api-reference.md` that does not
+  match what the package actually does, especially after installing from PyPI
+  instead of running from a checkout.
 - Docs or example gaps: unclear README snippets, missing API reference detail,
   examples that only work from a checkout, `stui init` template confusion, or a
   kitchen-sink example that does not match the documented stable-candidate API.
+- Example packaging issues: bundled examples missing from an installed package,
+  `stui example copy` writing confusing starter code, or `stui init` templates
+  that do not run with `python -m stui run`.
 - Desired examples: local tools, SSH workflows, data scripts, model/debug
   panels, DevOps dashboards, forms, charts, layouts, narrow terminal examples,
   and kitchen-sink coverage.
@@ -41,11 +47,17 @@ Feedback that is most helpful right now:
 
 Feedback that can shape near-term design:
 
+- Terminal evidence: which environments should move from unknown/test-needed to
+  supported in the v0.8 compatibility pass.
+- Package hardening: whether install, copy, init, and example flows work from
+  clean virtual environments and built artifacts.
 - Charts: whether the first bar chart helper is enough, and which chart
   types are useful in a terminal without color.
 - Richer dataframe support: which table interactions matter first for
   inspection and debugging.
-- Layout primitives: what should come after containers and expanders.
+- Layout primitives: whether containers, integer-count columns, and expanders
+  are enough for v1, and what real workflow would justify ratios, tabs,
+  sidebars, or a larger layout system.
 - Forms: where submit-style flows feel natural or surprising in a top-to-bottom
   rerun model.
 - Caching and session persistence: what data should persist, for how long, and

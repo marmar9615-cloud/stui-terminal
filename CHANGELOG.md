@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 This project is currently pre-1.0, so APIs may change while the MVP is being
 shaped.
 
+## Unreleased
+
+No unreleased changes.
+
+## 0.7.0 - 2026-05-12
+
+### Added
+
+- Added pre-v1 experimental `st.status(...)`, `st.spinner(...)`, and
+  `st.help(...)` primitives for terminal status/help output while their exact
+  v1 contract is still gathering feedback.
+- Added pre-v1 experimental `st.columns(count)` with simple responsive terminal
+  rendering that stacks on narrow terminals.
+- Added `docs/layouts.md` to document layout primitives, columns limitations,
+  and why tabs remain deferred.
+- Added v0.7.0 release notes for the API contract readiness pass.
+- Added README links to the API contract status and refreshed terminal
+  compatibility guidance.
+- Added explicit README non-goals for Streamlit compatibility, browser
+  dashboards, hosted/cloud features, plotting/dataframe replacement behavior,
+  large component marketplaces, and GPL widget dependencies.
+
+### Changed
+
+- Reframed README API status around v0.7.0 stable-candidate APIs and
+  experimental/modest areas.
+- Clarified layout primitive status: `st.container`, `st.columns`, and
+  `st.expander` are terminal grouping helpers; columns remain pre-v1
+  experimental and are not a sidebar, tabs, grid, or full layout engine.
+- Expanded examples/init/copy docs with installed-package commands that do not
+  require a repository checkout after copying.
+- Updated `docs/v1-readiness.md` with API contract status,
+  stable/experimental status, remaining blockers, and the v0.8/v0.9 plan.
+- Updated `ROADMAP.md` and `docs/feedback.md` around terminal evidence,
+  package hardening, API contract mismatch reports, and layout feedback.
+- Kept public announcement-style launch pushes explicitly saved for v1.0.0.
+
 ## 0.6.0 - 2026-05-12
 
 ### Added

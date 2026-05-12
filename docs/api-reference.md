@@ -16,46 +16,53 @@ including runtime classes, Textual widgets, and element dataclasses under
 
 ## Public Imports
 
-These names are intentionally exported from `stui.__all__`:
+These names are intentionally exported from `stui.__all__`. Stability labels are
+defined in [API Stability](api-stability.md).
 
-```text
-__version__
-button
-bar_chart
-caption
-checkbox
-code
-container
-dataframe
-divider
-error
-exception
-expander
-form
-form_submit_button
-header
-info
-json
-line_chart
-markdown
-metric
-number_input
-progress
-radio
-rerun
-selectbox
-session_state
-slider
-stop
-subheader
-success
-table
-text
-text_input
-title
-warning
-write
-```
+<!-- API_CLASSIFICATION_START -->
+| API | Classification | Notes |
+| --- | --- | --- |
+| `__version__` | v1-stable | Package version string. |
+| `bar_chart` | pre-v1 experimental | Terminal chart rendering may still tighten before v1. |
+| `button` | v1-stable | Core input widget. |
+| `caption` | v1-stable | Core text output. |
+| `checkbox` | v1-stable | Core input widget. |
+| `code` | v1-stable | Core text output. |
+| `columns` | pre-v1 experimental | Responsive terminal layout behavior may still tighten. |
+| `container` | pre-v1 experimental | Terminal grouping primitive, not a full layout engine. |
+| `dataframe` | pre-v1 experimental | Static terminal display; editing and sorting are out of scope. |
+| `divider` | v1-stable | Core visual separator. |
+| `error` | v1-stable | Core status output. |
+| `exception` | v1-stable | Core status output for exceptions. |
+| `expander` | pre-v1 experimental | Terminal grouping behavior may still tighten. |
+| `form` | pre-v1 experimental | Deferred submit behavior and callback timing need v1 feedback. |
+| `form_submit_button` | pre-v1 experimental | Coupled to experimental form semantics. |
+| `header` | v1-stable | Core text output. |
+| `help` | pre-v1 experimental | Help formatting and the public name need v1 feedback. |
+| `info` | v1-stable | Core status output. |
+| `json` | pre-v1 experimental | Static terminal display formatting may change. |
+| `line_chart` | pre-v1 experimental | Terminal chart rendering may still tighten before v1. |
+| `markdown` | v1-stable | Core text output. |
+| `metric` | pre-v1 experimental | Compact terminal summary formatting may change. |
+| `number_input` | pre-v1 experimental | Newer input widget still gathering feedback. |
+| `progress` | pre-v1 experimental | Terminal rendering and normalization may still tighten. |
+| `radio` | pre-v1 experimental | Newer selection widget still gathering feedback. |
+| `rerun` | pre-v1 experimental | Flow-control semantics need real-app feedback. |
+| `selectbox` | pre-v1 experimental | Newer selection widget still gathering feedback. |
+| `session_state` | v1-stable | Core state mapping and attribute proxy. |
+| `slider` | v1-stable | Core numeric input widget. |
+| `spinner` | pre-v1 experimental | Status grouping behavior may still tighten before v1. |
+| `stop` | pre-v1 experimental | Flow-control semantics need real-app feedback. |
+| `subheader` | v1-stable | Core text output. |
+| `status` | pre-v1 experimental | Status grouping behavior may still tighten before v1. |
+| `success` | v1-stable | Core status output. |
+| `table` | pre-v1 experimental | Static terminal display formatting may change. |
+| `text` | v1-stable | Core text output. |
+| `text_input` | v1-stable | Core input widget. |
+| `title` | v1-stable | Core text output. |
+| `warning` | v1-stable | Core status output. |
+| `write` | v1-stable | Core text/value output. |
+<!-- API_CLASSIFICATION_END -->
 
 ## Text and Status
 
@@ -68,6 +75,7 @@ st.caption(body) -> None
 st.markdown(body) -> None
 st.code(body, language=None) -> None
 st.write(*args) -> None
+st.help(obj_or_text) -> None
 ```
 
 ```python
@@ -84,6 +92,8 @@ st.info(body) -> None
 st.warning(body) -> None
 st.error(body) -> None
 st.exception(exc) -> None
+st.status(label, state="running", expanded=False)
+st.spinner(text="Working...")
 ```
 
 ```python
@@ -91,7 +101,21 @@ try:
     raise RuntimeError("model failed")
 except RuntimeError as exc:
     st.exception(exc)
+
+with st.status("Indexing", state="running"):
+    st.write("Reading local files")
+
+with st.spinner("Waiting for job"):
+    st.write("Polling once")
+
+st.help(st.progress)
 ```
+
+`st.status` accepts `state="running"`, `"complete"`, or `"error"`. It renders a
+terminal status block and can group child elements when used as a context
+manager. `st.spinner` is a simple display/context primitive; it does not animate
+or update after the script pass completes. `st.help` renders plain text directly
+or a simple signature and docstring for Python objects.
 
 ## Data Display
 
@@ -122,6 +146,7 @@ st.bar_chart({"baseline": 42, "quantized": 24})
 
 ```python
 st.container()
+st.columns(count)
 st.expander(label, expanded=False, *, key=None)
 st.form(key)
 st.form_submit_button(
@@ -143,6 +168,12 @@ with st.container():
     st.header("Inputs")
     name = st.text_input("Name")
 
+left, right = st.columns(2)
+with left:
+    st.metric("Queued", 4)
+with right:
+    st.metric("Failed", 0)
+
 with st.expander("Advanced", expanded=False, key="advanced"):
     dry_run = st.checkbox("Dry run", value=True)
 
@@ -153,6 +184,12 @@ with st.form("job-form"):
 if submitted:
     st.success(f"Queued {name} with batch size {batch}")
 ```
+
+`st.columns(count)` accepts a positive integer and returns that many context
+managers. Columns render side-by-side when each column has enough terminal
+width, then stack vertically on narrow terminals. It does not support browser
+grid behavior, custom gaps, width ratios, tabs, sidebars, or horizontal
+scrolling. See [Layout Primitives](layouts.md) for the current layout boundary.
 
 ## Widgets
 
@@ -345,17 +382,19 @@ if "token" not in st.session_state:
 
 ## Stability Before v1
 
-The signatures above are intentionally covered by tests in v0.6.0. Treat them
-as stable candidates on the path to v1, not as a final v1 compatibility promise.
-Behavior can still tighten before v1 when a bug fix, terminal limitation, or
-clearer API boundary requires it.
+The signatures above are intentionally covered by tests in v0.7.0. The
+classification table marks each top-level API as either `v1-stable` or
+`pre-v1 experimental`; see [API Stability](api-stability.md) for the full
+compatibility promise before v1.0.0 and the post-v1 deprecation policy.
 
 These areas need the most feedback before they can be called v1-stable:
 
 - Forms: deferred submit behavior and callback timing.
-- Grouping: `st.container` and `st.expander` as terminal grouping primitives,
-  not a full layout engine.
+- Grouping: `st.container`, `st.columns`, and `st.expander` as terminal
+  grouping primitives, not a full layout engine.
 - Data display: static `st.table` and `st.dataframe` without editing/sorting.
 - Charts: compact terminal summaries from `st.metric`, `st.bar_chart`, and
   `st.line_chart`, not plotting-library replacements.
+- Help and status: `st.help`, `st.status`, and `st.spinner` formatting and
+  grouping behavior.
 - Flow control: clear expectations for `st.rerun` and `st.stop` in real apps.

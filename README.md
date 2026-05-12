@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml/badge.svg)](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml)
 
-`stui` v0.6.0 is a tiny Streamlit-inspired framework for building
+`stui` v0.7.0 is a tiny Streamlit-inspired framework for building
 terminal-native Python apps. Write a short script, run it in your terminal, and
 get a Textual UI with stateful controls.
 
@@ -168,6 +168,17 @@ stui init ./dashboard.py --template dashboard
 Use `python -m stui ...` for the same commands when the `stui` script directory
 is not on `PATH`.
 
+Copied examples and generated starter files are plain Python scripts. They do
+not require a checkout after they are copied:
+
+```bash
+stui example copy forms ./forms_app.py
+python -m stui run ./forms_app.py
+
+stui init ./ops_dashboard.py --template dashboard
+python -m stui run ./ops_dashboard.py
+```
+
 ## Copy-Paste Examples
 
 ### Slider and Button
@@ -329,20 +340,22 @@ The public API is intentionally compact and Streamlit-inspired, not
 Streamlit-compatible.
 
 For the working API reference, see
-[docs/api-reference.md](docs/api-reference.md). The v1 stability checklist is
-tracked in
-[docs/v1-readiness.md#stable-api-candidate](docs/v1-readiness.md#stable-api-candidate),
-and the terminal support checklist lives in
+[docs/api-reference.md](docs/api-reference.md). The current API contract and v1
+stability checklist are tracked in
+[docs/v1-readiness.md#api-contract-status](docs/v1-readiness.md#api-contract-status)
+and [docs/v1-readiness.md#stable-api-candidate](docs/v1-readiness.md#stable-api-candidate).
+The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v0.6.0 |
+| Area | APIs | Status in v0.7.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | Stable candidate |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | Stable candidate |
+| Status/help primitives | `st.status`, `st.spinner`, `st.help` | Pre-v1 experimental while terminal grouping/help formatting gathers feedback |
 | Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | Stable candidate; tables/dataframes are static |
 | Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | Stable candidate with keys, disabled state, and callbacks |
 | Forms | `st.form`, `st.form_submit_button` | Deferred commit to `session_state` until submit |
-| Grouping | `st.container`, `st.expander` | Stable candidate; terminal grouping, not a full layout engine |
+| Layout/grouping | `st.container`, `st.columns`, `st.expander` | Terminal grouping primitives; columns are pre-v1 experimental and stack on narrow terminals |
 | Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Experimental terminal summaries, not plotting replacements |
 | State and flow | `st.session_state`, `st.rerun`, `st.stop` | Stable candidate with explicit rerun/stop semantics |
 | CLI and examples | `stui run`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | Stable candidate for v1 docs |
@@ -370,6 +383,11 @@ Runtime expectations:
 - Static table/dataframe display without dataframe editing or sorting.
 - Common modern terminals should work best with UTF-8, color support, and a
   normal interactive `TERM` such as `xterm-256color`.
+
+See [Terminal Compatibility](docs/terminal-compatibility.md) for the current
+evidence matrix and report format. v0.7.0 still treats terminal support as
+evidence-driven, so unknown terminals are labeled as test-needed instead of
+claimed as supported.
 
 ## Common Mistakes
 
@@ -498,7 +516,9 @@ stui run examples/forms.py
 
 ### Layouts
 
-`examples/layouts.py` shows container and keyboard-toggleable expander patterns.
+`examples/layouts.py` shows responsive columns, container, and
+keyboard-toggleable expander patterns. The design notes are in
+[`docs/layouts.md`](docs/layouts.md).
 
 ```bash
 stui run examples/layouts.py
@@ -530,6 +550,9 @@ stui run examples/kitchen_sink.py
   pending form values out of `session_state` until submit.
 - Expanders are keyboard-toggleable with Enter/Space and persist their state;
   this is still a modest terminal grouping primitive, not a full layout system.
+- Columns accept only an integer count, stack when the terminal is narrow, and
+  do not support custom ratios, sidebars, tabs, browser grids, or horizontal
+  scrolling.
 - Charts are compact terminal summaries, not plotting-library replacements.
   `st.bar_chart` supports signed values and zero-only data; `st.line_chart` is
   a simple static sparkline for numeric lists or dictionaries of numeric series.
@@ -543,15 +566,27 @@ stui run examples/kitchen_sink.py
 - Public announcement pushes are saved for v1.0.0, after PyPI install, docs,
   examples, CI, and terminal compatibility are verified together.
 
+## Non-Goals
+
+`stui` is deliberately not trying to become:
+
+- A Streamlit compatibility layer or migration tool.
+- A browser dashboard framework.
+- A hosted/cloud product with auth, sync, collaboration, or deployment
+  management.
+- A plotting library or dataframe editor.
+- A large component marketplace before the terminal API is stable.
+- A wrapper around GPL slider/widget code or `textual-slider`.
+
 ## Roadmap
 
-- v0.6: compatibility and API-stability readiness: API reference links,
-  stable/experimental labels, install/examples/init docs, terminal report asks,
-  and v1 gate tracking.
-- v0.7: release-candidate cleanup: final API signatures, return values,
-  callbacks, disabled behavior, examples, and package verification.
+- v0.7: API contract readiness: final public signatures and return values are
+  documented, layout primitives are scoped as terminal grouping helpers,
+  examples/init/copy docs are aligned, and release notes/changelog are prepared.
 - v0.8: release hardening: terminal matrix evidence, narrow-width fixes,
-  installed-package smoke tests, and release-candidate notes.
+  installed-package smoke tests, and package verification.
+- v0.9: release-candidate closeout: freeze docs against the built artifact,
+  resolve or document remaining blockers, and prepare the v1 checklist.
 - v1: a small stable API with no known state/rerun bugs, verified PyPI install,
   supported Python versions aligned with CI, and honest non-goals. Public
   launch announcements wait for v1.0.0.

@@ -7,9 +7,12 @@ from stui.elements import (
     DividerElement,
     ExceptionElement,
     HeaderElement,
+    HelpElement,
     JsonElement,
     MarkdownElement,
     ProgressElement,
+    SpinnerElement,
+    StatusElement,
     SubheaderElement,
     TextElement,
 )
@@ -131,3 +134,64 @@ st.progress(500)
     elements = runtime.run_script()
 
     assert [element.value for element in elements] == [0, 12, 42, 0, 100]
+
+
+def test_status_spinner_and_help_elements_render_content(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        '''
+import stui as st
+
+def train(epochs: int = 1) -> None:
+    """Run a tiny training job."""
+
+with st.status("Training", state="running", expanded=True):
+    st.write("epoch 1")
+
+with st.spinner("Loading"):
+    st.caption("checkpoint")
+
+st.help(train)
+st.help("plain help text")
+''',
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert [type(element) for element in elements] == [
+        StatusElement,
+        SpinnerElement,
+        HelpElement,
+        HelpElement,
+    ]
+    status = elements[0]
+    assert status.label == "Training"
+    assert status.state == "running"
+    assert status.expanded is True
+    assert status.children is not None
+    assert status.children[0].text == "epoch 1"
+    spinner = elements[1]
+    assert spinner.text == "Loading"
+    assert spinner.children is not None
+    assert spinner.children[0].body == "checkpoint"
+    assert "train(epochs: int = 1) -> None" in elements[2].body
+    assert "Run a tiny training job." in elements[2].body
+    assert elements[3].body == "plain help text"
+
+
+def test_status_rejects_unknown_state(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.status("Bad", state="pending")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert len(elements) == 1
+    assert "st.status state must be one of" in elements[0].traceback

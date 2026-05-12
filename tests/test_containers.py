@@ -3,7 +3,9 @@ from pathlib import Path
 
 from stui.app import StuiApp
 from stui.elements import (
+    ColumnsElement,
     ContainerElement,
+    ErrorElement,
     ExpanderElement,
     TextElement,
     WriteElement,
@@ -42,6 +44,90 @@ st.write("after")
     assert isinstance(elements[1].children[0], TextElement)
     assert elements[1].children[0].body == "inside"
     assert elements[2].text == "after"
+
+
+def test_columns_preserve_column_children_and_order(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.write("before")
+left, right = st.columns(2)
+with left:
+    st.write("left")
+with right:
+    st.text("right")
+st.write("after")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert [type(element) for element in elements] == [
+        WriteElement,
+        ColumnsElement,
+        WriteElement,
+    ]
+    columns = elements[1]
+    assert isinstance(columns, ColumnsElement)
+    assert len(columns.columns) == 2
+    assert isinstance(columns.columns[0][0], WriteElement)
+    assert columns.columns[0][0].text == "left"
+    assert isinstance(columns.columns[1][0], TextElement)
+    assert columns.columns[1][0].body == "right"
+    assert elements[2].text == "after"
+
+
+def test_columns_support_nested_grouping(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+left, right = st.columns(2)
+with left:
+    with st.container():
+        st.write("nested")
+with right:
+    with st.expander("Details", expanded=True):
+        st.write("open")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    columns = elements[0]
+    assert isinstance(columns, ColumnsElement)
+    assert isinstance(columns.columns[0][0], ContainerElement)
+    nested = columns.columns[0][0]
+    assert isinstance(nested.children[0], WriteElement)
+    assert nested.children[0].text == "nested"
+    assert isinstance(columns.columns[1][0], ExpanderElement)
+    expander = columns.columns[1][0]
+    assert expander.children is not None
+    assert isinstance(expander.children[0], WriteElement)
+    assert expander.children[0].text == "open"
+
+
+def test_columns_reject_non_positive_counts(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.columns(0)
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert len(elements) == 1
+    assert isinstance(elements[0], ErrorElement)
+    assert "positive integer count" in elements[0].traceback
 
 
 def test_nested_container_and_expander_keep_nesting(tmp_path: Path) -> None:
@@ -254,6 +340,61 @@ with st.expander("Open", expanded=True):
             await pilot.pause()
             assert len(list(app.query(".stui-expander"))) == 2
             assert len(list(app.query(".write"))) == 1
+
+    asyncio.run(scenario())
+
+
+def test_textual_columns_stack_on_narrow_terminals(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+left, right = st.columns(2)
+with left:
+    st.write("left")
+with right:
+    st.write("right")
+""",
+    )
+    runtime = Runtime(script)
+    app = StuiApp(runtime)
+
+    async def scenario() -> None:
+        async with app.run_test(size=(44, 20)) as pilot:
+            await pilot.pause()
+            assert len(list(app.query(".stui-columns-stacked"))) == 1
+            assert len(list(app.query(".stui-column"))) == 2
+            assert len(list(app.query(".write"))) == 2
+
+    asyncio.run(scenario())
+
+
+def test_textual_columns_render_side_by_side_when_wide(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+left, middle, right = st.columns(3)
+with left:
+    st.write("left")
+with middle:
+    st.write("middle")
+with right:
+    st.write("right")
+""",
+    )
+    runtime = Runtime(script)
+    app = StuiApp(runtime)
+
+    async def scenario() -> None:
+        async with app.run_test(size=(120, 24)) as pilot:
+            await pilot.pause()
+            assert len(list(app.query(".stui-columns"))) == 1
+            assert len(list(app.query(".stui-columns-stacked"))) == 0
+            assert len(list(app.query(".stui-column"))) == 3
+            assert len(list(app.query(".write"))) == 3
 
     asyncio.run(scenario())
 

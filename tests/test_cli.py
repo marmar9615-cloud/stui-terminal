@@ -60,7 +60,7 @@ def test_version_option() -> None:
     result = CliRunner().invoke(cli.app, ["--version"])
 
     assert result.exit_code == 0
-    assert "stui 0.6.0" in result.output
+    assert "stui 0.7.0" in result.output
 
 
 def test_doctor_command() -> None:
@@ -157,7 +157,7 @@ def test_doctor_json_output(monkeypatch) -> None:
 
     assert result.exit_code == 0
     diagnostics = json.loads(result.output)
-    assert diagnostics["stui"] == "0.6.0"
+    assert diagnostics["stui"] == "0.7.0"
     assert diagnostics["terminal"]["columns"] == 72
     assert diagnostics["terminal"]["lines"] == 24
     assert diagnostics["terminal"]["too_small"] is True

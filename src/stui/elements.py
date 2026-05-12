@@ -63,6 +63,25 @@ class ProgressElement:
 
 
 @dataclass(frozen=True)
+class StatusElement:
+    label: str
+    state: str = "running"
+    expanded: bool = False
+    children: list[Any] | None = None
+
+
+@dataclass(frozen=True)
+class SpinnerElement:
+    text: str = "Working..."
+    children: list[Any] | None = None
+
+
+@dataclass(frozen=True)
+class HelpElement:
+    body: str
+
+
+@dataclass(frozen=True)
 class MetricElement:
     label: str
     value: str
@@ -104,6 +123,11 @@ class TableElement:
 @dataclass(frozen=True)
 class ContainerElement:
     children: list[Any]
+
+
+@dataclass(frozen=True)
+class ColumnsElement:
+    columns: list[list[Any]]
 
 
 @dataclass(frozen=True)
@@ -213,11 +237,15 @@ Element: TypeAlias = (
     | JsonElement
     | ExceptionElement
     | ProgressElement
+    | StatusElement
+    | SpinnerElement
+    | HelpElement
     | MetricElement
     | BarChartElement
     | LineChartElement
     | TableElement
     | ContainerElement
+    | ColumnsElement
     | ExpanderElement
     | DividerElement
     | AlertElement

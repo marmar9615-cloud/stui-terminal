@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import contextvars
+import inspect
 import json as json_lib
 import math
 import runpy
 import sys
+import textwrap
 import traceback
 from collections.abc import Callable
 from pathlib import Path
@@ -18,6 +20,7 @@ from .elements import (
     CaptionElement,
     CheckboxElement,
     CodeElement,
+    ColumnsElement,
     ContainerElement,
     DividerElement,
     Element,
@@ -25,6 +28,7 @@ from .elements import (
     ExceptionElement,
     ExpanderElement,
     HeaderElement,
+    HelpElement,
     JsonElement,
     LineChartElement,
     LineChartSeries,
@@ -35,6 +39,8 @@ from .elements import (
     RadioElement,
     SelectboxElement,
     SliderElement,
+    SpinnerElement,
+    StatusElement,
     SubheaderElement,
     TableElement,
     TextElement,
@@ -93,6 +99,14 @@ class ElementBlock:
     def __exit__(self, exc_type: object, exc: object, tb: object) -> bool:
         self.runtime._pop_element_block(self.children)
         return False
+
+
+class StatusBlock(ElementBlock):
+    pass
+
+
+class SpinnerBlock(ElementBlock):
+    pass
 
 
 class Runtime:
@@ -191,6 +205,31 @@ class Runtime:
             ProgressElement(_normalize_progress(value), label)
         )
 
+    def status(
+        self,
+        label: Any,
+        state: str = "running",
+        expanded: bool = False,
+    ) -> StatusBlock:
+        children: list[Element] = []
+        self._append_element(
+            StatusElement(
+                label=str(label),
+                state=_normalize_status_state(state),
+                expanded=bool(expanded),
+                children=children,
+            )
+        )
+        return StatusBlock(self, children)
+
+    def spinner(self, text: Any = "Working...") -> SpinnerBlock:
+        children: list[Element] = []
+        self._append_element(SpinnerElement(text=str(text), children=children))
+        return SpinnerBlock(self, children)
+
+    def help(self, obj_or_text: Any) -> None:
+        self._append_element(HelpElement(_format_help(obj_or_text)))
+
     def metric(self, label: Any, value: Any, delta: Any | None = None) -> None:
         delta_text = None if delta is None else str(delta)
         self._append_element(MetricElement(str(label), str(value), delta_text))
@@ -255,6 +294,13 @@ class Runtime:
         children: list[Element] = []
         self._append_element(ContainerElement(children))
         return ElementBlock(self, children)
+
+    def columns(self, count: int) -> tuple[ElementBlock, ...]:
+        if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+            raise ApiUsageError("st.columns(count) requires a positive integer count.")
+        column_children: list[list[Element]] = [[] for _ in range(count)]
+        self._append_element(ColumnsElement(column_children))
+        return tuple(ElementBlock(self, children) for children in column_children)
 
     def expander(
         self,
@@ -793,6 +839,41 @@ def _normalize_progress(value: int | float) -> int:
     else:
         percent = round(value)
     return max(0, min(100, percent))
+
+
+def _normalize_status_state(state: str) -> str:
+    normalized = str(state).strip().lower()
+    if normalized not in {"running", "complete", "error"}:
+        raise ApiUsageError(
+            "st.status state must be one of: running, complete, error."
+        )
+    return normalized
+
+
+def _format_help(obj_or_text: Any) -> str:
+    if isinstance(obj_or_text, str):
+        return obj_or_text
+
+    lines: list[str] = []
+    name = getattr(obj_or_text, "__qualname__", None) or getattr(
+        obj_or_text,
+        "__name__",
+        None,
+    )
+    if name:
+        try:
+            signature = str(inspect.signature(obj_or_text))
+        except (TypeError, ValueError):
+            signature = ""
+        lines.append(f"{name}{signature}")
+
+    doc = inspect.getdoc(obj_or_text)
+    if doc:
+        lines.append(textwrap.dedent(doc).strip())
+
+    if lines:
+        return "\n\n".join(lines)
+    return str(obj_or_text)
 
 
 def _coerce_number(

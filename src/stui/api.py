@@ -90,6 +90,18 @@ def progress(value: int | float, text: Any | None = None) -> None:
     get_current_runtime().progress(value, text=text)
 
 
+def status(label: Any, state: str = "running", expanded: bool = False):
+    return get_current_runtime().status(label, state=state, expanded=expanded)
+
+
+def spinner(text: str = "Working..."):
+    return get_current_runtime().spinner(text)
+
+
+def help(obj_or_text: Any) -> None:
+    get_current_runtime().help(obj_or_text)
+
+
 def metric(label: Any, value: Any, delta: Any | None = None) -> None:
     get_current_runtime().metric(label, value, delta=delta)
 
@@ -147,6 +159,15 @@ def write(*args: Any) -> None:
 def container():
     """Group following elements when used as a context manager."""
     return get_current_runtime().container()
+
+
+def columns(count: int):
+    """Create simple responsive terminal columns.
+
+    Columns are side-by-side when the terminal is wide enough and stack
+    vertically when each column would be too narrow to read.
+    """
+    return get_current_runtime().columns(count)
 
 
 def expander(label: str, expanded: bool = False, *, key: str | None = None):

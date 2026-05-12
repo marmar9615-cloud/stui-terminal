@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import inspect
+from pathlib import Path
 
 import stui as st
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _sig(*parts: str) -> str:
@@ -16,6 +19,7 @@ EXPECTED_PUBLIC_EXPORTS = [
     "caption",
     "checkbox",
     "code",
+    "columns",
     "container",
     "dataframe",
     "divider",
@@ -25,6 +29,7 @@ EXPECTED_PUBLIC_EXPORTS = [
     "form",
     "form_submit_button",
     "header",
+    "help",
     "info",
     "json",
     "line_chart",
@@ -37,8 +42,10 @@ EXPECTED_PUBLIC_EXPORTS = [
     "session_state",
     "selectbox",
     "slider",
+    "spinner",
     "stop",
     "subheader",
+    "status",
     "table",
     "success",
     "text",
@@ -46,6 +53,65 @@ EXPECTED_PUBLIC_EXPORTS = [
     "title",
     "warning",
     "write",
+]
+
+EXPECTED_API_CLASSIFICATIONS = {
+    "__version__": "v1-stable",
+    "bar_chart": "pre-v1 experimental",
+    "button": "v1-stable",
+    "caption": "v1-stable",
+    "checkbox": "v1-stable",
+    "code": "v1-stable",
+    "columns": "pre-v1 experimental",
+    "container": "pre-v1 experimental",
+    "dataframe": "pre-v1 experimental",
+    "divider": "v1-stable",
+    "error": "v1-stable",
+    "exception": "v1-stable",
+    "expander": "pre-v1 experimental",
+    "form": "pre-v1 experimental",
+    "form_submit_button": "pre-v1 experimental",
+    "header": "v1-stable",
+    "help": "pre-v1 experimental",
+    "info": "v1-stable",
+    "json": "pre-v1 experimental",
+    "line_chart": "pre-v1 experimental",
+    "markdown": "v1-stable",
+    "metric": "pre-v1 experimental",
+    "number_input": "pre-v1 experimental",
+    "progress": "pre-v1 experimental",
+    "radio": "pre-v1 experimental",
+    "rerun": "pre-v1 experimental",
+    "selectbox": "pre-v1 experimental",
+    "session_state": "v1-stable",
+    "slider": "v1-stable",
+    "spinner": "pre-v1 experimental",
+    "stop": "pre-v1 experimental",
+    "subheader": "v1-stable",
+    "status": "pre-v1 experimental",
+    "success": "v1-stable",
+    "table": "pre-v1 experimental",
+    "text": "v1-stable",
+    "text_input": "v1-stable",
+    "title": "v1-stable",
+    "warning": "v1-stable",
+    "write": "v1-stable",
+}
+
+PRIVATE_INTERNAL_NAMES = [
+    "ApiUsageError",
+    "ButtonElement",
+    "DuplicateWidgetKeyError",
+    "RerunException",
+    "Runtime",
+    "SessionState",
+    "SessionStateProxy",
+    "StopException",
+    "StuiApp",
+    "StuiSlider",
+    "TitleElement",
+    "get_current_runtime",
+    "snap_value",
 ]
 
 EXPECTED_PUBLIC_SIGNATURES = {
@@ -67,6 +133,7 @@ EXPECTED_PUBLIC_SIGNATURES = {
         "kwargs: 'dict[str, Any] | None' = None) -> 'bool'",
     ),
     "code": "(body: 'Any', language: 'str | None' = None) -> 'None'",
+    "columns": "(count: 'int')",
     "container": "()",
     "dataframe": "(data: 'Any') -> 'None'",
     "divider": "() -> 'None'",
@@ -83,6 +150,7 @@ EXPECTED_PUBLIC_SIGNATURES = {
         "kwargs: 'dict[str, Any] | None' = None) -> 'bool'",
     ),
     "header": "(body: 'Any', *, key: 'str | None' = None) -> 'None'",
+    "help": "(obj_or_text: 'Any') -> 'None'",
     "info": "(body: 'Any') -> 'None'",
     "json": "(obj: 'Any') -> 'None'",
     "line_chart": _sig(
@@ -122,8 +190,13 @@ EXPECTED_PUBLIC_SIGNATURES = {
         "on_change=None, args: 'tuple[Any, ...] | None' = None, ",
         "kwargs: 'dict[str, Any] | None' = None) -> 'int | float'",
     ),
+    "spinner": "(text: 'str' = 'Working...')",
     "stop": "() -> 'None'",
     "subheader": "(body: 'Any', *, key: 'str | None' = None) -> 'None'",
+    "status": _sig(
+        "(label: 'Any', state: 'str' = 'running', ",
+        "expanded: 'bool' = False)",
+    ),
     "success": "(body: 'Any') -> 'None'",
     "table": "(data: 'Any') -> 'None'",
     "text": "(body: 'Any') -> 'None'",
@@ -140,6 +213,23 @@ EXPECTED_PUBLIC_SIGNATURES = {
 }
 
 
+def _documented_api_classifications(path: Path) -> dict[str, str]:
+    text = path.read_text(encoding="utf-8")
+    start = "<!-- API_CLASSIFICATION_START -->"
+    end = "<!-- API_CLASSIFICATION_END -->"
+    table = text.split(start, 1)[1].split(end, 1)[0]
+    classifications: dict[str, str] = {}
+
+    for line in table.splitlines():
+        if not line.startswith("| `"):
+            continue
+        columns = [column.strip() for column in line.strip("|").split("|")]
+        api = columns[0].strip("`")
+        classifications[api] = columns[1]
+
+    return classifications
+
+
 def test_public_all_exports_are_intentional() -> None:
     assert st.__all__ == EXPECTED_PUBLIC_EXPORTS
 
@@ -148,10 +238,24 @@ def test_import_stui_as_st_exposes_only_intended_public_exports() -> None:
     for name in EXPECTED_PUBLIC_EXPORTS:
         assert hasattr(st, name), name
 
-    assert "Runtime" not in st.__all__
-    assert "TitleElement" not in st.__all__
-    assert "StuiApp" not in st.__all__
-    assert "snap_value" not in st.__all__
+    for name in PRIVATE_INTERNAL_NAMES:
+        assert name not in st.__all__, name
+
+
+def test_star_import_only_exports_public_contract() -> None:
+    namespace: dict[str, object] = {}
+    exec("from stui import *", namespace)
+
+    assert set(namespace) - {"__builtins__"} == set(EXPECTED_PUBLIC_EXPORTS)
+
+
+def test_public_exports_match_documented_api_classification() -> None:
+    stability_doc = _documented_api_classifications(ROOT / "docs/api-stability.md")
+    reference_doc = _documented_api_classifications(ROOT / "docs/api-reference.md")
+
+    assert stability_doc == EXPECTED_API_CLASSIFICATIONS
+    assert reference_doc == EXPECTED_API_CLASSIFICATIONS
+    assert set(st.__all__) == set(stability_doc)
 
 
 def test_public_api_signatures_are_intentional() -> None:

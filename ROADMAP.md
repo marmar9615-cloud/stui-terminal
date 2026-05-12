@@ -7,34 +7,22 @@ timeline or compatibility with Streamlit.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## v0.6 Compatibility And API Stability
+## v0.7 API Contract Readiness
 
-- Align the README with the v1 readiness docs: API reference link, terminal
-  compatibility link, install flow, repository examples, bundled example
-  copying, and `stui init` templates.
-- Label the API surface as stable-candidate or experimental before v1. Text,
-  status, input, state, flow, forms, grouping, CLI, and static display helpers
-  should remain small and documented.
-- Keep experimental claims modest for charts, dataframe/table behavior, and
-  layout/grouping primitives.
-- Update release notes, changelog, feedback docs, and v1 readiness docs around
-  terminal reports, keyboard bugs, narrow rendering, API signature confusion,
-  docs gaps, and example requests.
-- Preserve the announcement gate: public launch-style pushes are saved for
-  v1.0.0, not v0.6.0.
-
-## v0.7 API Reference And Release Candidate Prep
-
-- Freeze the v1 candidate API list unless a documented issue forces a change.
-- Document signatures, return values, callbacks, `args`/`kwargs`, generated and
-  explicit `key` behavior, disabled behavior, form submit behavior, `st.rerun`,
-  and `st.stop`.
+- Keep the v1 candidate API list frozen unless a documented issue forces a
+  change.
+- Treat the API reference as the current public contract: signatures, return
+  values, callbacks, `args`/`kwargs`, generated and explicit `key` behavior,
+  disabled behavior, form submit behavior, `st.rerun`, and `st.stop`.
 - Ensure every stable-candidate API has focused tests and at least one README,
   example, or reference-doc mention.
-- Verify clean PyPI-style installs, editable installs, bundled example copying,
-  `stui init`, source distribution, wheel, and `twine check`.
-- Finalize release-candidate checklist, terminal report format, and
-  changelog/release-note expectations.
+- Scope layout primitives honestly: `st.container`, `st.columns`, and
+  `st.expander` are terminal grouping helpers, not sidebars, tabs, browser
+  grids, or a full layout engine. `st.columns` remains pre-v1 experimental.
+- Keep charts and richer dataframe behavior experimental or explicitly modest
+  until real v1 feedback says they should graduate.
+- Keep release notes, changelog, README, feedback docs, and v1 readiness docs
+  aligned without generating public launch posts.
 
 ## v0.8 Terminal Evidence And Hardening
 
@@ -47,9 +35,41 @@ Streamlit compatibility layer.
 - Confirm error display and recovery when user scripts raise exceptions.
 - Re-run install and example smoke checks against built artifacts, not only an
   editable checkout.
+- Verify clean PyPI-style installs, editable installs, bundled example copying,
+  `stui init`, source distribution, wheel, and `twine check`.
+- Keep `st.columns` intentionally small: integer count only, responsive stacking
+  on narrow terminals, and documented limitations. Do not add ratios, tabs,
+  sidebars, grids, or a broader layout engine without terminal evidence and a
+  concrete user workflow.
+- Keep `st.empty()` deferred until placeholder mutation semantics are clear in
+  the rerun-based terminal runtime. A static placeholder that does not update
+  would be misleading.
 - Defer larger features such as richer dataframe interactions, table selection,
-  chart variants, columns, or layout expansion unless real v1 feedback shows a
-  clear need.
+  chart variants, tabs, sidebars, or layout expansion unless real v1 feedback
+  shows a clear need.
+
+## Layout Criteria Before Expansion
+
+- `st.columns` must keep passing focused runtime/rendering tests for child order,
+  nesting, wide rendering, and narrow stacking.
+- Terminal reports should show readable behavior in at least one local macOS
+  terminal and one Linux or SSH/headless-style environment before promoting
+  columns beyond pre-v1 experimental.
+- Do not add tabs until keyboard navigation, hidden-content state semantics, and
+  generated widget keys are predictable enough to document.
+- Do not add sidebars, custom ratios, browser-grid behavior, or horizontal
+  scrolling unless a real terminal workflow cannot be expressed with headings,
+  containers, columns, and expanders.
+
+## v0.9 Release Candidate Closeout
+
+- Freeze README, API reference, v1 readiness docs, changelog, and release notes
+  against the artifact that will be published.
+- Resolve or document remaining blockers around terminal compatibility,
+  narrow-width rendering, package verification, and state/rerun correctness.
+- Confirm supported Python versions match CI, `pyproject.toml`, README, and
+  release notes.
+- Keep public announcement-style launch pushes saved for v1.0.0.
 
 ## v1 Stable API
 
