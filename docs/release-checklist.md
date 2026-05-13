@@ -62,12 +62,12 @@ python3.11 -m venv /tmp/stui-current
 ```
 
 After publishing, repeat the same check with the exact released version, for
-example `stui-terminal==0.9.0`.
+example `stui-terminal==1.0.0`.
 
 ## Tag, CI, Publish, Release
 
 1. Commit only after local verification is green.
-2. Create and push the release tag, for example `v0.9.0`.
+2. Create and push the release tag, for example `v1.0.0`.
 3. Wait for CI on `main` and the tag.
 4. Dispatch the `Publish` workflow from the release tag with exactly one publish
    flag enabled.
@@ -77,9 +77,40 @@ example `stui-terminal==0.9.0`.
 7. Verify a clean install from PyPI with the exact version.
 8. Create the GitHub Release from the matching `RELEASE_NOTES_*.md` file.
 
-## v0.9 And v1 Release Gates
+## Final v1.0.0 Flow
 
-Before tagging v0.9.0 or v1.0.0, confirm:
+Use this stricter flow for the stable v1 launch:
+
+1. Freeze code and docs together: version metadata, README, API reference, API
+   stability table, changelog, release notes, v1 readiness, feedback docs,
+   roadmap, and announcement drafts must describe the same shipped surface.
+2. Run local gates from a clean checkout or refreshed virtual environment:
+   `ruff check .`, `python3.11 -m pytest`, `python -m build`,
+   `python -m twine check dist/*`, `./scripts/check.sh`, and
+   `git diff --check`.
+3. Inspect built artifacts for README/assets/examples/release-note inclusion
+   before creating the tag.
+4. Smoke the built wheel in a temporary virtual environment: import `stui`, run
+   version/doctor commands, list/copy examples, list demos, launch one demo when
+   practical, create each documented template, and run at least one copied
+   example with `python -m stui run`.
+5. Refresh `docs/terminal-compatibility.md` with the evidence actually gathered
+   for v1.0.0 and keep unverified environments marked test-needed.
+6. Confirm the README/PyPI screenshot URL renders and represents a real
+   terminal app from the shipped code.
+7. Tag `v1.0.0` only after the release diff is final and no other agent has
+   unreviewed edits in the owned docs.
+8. Wait for `main` and tag CI, then publish from the tag through Trusted
+   Publishing with only the real PyPI flag enabled.
+9. Verify PyPI JSON, the Simple API, and a clean exact-version install from
+   PyPI.
+10. Create the GitHub Release from the matching v1.0.0 release notes.
+11. Publish X, LinkedIn, and GitHub Discussion launch copy only after the exact
+   PyPI release, docs, screenshot, examples, and CI are verified.
+
+## v1 Release Gates
+
+Before tagging v1.0.0 or later v1.x releases, confirm:
 
 - Version metadata, README, `CHANGELOG.md`, release notes, and
   `docs/v1-readiness.md` all name the same release.
@@ -93,7 +124,8 @@ Before tagging v0.9.0 or v1.0.0, confirm:
 - No browser, server, websocket, port-forwarding, Streamlit runtime, GPL slider
   code, or `textual-slider` dependency has been introduced.
 - Installed-package flows work without a repository checkout: `stui examples`,
-  `stui example list`, `stui example copy`, and `stui init`.
+  `stui demo list`, `stui demo NAME`, `stui example list`,
+  `stui example copy`, and `stui init`.
 - Terminal compatibility evidence or explicit test-needed labels are current in
   `docs/terminal-compatibility.md`.
 - Public launch-style announcement copy is not generated for pre-v1 releases.

@@ -2,12 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
-This project is currently pre-1.0, so APIs may change while the MVP is being
-shaped.
+## 1.0.0 - 2026-05-12
 
-## Unreleased
+### Added
 
-No unreleased changes.
+- Added `stui demo list` and `stui demo NAME` for running curated bundled demos
+  directly from an installed package without requiring a repository checkout.
+- Added v1.0.0 release notes with the project identity, stable API summary,
+  experimental API list, install/demo commands, limitations, non-goals,
+  verification summary, and upgrade notes from 0.9.0.
+- Added a v1.0.0 GitHub milestone for stable-release gates and assigned the
+  open v1 blocker tracker issue to it.
+
+### Changed
+
+- Promoted the v0.9.0 stable-candidate API documentation into the v1.0.0 stable
+  release story without adding new public runtime APIs.
+- Kept experimental APIs explicitly labeled for v1.0.0 instead of treating all
+  public names as frozen.
+- Preserved the package boundary: install `stui-terminal`, import `stui`, run
+  the `stui` CLI, and use `python -m stui` as the fallback entry point.
+- Kept v1 release notes clear that `stui` is Streamlit-inspired, not official
+  Streamlit, not affiliated with Streamlit, and not a Streamlit compatibility
+  layer.
+- Tightened v1 API contract tests and post-v1 deprecation policy wording while
+  keeping the v1 stable/experimental API classifications explicit.
 
 ## 0.9.0 - 2026-05-12
 

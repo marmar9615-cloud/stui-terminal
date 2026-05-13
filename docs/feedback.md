@@ -6,10 +6,18 @@ and Streamlit-inspired without being Streamlit-compatible.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## Now
+## For v1 Users
 
 Feedback that is most helpful right now:
 
+- First-run reports from clean installs: `python -m pip install stui-terminal`,
+  `stui --version`, `python -m stui --version`, `stui doctor`, `stui example
+  copy`, `stui init`, and `stui run`.
+- Whether the PyPI landing page and README made the package/import/CLI split
+  clear: install `stui-terminal`, import `stui`, run `stui`.
+- Whether the quickstart and first app worked without cloning the repository.
+- Whether the screenshot and examples accurately set expectations for a
+  terminal-native app instead of a browser dashboard.
 - Stable versus experimental API labels: places where README,
   `docs/api-stability.md`, `docs/api-reference.md`, or examples disagree about
   whether an API is `v1-stable` or `pre-v1 experimental`.
@@ -35,7 +43,7 @@ Feedback that is most helpful right now:
   instead of running from a checkout.
 - Docs or example gaps: unclear README snippets, missing API reference detail,
   examples that only work from a checkout, `stui init` template confusion, or a
-  kitchen-sink example that does not match the documented stable-candidate API.
+  kitchen-sink example that does not match the documented stable API.
 - Example packaging issues: bundled examples missing from an installed package,
   `stui example copy` writing confusing starter code, or `stui init` templates
   that do not run with `python -m stui run`.
@@ -49,7 +57,7 @@ Feedback that is most helpful right now:
   behavior, plotting behavior, layout, tabs, sidebars, or GPL widget code.
 - Bugs that can be reproduced with a short `stui run` script.
 
-## Next
+## v1.1 Feedback
 
 Feedback that can shape near-term design:
 
@@ -73,10 +81,10 @@ Feedback that can shape near-term design:
   control without becoming required.
 - Screenshot and GIF docs: which workflows would be clearer with recorded
   terminal examples.
-- v0.9/v1 blockers: any mismatch that should stop the API/docs from freezing
-  before v1.0.0.
+- v1.1 candidates: which experimental APIs already feel stable enough, and
+  which should stay experimental because their terminal behavior is not clear.
 
-## Later
+## v1.2 And Later Feedback
 
 Feedback that is useful but may require more design work:
 
@@ -113,6 +121,7 @@ When opening an issue or sending feedback, include:
 - Whether the app was local, over SSH, in a container, or in another constrained
   environment.
 
-Public announcement-style pushes are intentionally saved for v1.0.0. Pre-1.0
-feedback should focus on whether the package is clear, installable, usable in
-real terminals, and small enough to stabilize.
+Public launch copy is prepared for v1.0.0, but social posts should still be
+posted manually only after the exact PyPI package and GitHub Release are
+verified. Post-v1 feedback should focus on whether the stable surface is clear,
+installable, usable in real terminals, and small enough to maintain.

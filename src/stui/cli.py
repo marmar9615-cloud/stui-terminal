@@ -50,6 +50,14 @@ EXAMPLE_DESCRIPTIONS = {
     "kitchen_sink.py": "Broad API tour for trying many widgets at once.",
 }
 
+DEMO_NAMES = (
+    "basic",
+    "dashboard",
+    "forms",
+    "charts",
+    "kitchen_sink",
+)
+
 INIT_TEMPLATES = {
     "basic": '''import stui as st
 
@@ -164,6 +172,30 @@ def _read_bundled_example(name: str) -> str:
         .joinpath(example_name)
         .read_text(encoding="utf-8")
     )
+
+
+def _bundled_demo_resource(name: str):
+    demo_name = _example_name(name)
+    if Path(demo_name).stem not in DEMO_NAMES:
+        choices = ", ".join(DEMO_NAMES)
+        raise typer.BadParameter(
+            f"unknown demo '{name}'. Run `stui demo list` to see names. "
+            f"Available demos: {choices}."
+        )
+
+    try:
+        demo_resource = resources.files("stui.examples").joinpath(demo_name)
+    except ModuleNotFoundError as exc:
+        raise typer.BadParameter(
+            "bundled demo resources were not found in this installation."
+        ) from exc
+
+    if not demo_resource.is_file():
+        raise typer.BadParameter(
+            f"bundled demo '{Path(demo_name).stem}' was not found in this "
+            "installation. Run `stui demo list` to see available demos."
+        )
+    return demo_resource
 
 
 def _missing_script_message(script: Path) -> str:
@@ -326,6 +358,26 @@ def run(script: Path) -> None:
 
     runtime = Runtime(script_path.resolve())
     StuiApp(runtime).run()
+
+
+@app.command("demo")
+def run_demo(name: str) -> None:
+    """Run a bundled first-run demo directly from the installed package."""
+
+    if name == "list":
+        typer.echo("stui demos:")
+        for demo_name in DEMO_NAMES:
+            description = EXAMPLE_DESCRIPTIONS.get(
+                _example_name(demo_name),
+                "Bundled demo app.",
+            )
+            typer.echo(f"  {demo_name} - {description}")
+        return
+
+    demo_resource = _bundled_demo_resource(name)
+    with resources.as_file(demo_resource) as demo_path:
+        runtime = Runtime(demo_path.resolve())
+        StuiApp(runtime).run()
 
 
 @app.command()

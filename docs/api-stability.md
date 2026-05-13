@@ -1,6 +1,6 @@
 # API Stability
 
-`stui` is still before v1.0.0. The top-level API is intentionally small and
+`stui` v1.0.0 keeps the top-level stable API intentionally small and
 Streamlit-inspired, but it is not Streamlit-compatible and does not depend on
 Streamlit at runtime.
 
@@ -13,35 +13,29 @@ import stui as st
 Anything outside the top-level `stui.__all__` surface is private unless a future
 release explicitly documents it here and in `docs/api-reference.md`.
 
-## Compatibility Before v1.0.0
+## v1 Compatibility Contract
 
-v0.9.0 is the final pre-v1 candidate line. The project should treat the
-`v1-stable` rows below as frozen for v1.0.0 unless a correctness bug, terminal
-limitation, or security issue makes a change necessary. Any such change needs a
-changelog entry, release-note coverage, and synchronized README/API reference
-updates.
-
-`v1-stable` means the API is a stable candidate for v1. The project intends to
-keep the name, call shape, return type, and basic behavior compatible through
-the remaining 0.x releases unless a correctness bug, terminal limitation, or
-security issue makes a change necessary.
+`v1-stable` means the API is part of the stable v1 contract. The project intends
+to keep the name, call shape, return type, and basic behavior compatible through
+the v1 series unless a correctness bug, terminal limitation, or security issue
+makes a change necessary.
 
 `pre-v1 experimental` means the API is public enough to use, but still needs
-feedback before v1. It may change in a 0.x release. Changes should be called out
-in release notes with a migration path when practical.
+feedback before it can graduate into the stable contract. It may change in a
+v1.x release. Changes should be called out in release notes with a migration
+path when practical.
 
 `internal/private` means the API is not supported for user code. It may move,
 rename, or disappear without deprecation, even when it is importable for tests or
 implementation reasons.
 
 `deferred for v1` means a familiar Streamlit-style name or feature area is
-intentionally not part of the v1 candidate API. It should not be added casually
+intentionally not part of the v1 stable API. It should not be added casually
 without updating this page, the API reference, the README API table, the v1
 readiness checklist, and public API tests.
 
-`candidate for removal/rename before v1` means a public name is known to need a
-decision before v1.0.0. There are no current top-level `stui.__all__` exports in
-that category.
+There are no current top-level `stui.__all__` exports marked for removal or
+rename in the v1.0.0 line.
 
 ## Top-Level API Classification
 
@@ -49,7 +43,7 @@ that category.
 | API | Classification | Notes |
 | --- | --- | --- |
 | `__version__` | v1-stable | Package version string. |
-| `bar_chart` | pre-v1 experimental | Terminal chart rendering may still tighten before v1. |
+| `bar_chart` | pre-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
 | `button` | v1-stable | Core input widget. |
 | `caption` | v1-stable | Core text output. |
 | `checkbox` | v1-stable | Core input widget. |
@@ -67,7 +61,7 @@ that category.
 | `help` | pre-v1 experimental | Help formatting and the public name need v1 feedback. |
 | `info` | v1-stable | Core status output. |
 | `json` | pre-v1 experimental | Static terminal display formatting may change. |
-| `line_chart` | pre-v1 experimental | Terminal chart rendering may still tighten before v1. |
+| `line_chart` | pre-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
 | `markdown` | v1-stable | Core text output. |
 | `metric` | pre-v1 experimental | Compact terminal summary formatting may change. |
 | `number_input` | pre-v1 experimental | Newer input widget still gathering feedback. |
@@ -77,10 +71,10 @@ that category.
 | `selectbox` | pre-v1 experimental | Newer selection widget still gathering feedback. |
 | `session_state` | v1-stable | Core state mapping and attribute proxy. |
 | `slider` | v1-stable | Core numeric input widget. |
-| `spinner` | pre-v1 experimental | Status grouping behavior may still tighten before v1. |
+| `spinner` | pre-v1 experimental | Status grouping behavior may still tighten in v1.x. |
 | `stop` | pre-v1 experimental | Flow-control semantics need real-app feedback. |
 | `subheader` | v1-stable | Core text output. |
-| `status` | pre-v1 experimental | Status grouping behavior may still tighten before v1. |
+| `status` | pre-v1 experimental | Status grouping behavior may still tighten in v1.x. |
 | `success` | v1-stable | Core status output. |
 | `table` | pre-v1 experimental | Static terminal display formatting may change. |
 | `text` | v1-stable | Core text output. |
@@ -108,8 +102,8 @@ the top-level `stui` API documented above.
 
 ## Deferred For v1
 
-These APIs and feature areas are explicitly deferred from the v1 stable
-candidate surface:
+These APIs and feature areas are explicitly deferred from the v1.0.0 stable
+surface:
 
 <!-- API_DEFERRED_START -->
 | API or area | v1 status | Notes |
@@ -128,14 +122,25 @@ candidate surface:
 
 ## Post-v1 Deprecations
 
-After v1.0.0, stable public APIs should not be removed or renamed in a v1.x
-release without a deprecation period. A normal deprecation should:
+After v1.0.0, the top-level `v1-stable` APIs are the compatibility contract for
+the v1 series. Stable public APIs should not be removed or renamed in a v1.x
+release. A normal deprecation should:
 
 - document the replacement in `docs/api-reference.md` and release notes;
-- keep the old name working for at least one minor release when practical;
+- keep the old name working through the rest of the v1 series when practical;
 - warn clearly before removal when warnings are technically reasonable;
 - remove the deprecated API only in the next major release, unless keeping it
   would create a security, data-loss, or severe correctness problem.
 
-Experimental APIs that remain experimental after v1 must keep that label in the
-API reference and explain their narrower compatibility promise.
+Changing the call shape, return type, or basic behavior of a stable API during
+the v1 series should be treated like a removal: avoid it unless the existing
+behavior is incorrect, unsafe, or impossible to support in terminals. When such
+a change is unavoidable, document the reason, migration path, and affected
+versions in the changelog, release notes, API reference, and public API tests.
+
+Experimental APIs that remain experimental after v1 must keep that label in
+the API reference. They may change in a v1.x minor release, but the release
+notes should explain the migration path when practical. Promoting an
+experimental API to stable requires updating this page, the API reference, the
+README API table, the v1 readiness docs, and `tests/test_public_api.py` in the
+same release.

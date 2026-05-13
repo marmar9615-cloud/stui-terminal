@@ -69,6 +69,82 @@ def test_run_missing_unknown_repo_example_stays_plain() -> None:
     assert "Bundled examples are available after installation" not in result.output
 
 
+def test_demo_list_prints_supported_demos() -> None:
+    result = CliRunner().invoke(cli.app, ["demo", "list"])
+
+    assert result.exit_code == 0
+    assert "stui demos:" in result.output
+    assert "basic - Smallest useful app:" in result.output
+    assert "dashboard - Dashboard-style layout" in result.output
+    assert "forms - Form-style user input flow." in result.output
+    assert "charts - Simple chart and data visualization patterns." in result.output
+    assert "kitchen_sink - Broad API tour" in result.output
+    assert "counter" not in result.output
+
+
+def test_demo_launches_valid_bundled_demo(monkeypatch) -> None:
+    launched: list[Path] = []
+
+    class FakeRuntime:
+        def __init__(self, script_path: Path) -> None:
+            self.script_path = script_path
+
+    class FakeApp:
+        def __init__(self, runtime: FakeRuntime) -> None:
+            self.runtime = runtime
+
+        def run(self) -> None:
+            launched.append(self.runtime.script_path)
+
+    monkeypatch.setattr(cli, "Runtime", FakeRuntime)
+    monkeypatch.setattr(cli, "StuiApp", FakeApp)
+
+    result = CliRunner().invoke(cli.app, ["demo", "dashboard"])
+
+    assert result.exit_code == 0
+    assert [path.name for path in launched] == ["dashboard.py"]
+    assert launched[0].exists()
+    assert "stui/examples" in launched[0].as_posix()
+
+
+def test_demo_rejects_invalid_demo_name() -> None:
+    result = CliRunner().invoke(cli.app, ["demo", "counter"])
+    normalized_output = " ".join(result.output.split())
+
+    assert result.exit_code != 0
+    assert "unknown demo 'counter'" in normalized_output
+    assert "stui demo list" in result.output
+    assert "basic, dashboard, forms, charts, kitchen_sink" in normalized_output
+
+
+def test_demo_uses_package_resource_without_repo_checkout(monkeypatch) -> None:
+    launched: list[Path] = []
+
+    class FakeRuntime:
+        def __init__(self, script_path: Path) -> None:
+            self.script_path = script_path
+
+    class FakeApp:
+        def __init__(self, runtime: FakeRuntime) -> None:
+            self.runtime = runtime
+
+        def run(self) -> None:
+            launched.append(self.runtime.script_path)
+
+    monkeypatch.setattr(cli, "Runtime", FakeRuntime)
+    monkeypatch.setattr(cli, "StuiApp", FakeApp)
+    monkeypatch.setattr(cli, "_examples_dir", lambda: Path("/missing/repo/examples"))
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        result = runner.invoke(cli.app, ["demo", "forms"])
+
+    assert result.exit_code == 0
+    assert [path.name for path in launched] == ["forms.py"]
+    assert launched[0].exists()
+    assert "stui/examples" in launched[0].as_posix()
+
+
 def test_run_rejects_directory(tmp_path: Path) -> None:
     result = CliRunner().invoke(cli.app, ["run", str(tmp_path)])
 
@@ -440,6 +516,23 @@ def test_init_forms_template_runs_without_script_errors(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert not any(isinstance(element, ErrorElement) for element in elements)
+
+
+def test_all_init_templates_run_without_script_errors(tmp_path: Path) -> None:
+    for template in cli.INIT_TEMPLATE_CHOICES:
+        script = tmp_path / f"{template}.py"
+
+        result = CliRunner().invoke(
+            cli.app,
+            ["init", str(script), "--template", template],
+        )
+        runtime = Runtime(script)
+        elements = runtime.run_script()
+
+        assert result.exit_code == 0, result.output
+        assert not any(isinstance(element, ErrorElement) for element in elements), (
+            template
+        )
 
 
 def test_init_rejects_unknown_template(tmp_path: Path) -> None:

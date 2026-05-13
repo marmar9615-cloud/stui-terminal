@@ -1,41 +1,55 @@
 # stui Announcement Drafts
 
-Launch copy for the `stui-terminal` v0.3.0 terminal app primitives release.
+Launch copy for the `stui-terminal` v1.0.0 release. Do not publish this copy
+until v1.0.0 is live on PyPI, the clean exact-version install has been verified,
+the GitHub Release exists, and the README/PyPI screenshot still renders.
 
 ## X Post Draft
 
-I shipped `stui` v0.3.0 from MarMar Labs.
+I shipped `stui` v1.0.0 from MarMar Labs.
 
-It is a small Streamlit-inspired Python UI framework that runs terminal-native apps with Textual.
+It is a small Streamlit-inspired Python UI framework for terminal-native apps,
+built on Textual.
 
-No browser. No ports. No local web server. No Streamlit runtime dependency.
-
-v0.3.0 focuses on forms, containers, static expanders, metrics, and simple
-terminal-native bar charts.
+Install from PyPI:
 
 ```bash
 python -m pip install stui-terminal
 ```
 
+Then write normal Python:
+
 ```python
 import stui as st
+
+st.title("Local tool")
+name = st.text_input("Name", "MarMar")
+
+if st.button("Run"):
+    st.success(f"Hi {name}")
 ```
+
+Run it in the terminal:
 
 ```bash
 stui run app.py
 ```
 
-This is not official Streamlit, not affiliated with Streamlit, and not a Streamlit compatibility layer. It is a clean-room project for builders who want simple Python apps that stay in the terminal.
+No browser. No ports. No local web server. No Streamlit runtime dependency.
 
-Feedback welcome.
+`stui` is not official Streamlit, not affiliated with Streamlit, and not a
+Streamlit compatibility layer. It is a small terminal-first API for local tools,
+SSH/headless workflows, model/debug panels, and quick demos.
 
+Repo:
 https://github.com/marmar9615-cloud/stui-terminal
 
 ## X Thread Draft
 
-1. I shipped `stui` v0.3.0 from MarMar Labs.
+1. I shipped `stui` v1.0.0 from MarMar Labs.
 
-It is a small Streamlit-inspired Python UI framework for terminal-native apps, built on Textual.
+It is a small Streamlit-inspired Python UI framework for terminal-native apps,
+built on Textual.
 
 No browser. No ports. No local web server. No Streamlit runtime dependency.
 
@@ -59,50 +73,55 @@ stui run app.py
 
 3. The goal is not Streamlit compatibility.
 
-The goal is a small clean-room API for terminal-first tools: SSH sessions, headless boxes, local model/debug panels, internal utilities, and quick demos where opening a browser is extra ceremony.
+The goal is a small clean-room API for terminal-first tools: SSH sessions,
+headless machines, local model/debug panels, internal utilities, and quick demos
+where opening a browser is unnecessary ceremony.
 
-4. The current API covers the useful basics:
+4. The v1 stable surface is intentionally compact:
 
-text, markdown, code, JSON, alerts, buttons, sliders, text input, checkboxes, number inputs, selectboxes, radio groups, progress, simple tables, `session_state`, and reruns.
+text output, status messages, code blocks, buttons, sliders, text input,
+checkboxes, `session_state`, version/doctor commands, app running, bundled
+examples, and starter templates.
 
-5. The v0.3.0 direction adds terminal app primitives:
+5. Some useful APIs remain experimental after v1:
 
-- forms for batching related inputs
-- containers and static expanders for grouped sections
-- metrics and bar charts for terminal-readable summaries
+forms, containers, columns, expanders, metrics, charts, richer static data
+display, selection widgets, numeric input, status/spinner/help helpers, and
+flow-control helpers.
 
-6. It is intentionally still small.
+They are public enough to try, but still labeled honestly.
 
-No dataframe editor, sidebar, file upload, caching decorators, browser components, or hosted deployment story.
+6. Things intentionally not in v1:
 
-I would rather learn from real terminal workflows before making the surface area huge.
+sidebars, tabs, file upload, caching decorators, browser components, dataframe
+editing, plotting-library parity, hosted deployment, and any browser/server or
+websocket runtime.
 
-7. A few things I care about keeping honest:
+7. I care about keeping the boundary clear:
 
-`stui` is not official Streamlit, not affiliated with Streamlit, and not a Streamlit compatibility layer.
+`stui` is not official Streamlit, not affiliated with Streamlit, and not a
+Streamlit compatibility layer.
 
 It does not depend on Streamlit at runtime.
 
-It does not start a browser, web server, or port.
+8. Feedback I would love:
 
-8. Feedback I would genuinely love:
-
-- What would you build with a terminal-native Python app framework?
-- Are forms, containers, expanders, metrics, and charts the right next
-  primitives?
-- Does the rerun/state model feel natural in a TUI?
-- Is the PyPI name `stui-terminal` clear enough?
+- Did the PyPI install and `stui run` flow work cleanly?
+- Which terminal, SSH, container, or editor terminal did you try?
+- Which experimental APIs feel stable enough for v1.x?
+- What should stay out of scope so the project stays small?
 
 Repo:
 https://github.com/marmar9615-cloud/stui-terminal
 
 ## LinkedIn Post
 
-I shipped `stui` v0.3.0 from MarMar Labs.
+I shipped `stui` v1.0.0 from MarMar Labs.
 
-`stui` is a small Streamlit-inspired Python UI framework for building terminal-native apps with Textual.
+`stui` is a small Streamlit-inspired Python UI framework for building
+terminal-native apps with Textual.
 
-The basic workflow is meant to feel direct:
+The basic workflow is meant to stay direct:
 
 ```bash
 python -m pip install stui-terminal
@@ -110,6 +129,12 @@ python -m pip install stui-terminal
 
 ```python
 import stui as st
+
+st.title("Local tool")
+threshold = st.slider("Threshold", 0.0, 1.0, 0.5, step=0.1)
+
+if st.button("Run"):
+    st.success(f"Running with threshold {threshold}")
 ```
 
 ```bash
@@ -118,39 +143,40 @@ stui run app.py
 
 No browser. No ports. No local web server. No Streamlit runtime dependency.
 
-The use case is not "replace Streamlit." It is for the moments where a browser dashboard is more ceremony than help: SSH sessions, headless machines, local model/debug panels, internal tools, terminal-first demos, and scripts that already start in a shell.
+The use case is not "replace Streamlit." It is for the moments where a browser
+dashboard is more ceremony than help: SSH sessions, headless machines, local
+model/debug panels, internal tools, terminal-first demos, and scripts that
+already start in a shell.
 
-The current surface includes a practical first set:
+The v1 stable surface is deliberately small: text output, status messages, code
+blocks, core inputs, `session_state`, the CLI run flow, diagnostics, bundled
+examples, and starter templates.
 
-- text, markdown, code, JSON, progress, alerts, and traceback display
-- buttons, sliders, text input, checkboxes, number inputs, selectboxes, and radio groups
-- simple static tables without requiring pandas
-- `st.session_state` and script reruns
-- examples, tests, CI, CLI helpers, and PyPI packaging
+The project also includes experimental APIs for forms, grouping, layout,
+metrics, charts, richer static display, selection widgets, numeric input,
+status/spinner/help helpers, and flow control. Those are available to try, but
+they remain labeled separately so v1 does not overpromise.
 
-The v0.3.0 direction adds terminal app primitives that users naturally reach
-for after the basics: forms, containers, static expanders, metrics, and simple
-bar charts. The goal is still a small terminal-native API, not a browser
-dashboard or Streamlit compatibility mode.
+Important boundary: this is not official Streamlit, not affiliated with
+Streamlit, and not a Streamlit compatibility layer. It is a clean-room,
+terminal-native project inspired by the top-to-bottom scripting model.
 
-Important boundary: this is not official Streamlit, not affiliated with Streamlit, and not a Streamlit compatibility layer. It is a clean-room, terminal-native project inspired by the top-to-bottom scripting model.
-
-It is also intentionally small. Dataframe editing, sidebars, file upload,
-caching decorators, browser components, and broader layout systems are not part
-of this release.
-
-I am excited about the shape of it, but I want the next steps to come from real use instead of guesses. If you build local tools, AI/model workflows, internal CLIs, or terminal-first prototypes, I would love feedback on what feels useful, confusing, or missing.
+I would love feedback from people who build local tools, AI/model workflows,
+internal CLIs, SSH/headless workflows, or terminal-first prototypes.
 
 Repo:
 https://github.com/marmar9615-cloud/stui-terminal
 
 ## GitHub Discussion Feedback Post
 
-Title: `stui` v0.3.0 feedback thread
+Title: `stui` v1.0.0 feedback thread
 
-I shipped `stui` v0.3.0 from MarMar Labs and would love feedback from builders who might use a small Python UI framework directly in the terminal.
+I shipped `stui` v1.0.0 from MarMar Labs and would love feedback from builders
+who might use a small Python UI framework directly in the terminal.
 
-`stui` is Streamlit-inspired, but it is not official Streamlit, not affiliated with Streamlit, and not a Streamlit compatibility layer. It is a clean-room project for terminal-native apps built with Textual.
+`stui` is Streamlit-inspired, but it is not official Streamlit, not affiliated
+with Streamlit, and not a Streamlit compatibility layer. It is a clean-room
+project for terminal-native apps built with Textual.
 
 Install and run:
 
@@ -171,38 +197,42 @@ Project boundaries:
 - no browser
 - no ports
 - no local web server
+- no websocket or port-forwarding runtime
 - no Streamlit runtime dependency
 - not a Streamlit compatibility layer
 
-Current shape:
+The v1 stable surface is intentionally compact:
 
-- compact Python API for text, status, inputs, progress, code/JSON output, tables, reruns, and `session_state`
-- Textual-powered terminal rendering
+- text output, status messages, and code blocks
+- core widgets: buttons, sliders, text input, and checkboxes
+- `st.session_state`
+- `stui run`, `python -m stui run`, diagnostics, version output, bundled example
+  listing/copying, and starter templates
 - PyPI distribution name: `stui-terminal`
 - import package and CLI command: `stui`
-- examples, tests, CI, and packaging in place
-- v0.3.0 primitives for forms, containers, expanders, metrics, and bar
-  charts
 
-This is an honest early release line. There is plenty missing: dataframe
-editing, sidebar, caching, file upload, browser components, and broader widget
-coverage are not in the current API.
+The project also has experimental APIs for forms, containers, columns,
+expanders, metrics, charts, static tables/dataframes, selection and numeric
+widgets, status/spinner/help helpers, and flow control. They are documented, but
+not all frozen as stable v1 behavior.
 
 Feedback I would especially appreciate:
 
-- What terminal-first use case would you try first?
-- Are forms, containers, expanders, metrics, and bar charts enough for a useful
-  next step?
-- Does the rerun/state model feel natural in a TUI?
-- Is the install/import naming clear enough?
-- What should stay out of scope so the project stays small and readable?
+- Did a clean install from PyPI work?
+- Did the README quickstart work without cloning the repository?
+- Which terminal, shell, OS, SSH/container/editor-terminal setup did you try?
+- Which experimental APIs should graduate in v1.1 or v1.2?
+- Which APIs were confusing, too small, or surprisingly different from
+  Streamlit?
+- What should stay out of scope so the project remains small and readable?
 
 Repo:
 https://github.com/marmar9615-cloud/stui-terminal
 
 ## Short Dev-Community Reply Post
 
-I built `stui`, a small Streamlit-inspired Python UI framework for terminal-native apps with Textual.
+I built `stui`, a small Streamlit-inspired Python UI framework for
+terminal-native apps with Textual.
 
 ```bash
 python -m pip install stui-terminal
@@ -216,9 +246,8 @@ import stui as st
 stui run app.py
 ```
 
-No browser, no ports, no Streamlit runtime dependency. Also not official Streamlit, not affiliated with Streamlit, and not a compatibility layer.
+No browser, no ports, no Streamlit runtime dependency. Also not official
+Streamlit, not affiliated with Streamlit, and not a compatibility layer.
 
-The v0.3.0 direction adds forms, containers, static expanders, metrics, and
-simple terminal-native bar charts while keeping the API small.
-
-I am looking for practical feedback from people who build local tools, SSH/headless workflows, model/debug panels, or terminal-first prototypes.
+v1 keeps the stable API small and labels the newer forms/layout/charts/display
+helpers as experimental so feedback can shape v1.1 and v1.2 honestly.

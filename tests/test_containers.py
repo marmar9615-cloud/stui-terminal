@@ -164,6 +164,26 @@ st.columns(0)
     assert "positive integer count" in elements[0].traceback
 
 
+def test_columns_reject_streamlit_style_ratio_lists(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.columns([1, 2])
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert len(elements) == 1
+    assert isinstance(elements[0], ErrorElement)
+    assert elements[0].traceback == (
+        "st.columns(count) requires a positive integer count."
+    )
+
+
 def test_nested_container_and_expander_keep_nesting(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,

@@ -245,6 +245,80 @@ EXPECTED_PUBLIC_SIGNATURES = {
     "write": "(*args: 'Any') -> 'None'",
 }
 
+EXPECTED_REFERENCE_SIGNATURES = {
+    "bar_chart": "st.bar_chart(data, *, width=None, height=None) -> None",
+    "button": _sig(
+        "st.button(\n    label,\n    key=None,\n    help=None,\n    disabled=False,\n",
+        "    on_click=None,\n    args=None,\n    kwargs=None,\n) -> bool",
+    ),
+    "caption": "st.caption(body) -> None",
+    "checkbox": _sig(
+        "st.checkbox(\n    label,\n    value=False,\n    *,\n    key=None,\n",
+        "    disabled=False,\n    on_change=None,\n    args=None,\n",
+        "    kwargs=None,\n) -> bool",
+    ),
+    "code": "st.code(body, language=None) -> None",
+    "columns": "st.columns(count)",
+    "container": "st.container()",
+    "dataframe": "st.dataframe(data) -> None",
+    "divider": "st.divider() -> None",
+    "error": "st.error(body) -> None",
+    "exception": "st.exception(exc) -> None",
+    "expander": "st.expander(label, expanded=False, *, key=None)",
+    "form": "st.form(key)",
+    "form_submit_button": _sig(
+        "st.form_submit_button(\n    label=\"Submit\",\n    *,\n",
+        "    disabled=False,\n    on_click=None,\n    args=None,\n",
+        "    kwargs=None,\n) -> bool",
+    ),
+    "header": "st.header(body, *, key=None) -> None",
+    "help": "st.help(obj_or_text) -> None",
+    "info": "st.info(body) -> None",
+    "json": "st.json(obj) -> None",
+    "line_chart": "st.line_chart(data, *, width=None, height=None) -> None",
+    "markdown": "st.markdown(body) -> None",
+    "metric": "st.metric(label, value, delta=None) -> None",
+    "number_input": _sig(
+        "st.number_input(\n    label,\n    min_value=None,\n    max_value=None,\n",
+        "    value=0,\n    step=1,\n    *,\n    key=None,\n",
+        "    disabled=False,\n    on_change=None,\n    args=None,\n",
+        "    kwargs=None,\n) -> int | float",
+    ),
+    "progress": "st.progress(value, text=None) -> None",
+    "radio": _sig(
+        "st.radio(\n    label,\n    options,\n    index=0,\n    *,\n",
+        "    key=None,\n    disabled=False,\n    on_change=None,\n",
+        "    args=None,\n    kwargs=None,\n)",
+    ),
+    "rerun": "st.rerun() -> None",
+    "selectbox": _sig(
+        "st.selectbox(\n    label,\n    options,\n    index=0,\n    *,\n",
+        "    key=None,\n    disabled=False,\n    on_change=None,\n",
+        "    args=None,\n    kwargs=None,\n)",
+    ),
+    "slider": _sig(
+        "st.slider(\n    label,\n    min_value=0,\n    max_value=100,\n",
+        "    value=None,\n    step=1,\n    *,\n    key=None,\n",
+        "    help=None,\n    disabled=False,\n    on_change=None,\n",
+        "    args=None,\n    kwargs=None,\n) -> int | float",
+    ),
+    "spinner": "st.spinner(text=\"Working...\")",
+    "stop": "st.stop() -> None",
+    "subheader": "st.subheader(body, *, key=None) -> None",
+    "status": "st.status(label, state=\"running\", expanded=False)",
+    "success": "st.success(body) -> None",
+    "table": "st.table(data) -> None",
+    "text": "st.text(body) -> None",
+    "text_input": _sig(
+        "st.text_input(\n    label,\n    value=\"\",\n    *,\n",
+        "    key=None,\n    placeholder=None,\n    disabled=False,\n",
+        "    on_change=None,\n    args=None,\n    kwargs=None,\n) -> str",
+    ),
+    "title": "st.title(body, *, key=None) -> None",
+    "warning": "st.warning(body) -> None",
+    "write": "st.write(*args) -> None",
+}
+
 
 def _documented_api_classifications(path: Path) -> dict[str, str]:
     text = path.read_text(encoding="utf-8")
@@ -283,16 +357,16 @@ def _documented_deferred_api_areas(path: Path) -> list[str]:
 
 def _v1_stable_candidate_apis(path: Path) -> set[str]:
     text = path.read_text(encoding="utf-8")
-    start = "## Stable API Candidate"
-    end = "The pre-v1 experimental API is public"
+    start = "## Stable API"
+    end = "The experimental API is public"
     table = text.split(start, 1)[1].split(end, 1)[0]
     return set(re.findall(r"`st\.([a-z_]+|__version__)`", table))
 
 
 def _v1_experimental_mentions(path: Path) -> set[str]:
     text = path.read_text(encoding="utf-8")
-    start = "Experimental or intentionally modest before v1:"
-    end = "## Stable API Candidate"
+    start = "Experimental in v1:"
+    end = "## Stable API"
     section = text.split(start, 1)[1].split(end, 1)[0]
     return set(re.findall(r"`st\.([a-z_]+)`", section))
 
@@ -339,6 +413,11 @@ def test_import_stui_as_st_exposes_only_intended_public_exports() -> None:
     for name in st.__all__:
         obj = getattr(st, name)
         assert not inspect.isclass(obj), name
+
+
+def test_top_level_internal_modules_are_not_public_exports() -> None:
+    for name in ["api", "app", "cli", "elements", "runtime", "widgets"]:
+        assert name not in st.__all__, name
 
 
 def test_star_import_only_exports_public_contract() -> None:
@@ -404,6 +483,14 @@ def test_public_api_signatures_are_intentional() -> None:
     }
 
     assert signatures == EXPECTED_PUBLIC_SIGNATURES
+
+
+def test_api_reference_documents_every_frozen_signature() -> None:
+    reference = (ROOT / "docs/api-reference.md").read_text(encoding="utf-8")
+
+    assert set(EXPECTED_REFERENCE_SIGNATURES) == set(EXPECTED_PUBLIC_SIGNATURES)
+    for name, signature in EXPECTED_REFERENCE_SIGNATURES.items():
+        assert signature in reference, name
 
 
 def test_widget_callback_and_disabled_parameter_names_are_consistent() -> None:

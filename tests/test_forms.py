@@ -270,6 +270,31 @@ with st.form("outer"):
     assert elements[0].traceback == "Nested st.form blocks are not supported."
 
 
+def test_duplicate_form_key_renders_readable_error(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+with st.form("profile"):
+    st.text_input("Name")
+
+with st.form("profile"):
+    st.text_input("Email")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert len(elements) == 1
+    assert isinstance(elements[0], ErrorElement)
+    assert elements[0].traceback == (
+        'Duplicate form key "profile". '
+        "Form keys must be unique within a single run."
+    )
+
+
 def test_form_submit_button_outside_form_renders_readable_error(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,

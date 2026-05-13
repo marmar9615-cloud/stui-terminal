@@ -23,7 +23,7 @@ defined in [API Stability](api-stability.md).
 | API | Classification | Notes |
 | --- | --- | --- |
 | `__version__` | v1-stable | Package version string. |
-| `bar_chart` | pre-v1 experimental | Terminal chart rendering may still tighten before v1. |
+| `bar_chart` | pre-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
 | `button` | v1-stable | Core input widget. |
 | `caption` | v1-stable | Core text output. |
 | `checkbox` | v1-stable | Core input widget. |
@@ -41,7 +41,7 @@ defined in [API Stability](api-stability.md).
 | `help` | pre-v1 experimental | Help formatting and the public name need v1 feedback. |
 | `info` | v1-stable | Core status output. |
 | `json` | pre-v1 experimental | Static terminal display formatting may change. |
-| `line_chart` | pre-v1 experimental | Terminal chart rendering may still tighten before v1. |
+| `line_chart` | pre-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
 | `markdown` | v1-stable | Core text output. |
 | `metric` | pre-v1 experimental | Compact terminal summary formatting may change. |
 | `number_input` | pre-v1 experimental | Newer input widget still gathering feedback. |
@@ -51,10 +51,10 @@ defined in [API Stability](api-stability.md).
 | `selectbox` | pre-v1 experimental | Newer selection widget still gathering feedback. |
 | `session_state` | v1-stable | Core state mapping and attribute proxy. |
 | `slider` | v1-stable | Core numeric input widget. |
-| `spinner` | pre-v1 experimental | Status grouping behavior may still tighten before v1. |
+| `spinner` | pre-v1 experimental | Status grouping behavior may still tighten in v1.x. |
 | `stop` | pre-v1 experimental | Flow-control semantics need real-app feedback. |
 | `subheader` | v1-stable | Core text output. |
-| `status` | pre-v1 experimental | Status grouping behavior may still tighten before v1. |
+| `status` | pre-v1 experimental | Status grouping behavior may still tighten in v1.x. |
 | `success` | v1-stable | Core status output. |
 | `table` | pre-v1 experimental | Static terminal display formatting may change. |
 | `text` | v1-stable | Core text output. |
@@ -66,8 +66,8 @@ defined in [API Stability](api-stability.md).
 
 ## Text and Status
 
-`st.help` is pre-v1 experimental while the terminal formatting and public name
-settle. The other text helpers in this group are v1-stable candidates.
+`st.help` is experimental in v1 while the terminal formatting and public name
+settle. The other text helpers in this group are v1-stable.
 
 ```python
 st.title(body, *, key=None) -> None
@@ -389,20 +389,20 @@ if "token" not in st.session_state:
     st.stop()
 ```
 
-## v0.9 Final Candidate Status
+## v1.0 Stable Status
 
-The signatures above are intentionally covered by tests in v0.9.0. The
+The signatures above are intentionally covered by tests in v1.0.0. The
 classification table marks each top-level API as either `v1-stable` or
 `pre-v1 experimental`; see [API Stability](api-stability.md) for the full
-compatibility promise before v1.0.0 and the post-v1 deprecation policy.
+compatibility promise and post-v1 deprecation policy.
 
-The v0.9.0 release candidate treats the `v1-stable` rows as the proposed v1
-surface. Any change to those names before v1.0.0 should be treated as a release
-candidate blocker unless it fixes a correctness, terminal, or security issue
-and is documented in the changelog and release notes.
+The v1.0.0 release treats the `v1-stable` rows as the stable v1 surface. Any
+change to those names in v1.x should be treated as a compatibility event unless
+it fixes a correctness, terminal, or security issue and is documented in the
+changelog and release notes.
 
-These areas stay pre-v1 experimental for the v1 candidate freeze and need the
-most feedback before they can be called v1-stable:
+These areas stay experimental in v1.0.0 and need the most feedback before they
+can be called v1-stable:
 
 - Forms: deferred submit behavior and callback timing.
 - Grouping: `st.container`, `st.columns`, and `st.expander` as terminal
@@ -414,7 +414,7 @@ most feedback before they can be called v1-stable:
   grouping behavior.
 - Flow control: clear expectations for `st.rerun` and `st.stop` in real apps.
 
-APIs and feature areas explicitly deferred from the v1 candidate surface are
+APIs and feature areas explicitly deferred from the v1 stable surface are
 listed in [API Stability](api-stability.md#deferred-for-v1). They include
 `st.sidebar`, `st.tabs`, `st.file_uploader`, `st.cache_data`,
 `st.cache_resource`, `st.components`, editable dataframes,

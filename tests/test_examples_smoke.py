@@ -1,3 +1,4 @@
+from importlib import resources
 from pathlib import Path
 
 from stui.elements import (
@@ -32,6 +33,26 @@ def test_all_examples_run_without_script_errors() -> None:
         elements = runtime.run_script()
 
         assert not any(isinstance(element, ErrorElement) for element in elements), path
+
+
+def test_all_bundled_examples_run_without_script_errors() -> None:
+    examples = resources.files("stui.examples")
+    bundled = sorted(
+        child
+        for child in examples.iterdir()
+        if child.name.endswith(".py") and child.name != "__init__.py"
+    )
+
+    assert bundled
+
+    for example in bundled:
+        with resources.as_file(example) as path:
+            runtime = Runtime(path)
+            elements = runtime.run_script()
+
+        assert not any(isinstance(element, ErrorElement) for element in elements), (
+            example.name
+        )
 
 
 def test_kitchen_sink_example_runs_all_stable_apis() -> None:

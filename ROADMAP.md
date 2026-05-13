@@ -7,14 +7,14 @@ timeline or compatibility with Streamlit.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## v0.9 Final v1-Candidate Closeout
+## v1.0 Stable Baseline
 
-- Keep the v1 candidate API list frozen unless a documented correctness,
+- Keep the v1 stable API list frozen unless a documented correctness,
   terminal, or security issue forces a change.
 - Treat the API reference as the current public contract: signatures, return
   values, callbacks, `args`/`kwargs`, generated and explicit `key` behavior,
   disabled behavior, form submit behavior, `st.rerun`, and `st.stop`.
-- Ensure every stable-candidate API has focused tests and at least one README,
+- Ensure every stable API has focused tests and at least one README,
   example, or reference-doc mention.
 - Scope layout primitives honestly: `st.container`, `st.columns`, and
   `st.expander` are terminal grouping helpers, not sidebars, tabs, browser
@@ -22,9 +22,9 @@ Streamlit compatibility layer.
 - Keep charts and richer dataframe behavior experimental or explicitly modest
   until real v1 feedback says they should graduate.
 - Keep release notes, changelog, README, feedback docs, and v1 readiness docs
-  aligned without generating public launch posts.
+  aligned with the shipped package.
 
-## v0.9 Release Gates
+## v1 Maintenance Gates
 
 - Verify terminal compatibility across supported Python versions and common
   environments: macOS terminals, Linux terminals or containers, SSH/headless
@@ -50,13 +50,13 @@ Streamlit compatibility layer.
 
 ## Stable Versus Experimental API Boundary
 
-The stable-candidate API is the top-level `stui` surface marked `v1-stable` in
+The stable API is the top-level `stui` surface marked `v1-stable` in
 [`docs/api-stability.md`](docs/api-stability.md). These names should keep their
 call shape and core behavior through v1.0.0 unless a correctness
 issue forces a change.
 
-The pre-v1 experimental API is still public enough to try, but the project is
-asking for feedback before freezing it. This includes newer display helpers,
+The experimental API is still public enough to try, but the project is asking
+for feedback before freezing it. This includes newer display helpers,
 tables/dataframes, charts, forms, selection widgets, layout/grouping helpers,
 status/help helpers, and flow-control helpers that need more real terminal
 evidence before v1.
@@ -65,6 +65,8 @@ The command surface is expected to remain stable for v1 docs:
 
 - `stui run APP.py`
 - `python -m stui run APP.py`
+- `stui demo list`
+- `stui demo NAME`
 - `stui examples`
 - `stui example list`
 - `stui example copy NAME DEST`
@@ -90,8 +92,8 @@ The command surface is expected to remain stable for v1 docs:
 
 - Ship the documented small API surface only once there are no known state/rerun
   correctness bugs or every remaining issue is explicitly deferred.
-- Treat the APIs in `docs/v1-readiness.md` as the v1 stability candidate until
-  the project intentionally adds or removes an item.
+- Treat the APIs in `docs/v1-readiness.md` as the v1 stable contract until the
+  project intentionally adds or removes an item in a documented release.
 - Verify PyPI install, built artifacts, examples/init/copy commands, docs, CI,
   and terminal compatibility evidence together before calling v1 complete.
 - Keep Python support aligned with CI and document any support changes in the
@@ -102,16 +104,37 @@ The command surface is expected to remain stable for v1 docs:
   verified from PyPI, and the docs/examples match the shipped package. The
   public announcement push is saved for v1.0.0.
 
-## Post-v1 Candidates
+## v1.1 Candidates
 
-- Promote experimental APIs only after real terminal feedback supports their
-  current behavior.
-- Revisit richer dataframe interactions, chart variants, tabs, sidebars, and
-  broader layout primitives after the v1 API has settled.
-- Expand terminal compatibility evidence across more terminals and operating
-  systems without overstating unverified environments.
+- Promote only the experimental APIs that have real v1 user evidence and do not
+  need signature or semantic changes.
+- Improve installed-package examples, `stui init` templates, and terminal
+  compatibility docs based on early v1 feedback.
+- Tighten narrow-width rendering and keyboard documentation where reports show
+  reproducible friction.
+- Keep patch releases boring: bugs, docs, examples, packaging, and compatibility
+  evidence.
+
+## v1.2 Candidates
+
+- Revisit chart variants and richer static data inspection if users are building
+  real terminal dashboards that need them.
+- Explore table formatting hooks or lightweight selection only if they can stay
+  terminal-native and dependency-light.
+- Reassess `st.columns`, containers, expanders, forms, status, spinner, and
+  help after they have enough v1 usage to either stabilize or redesign.
+- Continue expanding compatibility evidence across macOS, Linux, SSH/headless,
+  editor terminals, containers, and Windows setups without overstating
+  environments the project has not tested.
+
+## Future Direction
+
 - Add normal deprecation warnings and migration notes before removing stable v1
   APIs in a future major release.
+- Consider a small extension story only after the core API has proven stable in
+  real terminal apps.
+- Keep large hosted, browser, cloud, auth, sync, and component-marketplace ideas
+  out of scope unless the project intentionally changes direction.
 
 ## Not Planned Yet
 
