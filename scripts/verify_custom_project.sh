@@ -48,8 +48,22 @@ PY
 
 (
   cd "$WORKDIR"
+  env -u PYTHONPATH "$PY" -m stui selftest --json > selftest-result.json
   env -u PYTHONPATH "$PY" -m stui check app.py --json > check-result.json
 )
+
+"$PY" - "$WORKDIR/selftest-result.json" <<'PY'
+import json
+import pathlib
+import sys
+
+result_path = pathlib.Path(sys.argv[1])
+payload = json.loads(result_path.read_text(encoding="utf-8"))
+
+assert payload["schema_version"] == "stui.selftest.v1", payload
+assert payload["ok"] is True, payload
+assert payload["summary"]["passed"] == payload["summary"]["total"], payload
+PY
 
 "$PY" - "$WORKDIR/check-result.json" <<'PY'
 import json

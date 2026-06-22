@@ -67,7 +67,7 @@ After the TestPyPI Trusted Publisher is configured:
 
 1. Go to GitHub Actions for this repository.
 2. Select the `Publish` workflow.
-3. Run the workflow from the release tag, for example `v1.2.0`.
+3. Run the workflow from the release tag, for example `v1.3.0`.
 4. Set `publish_to_testpypi` to `true`.
 5. Keep `publish_to_pypi` set to `false`.
 6. Approve the `testpypi` environment if GitHub asks for approval.
@@ -77,7 +77,7 @@ You can also use GitHub CLI after the trusted publisher exists:
 ```bash
 gh workflow run publish.yml \
   --repo marmar9615-cloud/stui-terminal \
-  --ref v1.2.0 \
+  --ref v1.3.0 \
   -f publish_to_testpypi=true \
   -f publish_to_pypi=false
 ```
@@ -88,7 +88,7 @@ After the PyPI Trusted Publisher is configured and local verification is green:
 
 1. Go to GitHub Actions for this repository.
 2. Select the `Publish` workflow.
-3. Run the workflow from the release tag, for example `v1.2.0`.
+3. Run the workflow from the release tag, for example `v1.3.0`.
 4. Keep `publish_to_testpypi` set to `false`.
 5. Set `publish_to_pypi` to `true`.
 
@@ -97,7 +97,7 @@ You can also use GitHub CLI after the trusted publisher exists:
 ```bash
 gh workflow run publish.yml \
   --repo marmar9615-cloud/stui-terminal \
-  --ref v1.2.0 \
+  --ref v1.3.0 \
   -f publish_to_testpypi=false \
   -f publish_to_pypi=true
 ```
@@ -113,7 +113,7 @@ python -m pip install --upgrade pip
 python -m pip install \
   --index-url https://test.pypi.org/simple/ \
   --extra-index-url https://pypi.org/simple/ \
-  stui-terminal==1.2.0
+  stui-terminal==1.3.0
 python -c "import stui; print(stui.__version__)"
 stui --version
 ```
@@ -121,8 +121,8 @@ stui --version
 Expected version for this release:
 
 ```text
-1.2.0
-stui 1.2.0
+1.3.0
+stui 1.3.0
 ```
 
 ## Verify PyPI Install
@@ -133,9 +133,10 @@ Use a clean temporary environment:
 python3.11 -m venv /tmp/stui-terminal-pypi
 . /tmp/stui-terminal-pypi/bin/activate
 python -m pip install --upgrade pip
-python -m pip install stui-terminal==1.2.0
+python -m pip install stui-terminal==1.3.0
 python -c "import stui; print(stui.__version__)"
 stui --version
+stui selftest
 stui init /tmp/stui-app.py
 stui check /tmp/stui-app.py
 ```

@@ -1,6 +1,6 @@
 # API Stability
 
-`stui` v1.2.0 keeps the top-level stable API intentionally small and
+`stui` v1.3.0 keeps the top-level stable API intentionally small and
 Streamlit-inspired, but it is not Streamlit-compatible and does not depend on
 Streamlit at runtime.
 
@@ -114,6 +114,7 @@ surface:
 | `st.cache_data` | deferred for v1 | Caching decorators are out of scope for the v1 API freeze. |
 | `st.cache_resource` | deferred for v1 | Caching decorators are out of scope for the v1 API freeze. |
 | `st.components` | deferred for v1 | Browser component embedding is intentionally unsupported. |
+| `st.empty` | deferred for v1 | Placeholder mutation semantics are not frozen for the terminal rerun model. |
 | custom column ratios/gaps | deferred for v1 | `st.columns` remains a count-only terminal primitive. |
 | editable dataframes | deferred for v1 | `st.dataframe` remains static display only. |
 | plotting-library parity | deferred for v1 | Charts remain compact terminal summaries. |

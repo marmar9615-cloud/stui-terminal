@@ -57,14 +57,14 @@ Feedback that is most helpful right now:
   behavior, plotting behavior, layout, tabs, sidebars, or GPL widget code.
 - Bugs that can be reproduced with a short `stui run` script.
 
-## v1.2 Feedback
+## v1.x Feedback
 
 Feedback that can shape near-term design:
 
 - Terminal evidence: which environments should move from unknown/test-needed to
   supported during the v1 series.
-- Package hardening: whether install, copy, init, and example flows work from
-  clean virtual environments and built artifacts.
+- Package hardening: whether install, copy, init, selftest, and example flows
+  work from clean virtual environments and built artifacts.
 - `stui check`: whether non-interactive validation catches useful script errors
   in local or CI workflows.
 - Charts: whether the current bar and line summaries are enough, and which chart
@@ -81,12 +81,12 @@ Feedback that can shape near-term design:
 - Theming: which parts of the terminal UI need project-level styling control.
 - Mouse support improvements: where mouse behavior should complement keyboard
   control without becoming required.
-- Screenshot and GIF docs: which workflows would be clearer with recorded
-  terminal examples.
+- Screenshot and GIF docs: whether the current real terminal screenshot and
+  `stui demo model_demo` command set expectations clearly.
 - Remaining experimental APIs: whether charts, status/spinner, or help should
   graduate, stay experimental, or be redesigned.
 
-## v1.2 And Later Feedback
+## Later v1.x Feedback
 
 Feedback that is useful but may require more design work:
 

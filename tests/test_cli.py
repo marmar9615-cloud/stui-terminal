@@ -79,6 +79,7 @@ def test_demo_list_prints_supported_demos() -> None:
     assert result.exit_code == 0
     assert "stui demos:" in result.output
     assert "basic - Smallest useful app:" in result.output
+    assert "model_demo - Compact model comparison demo" in result.output
     assert "dashboard - Dashboard-style layout" in result.output
     assert "forms - Form-style user input flow." in result.output
     assert "charts - Simple chart and data visualization patterns." in result.output
@@ -138,7 +139,10 @@ def test_demo_rejects_invalid_demo_name() -> None:
     assert result.exit_code != 0
     assert "unknown demo 'counter'" in normalized_output
     assert "stui demo list" in result.output
-    assert "basic, dashboard, forms, charts, kitchen_sink" in normalized_output
+    assert (
+        "basic, model_demo, dashboard, forms, charts, kitchen_sink"
+        in normalized_output
+    )
 
 
 def test_demo_uses_package_resource_without_repo_checkout(
@@ -441,6 +445,65 @@ def test_doctor_json_warns_on_package_import_version_mismatch(monkeypatch) -> No
         for item in diagnostics["warnings"]
     )
     assert "locations" in diagnostics
+
+
+def test_selftest_command() -> None:
+    result = CliRunner().invoke(cli.app, ["selftest"])
+
+    assert result.exit_code == 0
+    assert "stui selftest passed:" in result.output
+    assert "package metadata:" in result.output
+    assert "bundled demos:" in result.output
+    assert "generated template checks:" in result.output
+    assert "bundled example check:" in result.output
+
+
+def test_selftest_json_output() -> None:
+    result = CliRunner().invoke(cli.app, ["selftest", "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "stui.selftest.v1"
+    assert payload["stui_version"] == stui.__version__
+    assert payload["ok"] is True
+    assert payload["summary"]["passed"] == payload["summary"]["total"]
+    assert {check["name"] for check in payload["checks"]} == {
+        "package metadata",
+        "bundled demos",
+        "init templates",
+        "generated template checks",
+        "bundled example check",
+    }
+
+
+def test_selftest_reports_missing_bundled_demo(monkeypatch) -> None:
+    monkeypatch.setattr(cli, "_bundled_examples", lambda: {"dashboard.py"})
+
+    result = CliRunner().invoke(cli.app, ["selftest", "--json"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    bundled_check = next(
+        check for check in payload["checks"] if check["name"] == "bundled demos"
+    )
+    assert bundled_check["ok"] is False
+    assert "missing demo resources:" in bundled_check["detail"]
+
+
+def test_selftest_fails_on_package_metadata_mismatch(monkeypatch) -> None:
+    monkeypatch.setattr(cli, "_package_version", lambda _name: "9.9.9")
+
+    result = CliRunner().invoke(cli.app, ["selftest", "--json"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    metadata_check = next(
+        check for check in payload["checks"] if check["name"] == "package metadata"
+    )
+    assert metadata_check["ok"] is False
+    assert "version mismatch" in metadata_check["detail"]
 
 
 def test_color_capability_reports_truecolor_256_and_dumb() -> None:

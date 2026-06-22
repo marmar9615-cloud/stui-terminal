@@ -18,7 +18,7 @@ Streamlit compatibility layer. Existing Streamlit apps usually need edits; new
 
 ## Preview
 
-![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/main/assets/stui-model-demo.png)
+![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.3.0/assets/stui-model-demo.png)
 
 ```text
 ┌─ stui ───────────────────────────────────────────┐
@@ -59,6 +59,7 @@ filing terminal or keyboard issues:
 python -m stui --version
 python -m stui doctor
 python -m stui doctor --json
+python -m stui selftest
 ```
 
 For local development from a checkout, use an editable install with the dev
@@ -106,11 +107,13 @@ Install, launch a bundled demo, then run the app you just wrote:
 
 ```bash
 python -m pip install stui-terminal
+stui demo model_demo
 stui demo dashboard
 stui run app.py
 ```
 
-Press `q` to quit the demo.
+Press `q` to quit a demo. The screenshot above is a real terminal capture from
+the bundled `model_demo` demo.
 
 Or generate a starter file instead of writing `app.py` by hand:
 
@@ -131,9 +134,24 @@ Check your install and terminal details:
 stui --version
 stui doctor
 stui doctor --json
+stui selftest
+stui selftest --json
 stui check app.py
 stui check app.py --json
 ```
+
+## Project Links
+
+- [Docs index](docs/README.md)
+- [API reference](docs/api-reference.md)
+- [API stability](docs/api-stability.md)
+- [Terminal compatibility](docs/terminal-compatibility.md)
+- [Changelog](CHANGELOG.md)
+- [Roadmap](ROADMAP.md)
+- [Release notes](docs/releases/README.md)
+- [Contributing](CONTRIBUTING.md)
+- [Support](SUPPORT.md)
+- [Security](SECURITY.md)
 
 ## Build Your First App
 
@@ -185,6 +203,7 @@ bundled examples that can be listed or copied into any working directory:
 ```bash
 stui demo list
 stui demo basic
+stui demo model_demo
 stui demo dashboard
 stui demo forms
 stui demo charts
@@ -198,6 +217,7 @@ stui run ./counter.py
 stui init ./new_app.py
 stui init ./dashboard.py --template dashboard
 stui init ./forms_app.py --template forms
+stui selftest
 ```
 
 Automated tests cover demo CLI behavior and bundled-resource resolution without
@@ -226,10 +246,10 @@ stui init ./ops_dashboard.py --template dashboard
 python -m stui run ./ops_dashboard.py
 ```
 
-The v1.x releases treat these demo/example/init/copy commands as part of the
-stable documentation contract. If an installed-package flow does not work
-without a repository checkout, that is patch-release-worthy docs or packaging
-debt.
+The v1.x releases treat these demo/example/init/copy/check/selftest commands as
+part of the stable documentation contract. If an installed-package flow does
+not work without a repository checkout, that is patch-release-worthy docs or
+packaging debt.
 
 The demo screenshot above is generated from a real terminal app in this
 repository, not a browser mockup. If the image on PyPI or GitHub ever drifts
@@ -415,7 +435,7 @@ and [docs/v1-readiness.md#stable-api](docs/v1-readiness.md#stable-api).
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v1.2.0 |
+| Area | APIs | Status in v1.3.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
@@ -427,7 +447,7 @@ The terminal support checklist lives in
 | Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Mixed: `st.metric` is v1-stable; charts remain post-v1 experimental terminal summaries, not plotting replacements |
 | State and flow | `st.session_state`, `st.rerun`, `st.stop` | v1-stable state and flow-control helpers |
 | Package metadata | `st.__version__` | v1-stable package version string |
-| CLI and examples | `stui run`, `stui check`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | v1-stable command surface |
+| CLI and examples | `stui run`, `stui check`, `stui selftest`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | v1-stable command surface |
 
 Inputs support stable `key` values and optional callbacks where the function
 signature documents them. Tables and charts are simple static displays and do
@@ -435,28 +455,29 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v1.2.0 stable surface keeps the v1 core compact while adding
+The v1.3.0 stable surface keeps the v1 core compact while adding
 `st.table(..., max_rows=..., max_cols=...)` and
 `st.dataframe(..., max_rows=..., max_cols=...)` for bounded static output, and
 graduating count-only `st.columns(count)` as a stable terminal grouping
-primitive. These names should keep their call shape, return type, and basic
-behavior through v1 unless a correctness, terminal, or security issue forces a
-change.
+primitive. v1.3.0 also adds `stui selftest` and package-content audit tooling
+for installed-package verification. These names should keep their call shape,
+return type, and basic behavior through v1 unless a correctness, terminal, or
+security issue forces a change.
 
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v1 behavior yet. In v1.2.0 this includes `st.bar_chart`,
+promised as frozen v1 behavior yet. In v1.3.0 this includes `st.bar_chart`,
 `st.line_chart`, `st.status`, `st.spinner`, and `st.help`.
 Release notes should call out any change with a migration note when practical.
 
 APIs not shown in this table should be treated as private implementation
-details. Experimental display/layout helpers may still tighten in v1.x unless they
+details. Experimental display/status helpers may still tighten in v1.x unless they
 are promoted in the API stability docs and covered by release notes.
 Deferred APIs for v1 include `st.sidebar`, `st.tabs`, `st.file_uploader`,
 `st.cache_data`, `st.cache_resource`, `st.components`, editable dataframes,
-custom column ratios/gaps, plotting-library parity, and browser/server runtime
-features.
+custom column ratios/gaps, `st.empty`, plotting-library parity, and
+browser/server runtime features.
 
 ## Compatibility
 
@@ -682,19 +703,21 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v1.2.0 Stable Status
+## v1.3.0 Stable Status
 
-v1.2.0 is a practical post-v1 improvement release. It keeps the
-package/import/CLI contract from v1.0.0, adds `stui check APP.py` for
-non-interactive app validation, improves static table/dataframe limits, hardens
-chart empty states, and promotes count-only `st.columns(count)` to stable.
+v1.3.0 is a professionalization and trust release. It keeps the
+package/import/CLI contract from v1.0.0, keeps v1.2.0 behavior compatible, adds
+`stui selftest` for lightweight installed-package validation, adds a repeatable
+package-contents audit, and keeps the README/PyPI screenshot story tied to a
+real bundled terminal demo.
 
 The remaining experimental APIs and terminal compatibility unknowns are visible
 instead of hidden. Post-v1 work should be feedback-driven and kept out of the
 core stable API unless it has enough real terminal evidence.
 
-See [ROADMAP.md](ROADMAP.md) and
-[docs/v1-readiness.md](docs/v1-readiness.md) for the full path to v1.
+See [ROADMAP.md](ROADMAP.md), [docs/README.md](docs/README.md), and
+[docs/v1-readiness.md](docs/v1-readiness.md) for the current v1.x contract and
+post-v1 direction.
 
 ## Contributing
 

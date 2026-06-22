@@ -10,5 +10,7 @@ include pyproject.toml
 recursive-include assets *.png
 recursive-include docs *.md
 recursive-include examples *.py
-recursive-include scripts *.sh
+recursive-include scripts *.sh *.py
 prune tests
+exclude docs/announcement-drafts.md
+global-exclude *.py[cod] __pycache__ .DS_Store

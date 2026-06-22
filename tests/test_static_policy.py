@@ -155,6 +155,8 @@ def test_tracked_text_files_do_not_contain_obvious_secret_material() -> None:
 
     for tracked_file in tracked_files:
         path = ROOT / tracked_file
+        if not path.exists():
+            continue
         if path == Path(__file__):
             continue
         if path.suffix not in text_suffixes:

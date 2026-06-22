@@ -5,6 +5,7 @@ import os
 import platform
 import shutil
 import sys
+import tempfile
 from collections import Counter
 from dataclasses import dataclass
 from importlib import metadata, resources
@@ -54,6 +55,7 @@ EXAMPLE_DESCRIPTIONS = {
 
 DEMO_NAMES = (
     "basic",
+    "model_demo",
     "dashboard",
     "forms",
     "charts",
@@ -395,55 +397,29 @@ def check_app(
     """Validate a stui script without launching the interactive TUI."""
 
     script_path = script.expanduser()
-    if error := _script_path_error(script_path):
-        payload = _check_payload(
-            script,
-            script_path if script_path.is_absolute() else None,
-            errors=[error],
-            status="invalid_script",
-            exit_code=2,
-            error_kind=_script_error_kind(script_path, error),
-            element_types={},
-            element_count=0,
-        )
-        if json_output:
-            typer.echo(json_module.dumps(payload, indent=2, sort_keys=True))
-            raise typer.Exit(2)
-        raise typer.BadParameter(error)
-
-    runtime = Runtime(script_path.resolve())
-    elements = runtime.run_script()
-    errors = [
-        element.traceback
-        for element in elements
-        if isinstance(element, ErrorElement)
-    ]
-    element_types = Counter(type(element).__name__ for element in elements)
-    payload = _check_payload(
-        script,
-        script_path.resolve(),
-        errors=errors,
-        status="script_error" if errors else "ok",
-        exit_code=1 if errors else 0,
-        error_kind="script_error" if errors else None,
-        element_types=dict(sorted(element_types.items())),
-        element_count=len(elements),
-    )
+    payload = _validate_script(script)
+    error = payload["error"]
+    exit_code = int(payload["exit_code"])
 
     if json_output:
         typer.echo(json_module.dumps(payload, indent=2, sort_keys=True))
-    elif errors:
+        if exit_code:
+            raise typer.Exit(exit_code)
+        return
+    if payload["status"] == "invalid_script":
+        raise typer.BadParameter(str(error["traceback"]) if error else "")
+    if error:
         typer.echo(f"stui check failed: {script_path}")
-        for error in errors:
-            typer.echo(error)
+        typer.echo(error["traceback"])
     else:
+        element_count = int(payload["summary"]["element_count"])
         typer.echo(
             f"stui check passed: {script_path} "
-            f"({len(elements)} rendered element{'s' if len(elements) != 1 else ''})"
+            f"({element_count} rendered element{'s' if element_count != 1 else ''})"
         )
 
-    if errors:
-        raise typer.Exit(1)
+    if exit_code:
+        raise typer.Exit(exit_code)
 
 
 def _script_error_kind(script: Path, message: str) -> str:
@@ -454,6 +430,40 @@ def _script_error_kind(script: Path, message: str) -> str:
     if "must be a .py file" in message:
         return "not_python"
     return "invalid_script"
+
+
+def _validate_script(script: Path) -> dict[str, object]:
+    script_path = script.expanduser()
+    if error := _script_path_error(script_path):
+        return _check_payload(
+            script,
+            script_path if script_path.is_absolute() else None,
+            errors=[error],
+            status="invalid_script",
+            exit_code=2,
+            error_kind=_script_error_kind(script_path, error),
+            element_types={},
+            element_count=0,
+        )
+
+    runtime = Runtime(script_path.resolve())
+    elements = runtime.run_script()
+    errors = [
+        element.traceback
+        for element in elements
+        if isinstance(element, ErrorElement)
+    ]
+    element_types = Counter(type(element).__name__ for element in elements)
+    return _check_payload(
+        script,
+        script_path.resolve(),
+        errors=errors,
+        status="script_error" if errors else "ok",
+        exit_code=1 if errors else 0,
+        error_kind="script_error" if errors else None,
+        element_types=dict(sorted(element_types.items())),
+        element_count=len(elements),
+    )
 
 
 def _check_payload(
@@ -582,6 +592,152 @@ def doctor(
             f"example source: {first_source['source']} "
             f"({first_source['location']})"
         )
+
+
+def _selftest_check(
+    name: str,
+    ok: bool,
+    detail: str,
+    *,
+    payload: dict[str, object] | None = None,
+) -> dict[str, object]:
+    check: dict[str, object] = {
+        "name": name,
+        "ok": ok,
+        "detail": detail,
+    }
+    if payload is not None:
+        check["payload"] = payload
+    return check
+
+
+def _run_selftest() -> dict[str, object]:
+    checks: list[dict[str, object]] = []
+    package_version = _package_version("stui-terminal")
+    package_ok = package_version == __version__
+    package_detail = f"import stui={__version__}; stui-terminal={package_version}"
+    if not package_ok:
+        package_detail += " (version mismatch; run stui doctor for details)"
+    checks.append(
+        _selftest_check(
+            "package metadata",
+            package_ok,
+            package_detail,
+        )
+    )
+
+    bundled = _bundled_examples()
+    required_demos = {_example_name(name) for name in DEMO_NAMES}
+    missing_demos = sorted(required_demos - bundled)
+    checks.append(
+        _selftest_check(
+            "bundled demos",
+            not missing_demos,
+            (
+                f"{len(required_demos) - len(missing_demos)}/"
+                f"{len(required_demos)} demo resources available"
+            )
+            if not missing_demos
+            else f"missing demo resources: {', '.join(missing_demos)}",
+        )
+    )
+
+    checks.append(
+        _selftest_check(
+            "init templates",
+            {"basic", "dashboard", "forms"}.issubset(INIT_TEMPLATES),
+            "available templates: " + ", ".join(INIT_TEMPLATE_CHOICES),
+        )
+    )
+
+    with tempfile.TemporaryDirectory(prefix="stui-selftest-") as tmp:
+        tmp_path = Path(tmp)
+
+        template_errors = []
+        for template_name in INIT_TEMPLATE_CHOICES:
+            init_script = tmp_path / f"{template_name}_selftest.py"
+            init_script.write_text(
+                INIT_TEMPLATES[template_name].format(filename=init_script.name),
+                encoding="utf-8",
+            )
+            init_payload = _validate_script(init_script)
+            if not init_payload["ok"]:
+                template_errors.append(template_name)
+        checks.append(
+            _selftest_check(
+                "generated template checks",
+                not template_errors,
+                (
+                    f"{len(INIT_TEMPLATE_CHOICES) - len(template_errors)}/"
+                    f"{len(INIT_TEMPLATE_CHOICES)} templates rendered"
+                )
+                if not template_errors
+                else "template errors: " + ", ".join(template_errors),
+            )
+        )
+
+        if "basic.py" in bundled:
+            example_script = tmp_path / "basic.py"
+            example_script.write_text(
+                _read_bundled_example("basic"),
+                encoding="utf-8",
+            )
+            example_payload = _validate_script(example_script)
+            checks.append(
+                _selftest_check(
+                    "bundled example check",
+                    bool(example_payload["ok"]),
+                    "stui check copied basic example",
+                    payload=example_payload,
+                )
+            )
+        else:
+            checks.append(
+                _selftest_check(
+                    "bundled example check",
+                    False,
+                    "basic.py was not available as a bundled resource",
+                )
+            )
+
+    passed = sum(1 for check in checks if check["ok"])
+    return {
+        "schema_version": "stui.selftest.v1",
+        "stui_version": __version__,
+        "ok": passed == len(checks),
+        "summary": {
+            "passed": passed,
+            "total": len(checks),
+        },
+        "checks": checks,
+    }
+
+
+@app.command("selftest")
+def selftest(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print self-test result as JSON."),
+    ] = False,
+) -> None:
+    """Run lightweight installed-package checks without launching a TUI."""
+
+    result = _run_selftest()
+    if json_output:
+        typer.echo(json_module.dumps(result, indent=2, sort_keys=True))
+    else:
+        summary = result["summary"]
+        status = "passed" if result["ok"] else "failed"
+        typer.echo(
+            f"stui selftest {status}: "
+            f"{summary['passed']}/{summary['total']} checks passed"
+        )
+        for check in result["checks"]:
+            prefix = "ok" if check["ok"] else "fail"
+            typer.echo(f"  {prefix} {check['name']}: {check['detail']}")
+
+    if not result["ok"]:
+        raise typer.Exit(1)
 
 
 @app.command("examples")

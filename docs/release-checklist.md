@@ -62,12 +62,12 @@ python3.11 -m venv /tmp/stui-current
 ```
 
 After publishing, repeat the same check with the exact released version, for
-example `stui-terminal==1.2.0`.
+example `stui-terminal==1.3.0`.
 
 ## Tag, CI, Publish, Release
 
 1. Commit only after local verification is green.
-2. Create and push the release tag, for example `v1.2.0`.
+2. Create and push the release tag, for example `v1.3.0`.
 3. Wait for CI on `main` and the tag.
 4. Dispatch the `Publish` workflow from the release tag with exactly one publish
    flag enabled.
@@ -84,7 +84,7 @@ Use this stricter flow for the stable v1 launch:
 
 1. Freeze code and docs together: version metadata, README, API reference, API
    stability table, changelog, release notes, v1 readiness, feedback docs,
-   roadmap, and announcement drafts must describe the same shipped surface.
+   and roadmap must describe the same shipped surface.
 2. Run local gates from a clean checkout or refreshed virtual environment:
    `ruff check .`, `python3.11 -m pytest`, `python -m build`,
    `python -m twine check dist/*`, `./scripts/check.sh`, and
@@ -125,8 +125,9 @@ Use this flow for v1.1.0 and later v1.x maintenance/minor releases:
    before creating the tag.
 4. Smoke the built wheel in a temporary virtual environment: import `stui`, run
    version/doctor commands, list/copy examples, list demos, create each
-   documented template, run `stui check` on copied or initialized apps, and run
-   at least one copied example with `python -m stui run` when practical.
+   documented template, run `stui check` on copied or initialized apps, run
+   `stui selftest`, and run at least one copied example with `python -m stui
+   run` when practical.
 5. Tag only after the release diff is final and no helper has unreviewed edits.
 6. Wait for `main` and tag CI, then publish from the tag through Trusted
    Publishing with only the real PyPI flag enabled.
@@ -154,10 +155,12 @@ Before tagging v1.x releases, confirm:
   code, or `textual-slider` dependency has been introduced.
 - Installed-package flows work without a repository checkout: `stui examples`,
   `stui demo list`, `stui demo NAME`, `stui example list`,
-  `stui example copy`, `stui init`, and `stui check`.
+  `stui example copy`, `stui init`, `stui check`, and `stui selftest`.
 - v1.2.0 and later minor releases run `scripts/verify_custom_project.sh` from
   outside the repository or through `./scripts/check.sh` to prove a multi-file
   external project can import helpers and validate with `stui check`.
+- v1.3.0 and later minor releases run `scripts/audit_package_contents.py dist`
+  after building to prove wheel/sdist contents are intentional.
 - Terminal compatibility evidence or explicit test-needed labels are current in
   `docs/terminal-compatibility.md`.
 - Public launch-style announcement copy is not generated for routine v1.x

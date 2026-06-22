@@ -9,4 +9,8 @@ fi
 
 "$PYTHON" -m ruff check .
 "$PYTHON" -m pytest
+"$PYTHON" -m stui selftest --json >/tmp/stui-selftest-result.json
 PYTHON="$PYTHON" ./scripts/verify_custom_project.sh
+if [ -d dist ] && ls dist/stui_terminal-* >/dev/null 2>&1; then
+  "$PYTHON" scripts/audit_package_contents.py dist
+fi

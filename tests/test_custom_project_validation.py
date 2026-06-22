@@ -38,4 +38,5 @@ def test_verify_custom_project_script_runs_from_external_directory(
     assert "custom project validation passed:" in result.stdout
     assert (tmp_path / "custom-project" / "helper.py").exists()
     assert (tmp_path / "custom-project" / "app.py").exists()
+    assert (tmp_path / "custom-project" / "selftest-result.json").exists()
     assert (tmp_path / "custom-project" / "check-result.json").exists()

@@ -1,6 +1,6 @@
 # v1 Readiness
 
-`stui` v1.2.0 is a practical post-v1 improvement release. The goal for the v1
+`stui` v1.3.0 is a professionalization and trust release. The goal for the v1
 series is not to become Streamlit-compatible or to grow a large component
 catalog. The goal is a small, stable, terminal-native API that can be installed
 from PyPI, explained quickly, and trusted for local tools.
@@ -8,14 +8,14 @@ from PyPI, explained quickly, and trusted for local tools.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## Status After v1.2.0
+## Status After v1.3.0
 
-v1.2.0 keeps the v1.0.0 baseline intact, adds non-interactive `stui check`
-validation for app scripts, improves table/dataframe output limits, and
-graduates count-only `st.columns(count)` after additional docs and regression
-coverage. The release keeps chart/status/help APIs labeled as post-v1
-experimental instead of quietly freezing behavior that still needs terminal
-evidence.
+v1.3.0 keeps the v1.0.0 baseline intact and preserves v1.2.0 behavior while
+professionalizing the repo, package, and validation story. It adds `stui
+selftest`, package-content auditing for wheel/sdist hygiene, a docs index, and
+clearer first-run screenshot/demo alignment. The release keeps chart/status/help
+APIs labeled as post-v1 experimental instead of quietly freezing behavior that
+still needs terminal evidence.
 
 On the v1.x line, the stable API list is frozen. The freeze covers the
 top-level names in `stui.__all__`, their stability classifications, and the
@@ -34,22 +34,27 @@ Normal v1.x release work should include changelog and GitHub Release notes only.
 Do not generate social launch copy for maintenance or minor releases unless a
 separate task explicitly asks for it.
 
-## Complete For v1.2.0
+## Complete Through v1.3.0
 
 - The PyPI distribution/import/CLI naming is settled: install
   `stui-terminal`, import `stui`, and run `stui`.
 - The stable API is documented in the README, API reference, API
   stability table, and public API tests.
-- v1.2.0 keeps the v1.1 stable API intact, adds stable table/dataframe
-  `max_rows` and `max_cols` output limits, and graduates count-only
+- v1.2.0 kept the v1.1 stable API intact, added stable table/dataframe
+  `max_rows` and `max_cols` output limits, and graduated count-only
   `st.columns(count)`.
 - `stui check APP.py` provides a non-interactive runtime validation command for
   local and CI use.
+- `stui selftest` provides a lightweight installed-package health check for
+  bundled examples, templates, package metadata, and non-interactive runtime
+  validation.
+- `scripts/audit_package_contents.py` verifies wheel/sdist contents and keeps
+  stale package files out of release artifacts.
 - Remaining experimental APIs stay labeled instead of being quietly promoted.
 - Deferred Streamlit-style features are listed as out of scope for v1.
 - The README quickstart, first app, API table, terminal compatibility link,
   examples/templates, limitations, and troubleshooting sections all point users
-  at the same v1.2.0 contract.
+  at the same v1.3.0 contract.
 - Bundled demo/example listing/copying and `stui init` are part of the v1
   documentation contract rather than checkout-only conveniences.
 
@@ -64,7 +69,7 @@ separate task explicitly asks for it.
 
 ## API Stability Status
 
-The project should keep the public API small. v1.2.0 treats the table below as
+The project should keep the public API small. v1.3.0 treats the table below as
 the stable v1 reference.
 
 Stable APIs should not change casually. If a signature or return value
@@ -82,14 +87,15 @@ Post-v1 experimental APIs:
 Explicitly deferred APIs and feature areas:
 
 - `st.sidebar`, `st.tabs`, `st.file_uploader`, `st.cache_data`,
-  `st.cache_resource`, and `st.components` are not in the v1 stable API.
+  `st.cache_resource`, `st.components`, and `st.empty` are not in the v1
+  stable API.
 - custom column ratios/gaps, editable dataframes, plotting-library parity, and
   browser/server runtime, websocket, or port-forwarding runtime features are
   deferred from v1.
 
 ## API Contract Status
 
-v1.2.0 considers the stable public contract documented and frozen for the v1
+v1.3.0 considers the stable public contract documented and frozen for the v1
 series.
 The current contract lives in [`docs/api-reference.md`](api-reference.md) and
 covers:
@@ -100,7 +106,7 @@ covers:
 - Callback behavior, `args`/`kwargs`, disabled widgets, explicit keys, generated
   keys, form submit behavior, `st.rerun`, and `st.stop`.
 - CLI entry points for running apps, listing/copying bundled examples,
-  generating starter files, diagnostics, and version checks.
+  generating starter files, diagnostics, self-tests, and version checks.
 
 Post-v1 experimental APIs may continue to tighten in v1.x, but stable public
 signature, return-value, or semantic changes should be treated as compatibility
@@ -323,17 +329,17 @@ The README, release notes, and API docs should keep these limits explicit:
 
 ## v1.x Release Checklist
 
-| Gate | v1.2.0 status | v1.x decision |
+| Gate | v1.3.0 status | v1.x decision |
 | --- | --- | --- |
 | Stable API list | Adds table/dataframe output limits and graduates count-only columns. | Do not change unless a correctness, terminal, or safety issue appears. |
 | Experimental APIs | Labeled in README, API reference, API stability docs, v1 readiness docs, and tests. | Keep experimental until tests, docs, and terminal evidence justify promotion. |
 | Deferred Streamlit-style APIs | Explicitly deferred in API stability docs and README. | Do not add to v1. |
 | State/rerun/widget correctness | Covered by regression tests for known issues. | Fix reproducible blockers; document non-blocking limitations. |
-| Installed-package flow | Required for v1 release gates. | Verify from PyPI again for every release. |
+| Installed-package flow | Required for v1 release gates, now including `stui selftest`. | Verify from PyPI again for every release. |
 | Terminal compatibility | Evidence-driven matrix remains open. | Document unknowns instead of overclaiming support. |
 | Narrow rendering | Covered by regression tests for known table/chart/layout edges. | Fix reproducible blockers; document non-blocking limitations. |
 | Release process | Checklist and publishing docs are explicit. | Follow the same gates for v1.x releases. |
-| Public announcement | Not part of v1.2.0. | Generate no social or discussion copy for routine v1.x releases unless explicitly requested. |
+| Public announcement | Not part of v1.3.0. | Generate no social or discussion copy for routine v1.x releases unless explicitly requested. |
 
 ## Post-v1 Plan
 

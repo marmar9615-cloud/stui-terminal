@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.0 - 2026-06-22
+
+### Added
+
+- Added `stui selftest` and `stui selftest --json` for lightweight
+  installed-package validation without launching the full interactive TUI.
+- Added `scripts/audit_package_contents.py` to verify wheel and sdist contents
+  during release proof.
+- Added `docs/README.md` as a concise docs index.
+- Added v1.3.0 release notes under `docs/releases/`.
+
+### Changed
+
+- Added `model_demo` to the curated `stui demo` command set so the README/PyPI
+  screenshot can be reproduced from an installed package.
+- Updated README, API docs, feedback docs, roadmap, terminal compatibility docs,
+  publishing docs, and release checklist for the v1.3.0 validation flow.
+- Kept stale social announcement drafts out of source distributions.
+- Added explicit source distribution exclusions for Python bytecode,
+  `__pycache__`, and `.DS_Store`.
+
+### Fixed
+
+- Removed a stale duplicate `docs/v0.3.0.md` file now covered by
+  `docs/releases/RELEASE_NOTES_v0.3.0.md`.
+- Added `st.empty` to the canonical deferred API list so README, roadmap, and
+  API stability docs agree.
+
 ## 1.2.0 - 2026-06-21
 
 ### Added

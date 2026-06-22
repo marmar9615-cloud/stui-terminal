@@ -56,7 +56,7 @@ call shape and core behavior through v1.x unless a correctness
 issue forces a change.
 
 The experimental API is still public enough to try, but the project is asking
-for feedback before freezing it. In v1.2.0 the remaining experimental APIs are
+for feedback before freezing it. In v1.3.0 the remaining experimental APIs are
 `st.bar_chart`, `st.line_chart`, `st.status`, `st.spinner`, and `st.help`.
 
 The command surface is expected to remain stable for v1 docs:
@@ -71,6 +71,8 @@ The command surface is expected to remain stable for v1 docs:
 - `stui init APP.py --template basic|dashboard|forms`
 - `stui doctor`
 - `stui doctor --json`
+- `stui selftest`
+- `stui selftest --json`
 - `stui --version`
 
 ## Layout Criteria Before Expansion
@@ -86,14 +88,14 @@ The command surface is expected to remain stable for v1 docs:
   scrolling unless a real terminal workflow cannot be expressed with headings,
   containers, columns, and expanders.
 
-## v1 Stable Release
+## v1.x Release Discipline
 
-- Ship the documented small API surface only once there are no known state/rerun
-  correctness bugs or every remaining issue is explicitly deferred.
-- Treat the APIs in `docs/v1-readiness.md` as the v1 stable contract until the
-  project intentionally adds or removes an item in a documented release.
+- Treat the documented small API surface as the v1 stable contract unless the
+  project intentionally adds, graduates, or deprecates an item in a documented
+  release.
 - Verify PyPI install, built artifacts, examples/init/copy commands, docs, CI,
-  and terminal compatibility evidence together before calling v1 complete.
+  package contents, custom external projects, and terminal compatibility
+  evidence together before calling routine v1.x releases complete.
 - Keep Python support aligned with CI and document any support changes in the
   changelog.
 - Keep the package install path stable: PyPI distribution `stui-terminal`,
@@ -131,7 +133,17 @@ The command surface is expected to remain stable for v1 docs:
 - Graduated count-only `st.columns(count)` to stable while keeping ratios, tabs,
   sidebars, and larger layout systems deferred.
 
-## v1.3+ Candidates
+## v1.3 Shipped
+
+- Added `stui selftest` and `stui selftest --json` for lightweight
+  installed-package validation without launching the full Textual UI.
+- Added a repeatable package-contents audit script for wheel/sdist hygiene.
+- Kept stale social launch drafts out of source distributions.
+- Aligned the README/PyPI screenshot path with a real bundled `model_demo`
+  command.
+- Added a docs index and cleaned stale post-v1 wording.
+
+## v1.4+ Candidates
 
 - Revisit chart variants and richer static data inspection if users are building
   real terminal dashboards that need them.

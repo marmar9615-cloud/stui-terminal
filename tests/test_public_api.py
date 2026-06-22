@@ -126,6 +126,7 @@ EXPECTED_DEFERRED_API_AREAS = [
     "st.cache_data",
     "st.cache_resource",
     "st.components",
+    "st.empty",
     "custom column ratios/gaps",
     "editable dataframes",
     "plotting-library parity",

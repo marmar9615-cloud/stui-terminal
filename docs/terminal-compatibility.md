@@ -45,6 +45,8 @@ For non-interactive validation in CI or before sharing a reproduction, run:
 ```bash
 stui check app.py
 stui check app.py --json
+stui selftest
+stui selftest --json
 ```
 
 The doctor output includes:
@@ -56,6 +58,10 @@ The doctor output includes:
 - Whether standard input, output, and error streams are attached to a TTY.
 - A best-effort color capability summary.
 - Installed example availability.
+
+`stui selftest` checks package metadata, bundled demo resources, init templates,
+and non-interactive runtime validation. It is useful for install health, but it
+does not replace a real interactive terminal smoke test.
 
 `STUI_THEME=high-contrast` enables the high-contrast theme. Any other value
 falls back to the default theme and should be included in reports if the theme

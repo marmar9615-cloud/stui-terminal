@@ -136,7 +136,7 @@ st.line_chart(data, *, width=None, height=None) -> None
 st.divider() -> None
 ```
 
-In v1.2.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, and
+In v1.3.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, and
 `st.metric` are v1-stable static display primitives. Tables support scalars,
 lists or tuples of scalars, lists or tuples of dicts, lists or tuples of
 lists/tuples, dicts of scalar values, dicts of lists/tuples, and pandas-like
@@ -401,21 +401,20 @@ if "token" not in st.session_state:
     st.stop()
 ```
 
-## v1.2 Stable Status
+## v1.3 Stable Status
 
-The signatures above are intentionally covered by tests in v1.2.0. The
+The signatures above are intentionally covered by tests in v1.3.0. The
 classification table marks each top-level API as either `v1-stable` or
 `post-v1 experimental`; see [API Stability](api-stability.md) for the full
 compatibility promise and post-v1 deprecation policy.
 
-v1.2.0 keeps the v1.1 stable API intact, adds stable `max_rows` and `max_cols`
-table/dataframe output limits, and graduates `st.columns(count)` as a
-count-only terminal grouping primitive. Any change to stable names in v1.x
-should be treated as a compatibility event unless it fixes a correctness,
-terminal, or security issue and is documented in the changelog and release
-notes.
+v1.3.0 keeps the v1.2 stable API intact and adds validation/proof tooling
+around the command surface instead of changing the top-level `stui` API. Any
+change to stable names in v1.x should be treated as a compatibility event
+unless it fixes a correctness, terminal, or security issue and is documented in
+the changelog and release notes.
 
-These APIs stay post-v1 experimental in v1.2.0 and need more feedback before
+These APIs stay post-v1 experimental in v1.3.0 and need more feedback before
 they can be called v1-stable:
 
 - Charts: compact terminal summaries from `st.bar_chart` and `st.line_chart`,
@@ -426,6 +425,6 @@ they can be called v1-stable:
 APIs and feature areas explicitly deferred from the v1 stable surface are
 listed in [API Stability](api-stability.md#deferred-for-v1). They include
 `st.sidebar`, `st.tabs`, `st.file_uploader`, `st.cache_data`,
-`st.cache_resource`, `st.components`, editable dataframes,
-plotting-library parity, custom column ratios/gaps, and any browser/server runtime,
+`st.cache_resource`, `st.components`, `st.empty`, editable dataframes,
+plotting-library parity, custom column ratios/gaps, browser/server runtime,
 websocket, or port-forwarding runtime.
