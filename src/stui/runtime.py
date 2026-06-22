@@ -984,7 +984,7 @@ def _normalize_chart_points(data: Any) -> tuple[BarChartPoint, ...]:
             for key, value in data.items()
             if _is_number(value)
         ]
-        return tuple(points)
+        return tuple(points) or _chart_points_from_column_dict(data)
     if isinstance(data, (list, tuple)):
         if not data:
             return ()
@@ -1002,6 +1002,13 @@ def _normalize_chart_points(data: Any) -> tuple[BarChartPoint, ...]:
                 for index, row in enumerate(data)
             )
             return tuple(point for point in points if point is not None)
+        pair_points = tuple(
+            point
+            for point in (_chart_point_from_pair(item) for item in data)
+            if point is not None
+        )
+        if pair_points:
+            return pair_points
     return ()
 
 
@@ -1009,6 +1016,9 @@ def _normalize_line_chart_series(data: Any) -> tuple[LineChartSeries, ...]:
     if _is_number(data):
         return (LineChartSeries("value", (float(data),)),)
     if isinstance(data, dict):
+        column_series = _line_series_from_column_dict(data)
+        if column_series:
+            return column_series
         series = [
             LineChartSeries(str(key), _numeric_values(value))
             for key, value in data.items()
@@ -1018,6 +1028,10 @@ def _normalize_line_chart_series(data: Any) -> tuple[LineChartSeries, ...]:
         row_series = _line_series_from_rows(data)
         if row_series:
             return row_series
+    if isinstance(data, (list, tuple)):
+        pair_values = _numeric_values_from_pairs(data)
+        if pair_values:
+            return (LineChartSeries("value", pair_values),)
     values = _numeric_values(data)
     if values:
         return (LineChartSeries("value", values),)
@@ -1030,6 +1044,37 @@ def _numeric_values(data: Any) -> tuple[float, ...]:
     if isinstance(data, (list, tuple)):
         return tuple(float(value) for value in data if _is_number(value))
     return ()
+
+
+def _is_sequence(value: Any) -> bool:
+    return isinstance(value, (list, tuple))
+
+
+def _chart_point_from_pair(item: Any) -> BarChartPoint | None:
+    if not _is_sequence(item) or len(item) < 2:
+        return None
+    label, value = item[0], item[1]
+    if not _is_number(value):
+        return None
+    return BarChartPoint(str(label), float(value))
+
+
+def _chart_points_from_column_dict(data: dict[Any, Any]) -> tuple[BarChartPoint, ...]:
+    value_column = _first_column(data, ("value", "score", "count", "total", "y"))
+    if value_column is None:
+        return ()
+    label_column = _first_column(data, ("label", "name", "key", "category", "x"))
+    points = []
+    for index, value in enumerate(value_column):
+        if not _is_number(value):
+            continue
+        label = (
+            str(label_column[index])
+            if label_column is not None and index < len(label_column)
+            else str(index)
+        )
+        points.append(BarChartPoint(label, float(value)))
+    return tuple(points)
 
 
 def _chart_point_from_row(index: int, row: dict[Any, Any]) -> BarChartPoint | None:
@@ -1093,6 +1138,47 @@ def _line_series_from_rows(
         if values:
             series.append(LineChartSeries(str(key), values))
     return tuple(series)
+
+
+def _line_series_from_column_dict(data: dict[Any, Any]) -> tuple[LineChartSeries, ...]:
+    sequence_keys = [key for key, value in data.items() if _is_sequence(value)]
+    if not sequence_keys:
+        return ()
+    numeric_keys = [
+        key
+        for key in sequence_keys
+        if any(_is_number(value) for value in data[key])
+    ]
+    if len(numeric_keys) > 1:
+        numeric_keys = [
+            key
+            for key in numeric_keys
+            if str(key).lower() not in {"x", "step", "index"}
+        ] or numeric_keys
+    return tuple(
+        LineChartSeries(str(key), _numeric_values(data[key]))
+        for key in numeric_keys
+        if _numeric_values(data[key])
+    )
+
+
+def _numeric_values_from_pairs(data: list[Any] | tuple[Any, ...]) -> tuple[float, ...]:
+    values = []
+    for item in data:
+        if _is_sequence(item) and len(item) >= 2 and _is_number(item[1]):
+            values.append(float(item[1]))
+    return tuple(values)
+
+
+def _first_column(
+    data: dict[Any, Any],
+    preferred_keys: tuple[str, ...],
+) -> list[Any] | tuple[Any, ...] | None:
+    for preferred_key in preferred_keys:
+        for key, value in data.items():
+            if str(key).lower() == preferred_key and _is_sequence(value):
+                return value
+    return None
 
 
 def _is_number(value: Any) -> bool:

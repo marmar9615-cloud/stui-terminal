@@ -32,6 +32,7 @@ Run:
 
 ```bash
 stui doctor
+stui doctor --compat
 ```
 
 For machine-readable bug reports or CI artifacts, run:
@@ -52,12 +53,14 @@ stui selftest --json
 The doctor output includes:
 
 - `stui`, package, Python, Textual, Rich, and Typer versions.
+- `schema_version` and a compatibility profile in JSON output.
 - Terminal size and a warning when it is below the recommended minimum.
 - Resolved theme.
 - `TERM`, `COLORTERM`, `TERM_PROGRAM`, `STUI_THEME`, and `NO_COLOR`.
 - Whether standard input, output, and error streams are attached to a TTY.
 - A best-effort color capability summary.
 - Installed example availability.
+- A compatibility report command that can be pasted into issues.
 
 `stui selftest` checks package metadata, bundled demo resources, init templates,
 and non-interactive runtime validation. It is useful for install health, but it
@@ -70,9 +73,9 @@ color-related environment differences; do not assume every terminal front end
 handles it the same way.
 
 Current automated coverage checks the doctor output, `stui doctor --json`,
-`stui check`, color capability classification for `TERM`/`COLORTERM`,
-`STUI_THEME` resolution, and small-terminal warnings. It does not replace
-manual visual checks in real terminal emulators.
+`stui doctor --compat`, `stui check`, color capability classification for
+`TERM`/`COLORTERM`, `STUI_THEME` resolution, and small-terminal warnings. It
+does not replace manual visual checks in real terminal emulators.
 
 ## Keyboard Notes
 
@@ -93,7 +96,7 @@ selectbox and slider shortcuts are covered by stable tests.
 When opening a terminal compatibility issue, include:
 
 - The exact command you ran, such as `stui run app.py` or `python -m stui run app.py`.
-- Full `stui doctor` output.
+- Full `stui doctor` output and the concise `stui doctor --compat` report.
 - Operating system and version.
 - Terminal emulator and version.
 - Shell, for example `zsh`, `bash`, `fish`, PowerShell, or WSL shell.

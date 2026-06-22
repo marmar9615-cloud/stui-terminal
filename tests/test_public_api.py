@@ -58,7 +58,7 @@ EXPECTED_PUBLIC_EXPORTS = [
 
 EXPECTED_API_CLASSIFICATIONS = {
     "__version__": "v1-stable",
-    "bar_chart": "post-v1 experimental",
+    "bar_chart": "v1-stable",
     "button": "v1-stable",
     "caption": "v1-stable",
     "checkbox": "v1-stable",
@@ -76,7 +76,7 @@ EXPECTED_API_CLASSIFICATIONS = {
     "help": "post-v1 experimental",
     "info": "v1-stable",
     "json": "v1-stable",
-    "line_chart": "post-v1 experimental",
+    "line_chart": "v1-stable",
     "markdown": "v1-stable",
     "metric": "v1-stable",
     "number_input": "v1-stable",
@@ -112,9 +112,7 @@ EXPECTED_EXPERIMENTAL_APIS = {
 }
 
 EXPECTED_EXPERIMENTAL_FREEZE_DECISIONS = {
-    "bar_chart",
     "help",
-    "line_chart",
     "spinner",
     "status",
 }

@@ -1,21 +1,22 @@
 # v1 Readiness
 
-`stui` v1.3.0 is a professionalization and trust release. The goal for the v1
-series is not to become Streamlit-compatible or to grow a large component
-catalog. The goal is a small, stable, terminal-native API that can be installed
-from PyPI, explained quickly, and trusted for local tools.
+`stui` v1.4.0 is a chart-contract and terminal-compatibility release. The goal
+for the v1 series is not to become Streamlit-compatible or to grow a large
+component catalog. The goal is a small, stable, terminal-native API that can be
+installed from PyPI, explained quickly, and trusted for local tools.
 
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## Status After v1.3.0
+## Status After v1.4.0
 
-v1.3.0 keeps the v1.0.0 baseline intact and preserves v1.2.0 behavior while
-professionalizing the repo, package, and validation story. It adds `stui
-selftest`, package-content auditing for wheel/sdist hygiene, a docs index, and
-clearer first-run screenshot/demo alignment. The release keeps chart/status/help
-APIs labeled as post-v1 experimental instead of quietly freezing behavior that
-still needs terminal evidence.
+v1.4.0 keeps the v1.0.0 baseline intact and preserves v1.3.0 behavior while
+graduating `st.bar_chart` and `st.line_chart` to stable compact terminal
+summaries for documented numeric shapes. It also adds `stui doctor --compat`
+and richer doctor JSON compatibility fields so terminal reports are easier to
+compare across environments. The release keeps status/help APIs labeled as
+post-v1 experimental instead of quietly freezing behavior that still needs
+terminal evidence.
 
 On the v1.x line, the stable API list is frozen. The freeze covers the
 top-level names in `stui.__all__`, their stability classifications, and the
@@ -34,7 +35,7 @@ Normal v1.x release work should include changelog and GitHub Release notes only.
 Do not generate social launch copy for maintenance or minor releases unless a
 separate task explicitly asks for it.
 
-## Complete Through v1.3.0
+## Complete Through v1.4.0
 
 - The PyPI distribution/import/CLI naming is settled: install
   `stui-terminal`, import `stui`, and run `stui`.
@@ -50,11 +51,13 @@ separate task explicitly asks for it.
   validation.
 - `scripts/audit_package_contents.py` verifies wheel/sdist contents and keeps
   stale package files out of release artifacts.
+- `st.bar_chart` and `st.line_chart` are stable compact terminal summaries for
+  documented numeric shapes, including tuple pairs and dict-of-columns inputs.
 - Remaining experimental APIs stay labeled instead of being quietly promoted.
 - Deferred Streamlit-style features are listed as out of scope for v1.
 - The README quickstart, first app, API table, terminal compatibility link,
   examples/templates, limitations, and troubleshooting sections all point users
-  at the same v1.3.0 contract.
+  at the same v1.4.0 contract.
 - Bundled demo/example listing/copying and `stui init` are part of the v1
   documentation contract rather than checkout-only conveniences.
 
@@ -69,7 +72,7 @@ separate task explicitly asks for it.
 
 ## API Stability Status
 
-The project should keep the public API small. v1.3.0 treats the table below as
+The project should keep the public API small. v1.4.0 treats the table below as
 the stable v1 reference.
 
 Stable APIs should not change casually. If a signature or return value
@@ -78,8 +81,6 @@ examples should be updated in the same release.
 
 Post-v1 experimental APIs:
 
-- `st.bar_chart` and `st.line_chart` are compact terminal summaries, not
-  replacements for plotting libraries.
 - `st.status`, `st.spinner`, and `st.help` are simple terminal display
   primitives. They do not promise Streamlit-compatible mutation, animation, or
   full pager-style help behavior.
@@ -95,7 +96,7 @@ Explicitly deferred APIs and feature areas:
 
 ## API Contract Status
 
-v1.3.0 considers the stable public contract documented and frozen for the v1
+v1.4.0 considers the stable public contract documented and frozen for the v1
 series.
 The current contract lives in [`docs/api-reference.md`](api-reference.md) and
 covers:
@@ -121,7 +122,7 @@ Stable in v1:
 - Basic status output: `st.info`, `st.success`, `st.warning`, `st.error`, and
   `st.exception`.
 - Static display: `st.json`, `st.progress`, `st.table`, `st.dataframe`, and
-  `st.metric`.
+  `st.metric`, `st.bar_chart`, and `st.line_chart`.
 - Input widgets: `st.button`, `st.slider`, `st.text_input`, `st.checkbox`,
   `st.number_input`, `st.selectbox`, and `st.radio`.
 - Forms and grouping: `st.form`, `st.form_submit_button`, `st.container`, and
@@ -135,7 +136,6 @@ Experimental in v1:
 
 - `st.status`, `st.spinner`, and `st.help` as terminal status/help primitives
   while their exact grouping and formatting contract gathers feedback.
-- `st.bar_chart` and `st.line_chart` as compact terminal summaries.
 - Wider layout concepts such as sidebars, grids, tabs, custom ratios, or
   responsive layout engines.
 - Rich dataframe interactions such as editing, sorting, selection, pagination,
@@ -153,7 +153,7 @@ must match the `v1-stable` rows in `docs/api-stability.md` and
 | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider`, `st.code` |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` |
-| Display | `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric` |
+| Display | `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`, `st.bar_chart`, `st.line_chart` |
 | Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` |
 | Forms and grouping | `st.form`, `st.form_submit_button`, `st.container`, `st.expander`, `st.columns` |
 | State and flow | `st.session_state`, `st.rerun`, `st.stop` |
@@ -161,8 +161,8 @@ must match the `v1-stable` rows in `docs/api-stability.md` and
 | CLI | `stui run`, `stui check`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` |
 
 The experimental API is public and documented, but not part of the stable table
-yet. Current experimental areas are `st.bar_chart`, `st.line_chart`,
-`st.status`, `st.spinner`, and `st.help`, plus larger deferred
+yet. Current experimental areas are `st.status`, `st.spinner`, and `st.help`,
+plus larger deferred
 layout, charting, dataframe-editing, caching, file-upload, and browser/server
 runtime areas.
 
@@ -329,9 +329,9 @@ The README, release notes, and API docs should keep these limits explicit:
 
 ## v1.x Release Checklist
 
-| Gate | v1.3.0 status | v1.x decision |
+| Gate | v1.4.0 status | v1.x decision |
 | --- | --- | --- |
-| Stable API list | Adds table/dataframe output limits and graduates count-only columns. | Do not change unless a correctness, terminal, or safety issue appears. |
+| Stable API list | Includes bounded tables/dataframes, count-only columns, and compact terminal charts. | Do not change unless a correctness, terminal, or safety issue appears. |
 | Experimental APIs | Labeled in README, API reference, API stability docs, v1 readiness docs, and tests. | Keep experimental until tests, docs, and terminal evidence justify promotion. |
 | Deferred Streamlit-style APIs | Explicitly deferred in API stability docs and README. | Do not add to v1. |
 | State/rerun/widget correctness | Covered by regression tests for known issues. | Fix reproducible blockers; document non-blocking limitations. |
@@ -339,7 +339,7 @@ The README, release notes, and API docs should keep these limits explicit:
 | Terminal compatibility | Evidence-driven matrix remains open. | Document unknowns instead of overclaiming support. |
 | Narrow rendering | Covered by regression tests for known table/chart/layout edges. | Fix reproducible blockers; document non-blocking limitations. |
 | Release process | Checklist and publishing docs are explicit. | Follow the same gates for v1.x releases. |
-| Public announcement | Not part of v1.3.0. | Generate no social or discussion copy for routine v1.x releases unless explicitly requested. |
+| Public announcement | Not part of v1.4.0. | Generate no social or discussion copy for routine v1.x releases unless explicitly requested. |
 
 ## Post-v1 Plan
 

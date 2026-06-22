@@ -62,12 +62,12 @@ python3.11 -m venv /tmp/stui-current
 ```
 
 After publishing, repeat the same check with the exact released version, for
-example `stui-terminal==1.3.0`.
+example `stui-terminal==X.Y.Z`.
 
 ## Tag, CI, Publish, Release
 
 1. Commit only after local verification is green.
-2. Create and push the release tag, for example `v1.3.0`.
+2. Create and push the release tag, for example `vX.Y.Z`.
 3. Wait for CI on `main` and the tag.
 4. Dispatch the `Publish` workflow from the release tag with exactly one publish
    flag enabled.

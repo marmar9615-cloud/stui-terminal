@@ -1,6 +1,6 @@
 # API Stability
 
-`stui` v1.3.0 keeps the top-level stable API intentionally small and
+`stui` v1.4.0 keeps the top-level stable API intentionally small and
 Streamlit-inspired, but it is not Streamlit-compatible and does not depend on
 Streamlit at runtime.
 
@@ -43,7 +43,7 @@ rename in the v1.x line.
 | API | Classification | Notes |
 | --- | --- | --- |
 | `__version__` | v1-stable | Package version string. |
-| `bar_chart` | post-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
+| `bar_chart` | v1-stable | Compact terminal bar summary, not plotting-library parity. |
 | `button` | v1-stable | Core input widget. |
 | `caption` | v1-stable | Core text output. |
 | `checkbox` | v1-stable | Core input widget. |
@@ -61,7 +61,7 @@ rename in the v1.x line.
 | `help` | post-v1 experimental | Help formatting and the public name need more feedback. |
 | `info` | v1-stable | Core status output. |
 | `json` | v1-stable | Static terminal JSON display with string fallback. |
-| `line_chart` | post-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
+| `line_chart` | v1-stable | Compact terminal sparkline summary, not plotting-library parity. |
 | `markdown` | v1-stable | Core text output. |
 | `metric` | v1-stable | Compact terminal summary display. |
 | `number_input` | v1-stable | Numeric input widget. |

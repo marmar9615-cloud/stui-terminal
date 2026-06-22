@@ -19,8 +19,9 @@ Streamlit compatibility layer.
 - Scope layout primitives honestly: `st.container`, `st.expander`, and
   count-only `st.columns` are terminal grouping helpers, not sidebars, tabs,
   browser grids, or a full layout engine.
-- Keep charts and richer dataframe behavior experimental or explicitly modest
-  until real v1 feedback says they should graduate.
+- Keep charts compact and terminal-native. `st.bar_chart` and `st.line_chart`
+  are stable summaries for documented numeric shapes; richer chart variants and
+  plotting-library parity remain future work.
 - Keep release notes, changelog, README, feedback docs, and v1 readiness docs
   aligned with the shipped package.
 
@@ -56,8 +57,8 @@ call shape and core behavior through v1.x unless a correctness
 issue forces a change.
 
 The experimental API is still public enough to try, but the project is asking
-for feedback before freezing it. In v1.3.0 the remaining experimental APIs are
-`st.bar_chart`, `st.line_chart`, `st.status`, `st.spinner`, and `st.help`.
+for feedback before freezing it. In v1.4.0 the remaining experimental APIs are
+`st.status`, `st.spinner`, and `st.help`.
 
 The command surface is expected to remain stable for v1 docs:
 
@@ -71,6 +72,7 @@ The command surface is expected to remain stable for v1 docs:
 - `stui init APP.py --template basic|dashboard|forms`
 - `stui doctor`
 - `stui doctor --json`
+- `stui doctor --compat`
 - `stui selftest`
 - `stui selftest --json`
 - `stui --version`
@@ -143,14 +145,25 @@ The command surface is expected to remain stable for v1 docs:
   command.
 - Added a docs index and cleaned stale post-v1 wording.
 
+## v1.4 Shipped
+
+- Graduated `st.bar_chart` and `st.line_chart` as stable compact terminal
+  summaries for documented numeric shapes.
+- Added tuple-pair and dict-of-columns chart data support for common
+  script-friendly inputs.
+- Added `stui doctor --compat` and richer doctor JSON compatibility fields for
+  terminal reports.
+- Updated chart examples, docs, and regression tests around narrow,
+  signed-value, unsupported, and column-shaped inputs.
+
 ## v1.4+ Candidates
 
-- Revisit chart variants and richer static data inspection if users are building
-  real terminal dashboards that need them.
+- Revisit additional chart variants and richer static data inspection if users
+  are building real terminal dashboards that need them.
 - Explore table formatting hooks or lightweight selection only if they can stay
   terminal-native and dependency-light.
-- Reassess charts, status, spinner, and help after they have enough v1 usage to
-  either stabilize or redesign.
+- Reassess status, spinner, and help after they have enough v1 usage to either
+  stabilize or redesign.
 - Continue expanding compatibility evidence across macOS, Linux, SSH/headless,
   editor terminals, containers, and Windows setups without overstating
   environments the project has not tested.

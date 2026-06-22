@@ -109,6 +109,40 @@ st.bar_chart([
     ]
 
 
+def test_bar_chart_accepts_tuple_pairs_and_dict_of_columns(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.bar_chart([
+    ("alpha", 2),
+    ("beta", -3),
+    ("skip", "not numeric"),
+    ("gamma", 0),
+])
+st.bar_chart({
+    "label": ["baseline", "candidate", "skip"],
+    "value": [4, -2, "not numeric"],
+})
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    charts = chart_elements(runtime)
+
+    assert [(point.label, point.value) for point in charts[0].points] == [
+        ("alpha", 2.0),
+        ("beta", -3.0),
+        ("gamma", 0.0),
+    ]
+    assert [(point.label, point.value) for point in charts[1].points] == [
+        ("baseline", 4.0),
+        ("candidate", -2.0),
+    ]
+
+
 def test_bar_chart_scalar_and_unsupported_data_fallback(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,
@@ -334,6 +368,39 @@ st.line_chart([
     chart = line_chart_elements(runtime)[0]
 
     assert [(series.label, series.values) for series in chart.series] == [
+        ("loss", (0.9, 0.4)),
+        ("accuracy", (0.3, 0.8, 0.9)),
+    ]
+
+
+def test_line_chart_accepts_tuple_pairs_and_dict_of_columns(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.line_chart([
+    ("step 1", 3),
+    ("step 2", 5),
+    ("skip", "not numeric"),
+    ("step 3", 4),
+])
+st.line_chart({
+    "step": [1, 2, 3],
+    "loss": [0.9, 0.4, "skip"],
+    "accuracy": [0.3, 0.8, 0.9],
+})
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    charts = line_chart_elements(runtime)
+
+    assert [(series.label, series.values) for series in charts[0].series] == [
+        ("value", (3.0, 5.0, 4.0)),
+    ]
+    assert [(series.label, series.values) for series in charts[1].series] == [
         ("loss", (0.9, 0.4)),
         ("accuracy", (0.3, 0.8, 0.9)),
     ]

@@ -244,6 +244,51 @@ def test_check_json_reports_ok_and_errors(tmp_path: Path) -> None:
     }
 
 
+def test_check_json_accepts_odd_chart_compat_shapes(tmp_path: Path) -> None:
+    script = tmp_path / "odd_charts.py"
+    script.write_text(
+        """
+import math
+import stui as st
+
+st.title("Odd chart compatibility")
+st.bar_chart([
+    ("alpha", 2),
+    ("beta", -3),
+    ("bool ignored", True),
+    ("nan", math.nan),
+    ("zero", 0),
+], width=1)
+st.bar_chart({
+    "label": ["baseline", "candidate", "skip"],
+    "value": [4, -2, "bad"],
+}, width=6)
+st.line_chart({
+    "step": [1, 2, 3],
+    "loss": [0.9, 0.4, "skip"],
+    "accuracy": [0.3, 0.8, 0.9],
+}, width=3)
+st.line_chart([
+    {"step": 1, "loss": 0.9},
+    {"step": 2, "loss": math.inf},
+    {"step": 3, "loss": 0.2},
+], height=1)
+st.bar_chart(object())
+st.line_chart({"bad": [math.nan, math.inf]})
+""",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(cli.app, ["check", str(script), "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["summary"]["error_count"] == 0
+    assert payload["summary"]["element_types"]["BarChartElement"] == 3
+    assert payload["summary"]["element_types"]["LineChartElement"] == 3
+
+
 def test_check_json_reports_syntax_error(tmp_path: Path) -> None:
     script = tmp_path / "bad.py"
     script.write_text("if True print('bad')\n", encoding="utf-8")
@@ -340,6 +385,7 @@ def test_doctor_command() -> None:
     assert "STUI_THEME:" in result.output
     assert "NO_COLOR:" in result.output
     assert "capabilities:" in result.output
+    assert "compatibility profile:" in result.output
     assert "stdout_tty=" in result.output
     assert "stderr_tty=" in result.output
     assert "no_color_requested=" in result.output
@@ -375,6 +421,7 @@ def test_doctor_reports_terminal_environment(monkeypatch) -> None:
     assert "STUI_THEME: high-contrast" in result.output
     assert "NO_COLOR: yes" in result.output
     assert "color=truecolor" in result.output
+    assert "compatibility profile:" in result.output
     assert "no_color_requested=yes" in result.output
 
 
@@ -416,6 +463,7 @@ def test_doctor_json_output(monkeypatch) -> None:
 
     assert result.exit_code == 0
     diagnostics = json.loads(result.output)
+    assert diagnostics["schema_version"] == "stui.doctor.v1"
     assert diagnostics["stui"] == stui.__version__
     assert diagnostics["terminal"]["columns"] == 72
     assert diagnostics["terminal"]["lines"] == 24
@@ -426,8 +474,36 @@ def test_doctor_json_output(monkeypatch) -> None:
     assert diagnostics["environment"]["NO_COLOR"] == "1"
     assert diagnostics["capabilities"]["color"] == "none/dumb"
     assert diagnostics["capabilities"]["no_color_requested"] is True
+    assert diagnostics["compatibility"]["profile"] == "limited"
+    assert diagnostics["compatibility"]["minimum_size"] == "80x24"
+    assert "stui doctor --json" in diagnostics["compatibility"]["report_command"]
     assert any("terminal is too small" in item for item in diagnostics["warnings"])
     assert any("TERM=dumb" in item for item in diagnostics["warnings"])
+
+
+def test_doctor_compat_output(monkeypatch) -> None:
+    monkeypatch.setattr(
+        cli.shutil,
+        "get_terminal_size",
+        lambda fallback: terminal_size((120, 40)),
+    )
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["doctor", "--compat"],
+        env={
+            "TERM": "xterm-256color",
+            "COLORTERM": "truecolor",
+            "TERM_PROGRAM": "Apple_Terminal",
+        },
+    )
+
+    assert result.exit_code == 0
+    assert "stui compatibility report" in result.output
+    assert "profile:" in result.output
+    assert "minimum size: 80x24" in result.output
+    assert "report command: stui doctor --json" in result.output
+    assert "notes:" in result.output
 
 
 def test_doctor_json_warns_on_package_import_version_mismatch(monkeypatch) -> None:

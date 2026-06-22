@@ -276,6 +276,50 @@ def _distribution_location(name: str) -> str:
         return "not installed"
 
 
+def _compatibility_summary(
+    *,
+    size_status: str,
+    term: str,
+    color_capability: str,
+    stdin_tty: bool,
+    stdout_tty: bool,
+) -> dict[str, object]:
+    normalized_term = term.lower()
+    if not term or normalized_term == "dumb" or color_capability == "none/dumb":
+        profile = "limited"
+    elif size_status != "ok":
+        profile = "small-terminal"
+    elif not stdin_tty or not stdout_tty:
+        profile = "non-interactive"
+    elif color_capability == "truecolor":
+        profile = "modern-terminal"
+    elif color_capability == "256-color":
+        profile = "standard-terminal"
+    else:
+        profile = "basic-terminal"
+
+    notes = []
+    if profile == "limited":
+        notes.append("TERM or color capability is limited; interactive UI may degrade.")
+    if size_status != "ok":
+        notes.append("Terminal is below the recommended size for charts and layouts.")
+    if not stdin_tty or not stdout_tty:
+        notes.append("Run inside a real interactive terminal for rendering reports.")
+    if not notes:
+        notes.append(
+            "Environment looks suitable for a normal stui terminal smoke test."
+        )
+
+    return {
+        "profile": profile,
+        "minimum_size": f"{MIN_TERMINAL_COLUMNS}x{MIN_TERMINAL_LINES}",
+        "terminal_size_ok": size_status == "ok",
+        "interactive_tty": stdin_tty and stdout_tty,
+        "report_command": "stui doctor --json",
+        "notes": notes,
+    }
+
+
 def _doctor_diagnostics() -> dict[str, object]:
     terminal_size = shutil.get_terminal_size(fallback=(0, 0))
     example_infos = _example_infos()
@@ -289,6 +333,9 @@ def _doctor_diagnostics() -> dict[str, object]:
     color_capability = _color_capability(term, color_term)
     size_status = _terminal_size_status(terminal_size.columns, terminal_size.lines)
     package_version = _package_version("stui-terminal")
+    stdin_tty = sys.stdin.isatty()
+    stdout_tty = sys.stdout.isatty()
+    stderr_tty = sys.stderr.isatty()
     warnings = []
     if size_status != "ok":
         warnings.append(
@@ -310,6 +357,7 @@ def _doctor_diagnostics() -> dict[str, object]:
         }
 
     return {
+        "schema_version": "stui.doctor.v1",
         "stui": __version__,
         "package": package_version,
         "python": {
@@ -344,12 +392,19 @@ def _doctor_diagnostics() -> dict[str, object]:
         },
         "capabilities": {
             "color": color_capability,
-            "stdin_tty": sys.stdin.isatty(),
-            "stdout_tty": sys.stdout.isatty(),
-            "stderr_tty": sys.stderr.isatty(),
+            "stdin_tty": stdin_tty,
+            "stdout_tty": stdout_tty,
+            "stderr_tty": stderr_tty,
             "unicode": sys.stdout.encoding or "unknown",
             "no_color_requested": bool(no_color),
         },
+        "compatibility": _compatibility_summary(
+            size_status=size_status,
+            term=term,
+            color_capability=color_capability,
+            stdin_tty=stdin_tty,
+            stdout_tty=stdout_tty,
+        ),
         "examples": {
             "bundled": bundled_count,
             "repo": repo_count,
@@ -503,6 +558,36 @@ def _check_payload(
     }
 
 
+def _print_compatibility_report(diagnostics: dict[str, object]) -> None:
+    terminal = diagnostics["terminal"]
+    environment = diagnostics["environment"]
+    capabilities = diagnostics["capabilities"]
+    compatibility = diagnostics["compatibility"]
+
+    typer.echo("stui compatibility report")
+    typer.echo(f"profile: {compatibility['profile']}")
+    typer.echo(
+        f"terminal size: {terminal['columns']}x{terminal['lines']} "
+        f"({terminal['status']})"
+    )
+    typer.echo(f"minimum size: {compatibility['minimum_size']}")
+    typer.echo(f"TERM: {environment['TERM'] or 'unknown'}")
+    typer.echo(f"COLORTERM: {environment['COLORTERM'] or 'unknown'}")
+    typer.echo(f"TERM_PROGRAM: {environment['TERM_PROGRAM'] or 'unknown'}")
+    typer.echo(
+        "TTY: "
+        f"stdin={_bool_status(bool(capabilities['stdin_tty']))}, "
+        f"stdout={_bool_status(bool(capabilities['stdout_tty']))}, "
+        f"stderr={_bool_status(bool(capabilities['stderr_tty']))}"
+    )
+    typer.echo(f"color: {capabilities['color']}")
+    typer.echo(f"unicode: {capabilities['unicode']}")
+    typer.echo(f"report command: {compatibility['report_command']}")
+    typer.echo("notes:")
+    for note in compatibility["notes"]:
+        typer.echo(f"  - {note}")
+
+
 @app.command("demo")
 def run_demo(name: str) -> None:
     """Run a bundled first-run demo directly from the installed package."""
@@ -538,6 +623,10 @@ def doctor(
         bool,
         typer.Option("--json", help="Print diagnostics as JSON."),
     ] = False,
+    compat: Annotated[
+        bool,
+        typer.Option("--compat", help="Print a terminal compatibility report."),
+    ] = False,
 ) -> None:
     """Print environment details useful for debugging stui installs."""
 
@@ -545,12 +634,16 @@ def doctor(
     if json_output:
         typer.echo(json_module.dumps(diagnostics, indent=2, sort_keys=True))
         return
+    if compat:
+        _print_compatibility_report(diagnostics)
+        return
 
     python_info = diagnostics["python"]
     packages = diagnostics["packages"]
     terminal = diagnostics["terminal"]
     environment = diagnostics["environment"]
     capabilities = diagnostics["capabilities"]
+    compatibility = diagnostics["compatibility"]
     examples = diagnostics["examples"]
 
     typer.echo(f"stui: {diagnostics['stui']}")
@@ -581,6 +674,7 @@ def doctor(
         f"unicode={capabilities['unicode']}, "
         f"no_color_requested={_bool_status(bool(capabilities['no_color_requested']))}"
     )
+    typer.echo(f"compatibility profile: {compatibility['profile']}")
     for warning in diagnostics["warnings"]:
         typer.echo(f"warning: {warning}.")
     typer.echo(

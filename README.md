@@ -18,7 +18,7 @@ Streamlit compatibility layer. Existing Streamlit apps usually need edits; new
 
 ## Preview
 
-![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.3.0/assets/stui-model-demo.png)
+![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.4.0/assets/stui-model-demo.png)
 
 ```text
 ┌─ stui ───────────────────────────────────────────┐
@@ -59,6 +59,7 @@ filing terminal or keyboard issues:
 python -m stui --version
 python -m stui doctor
 python -m stui doctor --json
+python -m stui doctor --compat
 python -m stui selftest
 ```
 
@@ -134,6 +135,7 @@ Check your install and terminal details:
 stui --version
 stui doctor
 stui doctor --json
+stui doctor --compat
 stui selftest
 stui selftest --json
 stui check app.py
@@ -435,7 +437,7 @@ and [docs/v1-readiness.md#stable-api](docs/v1-readiness.md#stable-api).
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v1.3.0 |
+| Area | APIs | Status in v1.4.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
@@ -444,7 +446,7 @@ The terminal support checklist lives in
 | Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | v1-stable input widgets |
 | Forms | `st.form`, `st.form_submit_button` | v1-stable deferred commit to `session_state` until submit |
 | Layout/grouping | `st.container`, `st.expander`, `st.columns` | v1-stable terminal grouping primitives; `st.columns` is count-only and stacks on narrow terminals |
-| Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Mixed: `st.metric` is v1-stable; charts remain post-v1 experimental terminal summaries, not plotting replacements |
+| Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | v1-stable compact terminal summaries, not plotting replacements |
 | State and flow | `st.session_state`, `st.rerun`, `st.stop` | v1-stable state and flow-control helpers |
 | Package metadata | `st.__version__` | v1-stable package version string |
 | CLI and examples | `stui run`, `stui check`, `stui selftest`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | v1-stable command surface |
@@ -455,20 +457,19 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v1.3.0 stable surface keeps the v1 core compact while adding
-`st.table(..., max_rows=..., max_cols=...)` and
-`st.dataframe(..., max_rows=..., max_cols=...)` for bounded static output, and
-graduating count-only `st.columns(count)` as a stable terminal grouping
-primitive. v1.3.0 also adds `stui selftest` and package-content audit tooling
-for installed-package verification. These names should keep their call shape,
-return type, and basic behavior through v1 unless a correctness, terminal, or
-security issue forces a change.
+The v1.4.0 stable surface keeps the v1 core compact while graduating
+`st.bar_chart` and `st.line_chart` as compact terminal summaries. Charts are
+stable for the documented scalar, list, mapping, tuple-pair, list-of-dicts, and
+dict-of-columns shapes, but they are still intentionally smaller than plotting
+libraries. These names should keep their call shape, return type, and basic
+behavior through v1 unless a correctness, terminal, or security issue forces a
+change.
 
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v1 behavior yet. In v1.3.0 this includes `st.bar_chart`,
-`st.line_chart`, `st.status`, `st.spinner`, and `st.help`.
+promised as frozen v1 behavior yet. In v1.4.0 this includes `st.status`,
+`st.spinner`, and `st.help`.
 Release notes should call out any change with a migration note when practical.
 
 APIs not shown in this table should be treated as private implementation
@@ -646,8 +647,8 @@ stui run examples/layouts.py
 
 ### Charts
 
-`examples/charts.py` shows `metric`, `bar_chart`, and `line_chart` helpers with
-source data shown in a table.
+`examples/charts.py` shows stable `metric`, `bar_chart`, and `line_chart`
+helpers with list, mapping, tuple-pair, and column-shaped data.
 
 ```bash
 stui run examples/charts.py
@@ -675,8 +676,9 @@ stui run examples/kitchen_sink.py
   do not support custom ratios, sidebars, tabs, browser grids, or horizontal
   scrolling.
 - Charts are compact terminal summaries, not plotting-library replacements.
-  `st.bar_chart` supports signed values and zero-only data; `st.line_chart` is
-  a simple static sparkline for numeric lists or dictionaries of numeric series.
+  `st.bar_chart` and `st.line_chart` support documented numeric terminal data
+  shapes, including simple sequences, mappings, tuple pairs, list-of-dicts, and
+  dict-of-columns inputs.
 - `st.status`, `st.spinner`, and `st.help` are display helpers, not live
   animation, background task, or pager systems.
 - `st.rerun` and `st.stop` are small flow-control helpers, not a full job
@@ -703,13 +705,12 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v1.3.0 Stable Status
+## v1.4.0 Stable Status
 
-v1.3.0 is a professionalization and trust release. It keeps the
-package/import/CLI contract from v1.0.0, keeps v1.2.0 behavior compatible, adds
-`stui selftest` for lightweight installed-package validation, adds a repeatable
-package-contents audit, and keeps the README/PyPI screenshot story tied to a
-real bundled terminal demo.
+v1.4.0 is a chart-contract and terminal-compatibility release. It keeps the
+package/import/CLI contract from v1.0.0, keeps v1.3.0 behavior compatible,
+graduates `st.bar_chart` and `st.line_chart` for compact terminal summaries,
+and adds `stui doctor --compat` plus richer doctor JSON compatibility fields.
 
 The remaining experimental APIs and terminal compatibility unknowns are visible
 instead of hidden. Post-v1 work should be feedback-driven and kept out of the

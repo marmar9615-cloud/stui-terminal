@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.4.0 - 2026-06-22
+
+### Added
+
+- Added tuple-pair and dict-of-columns support to `st.bar_chart` and
+  `st.line_chart` for common script-friendly chart inputs.
+- Added `stui doctor --compat` for concise terminal compatibility reports.
+- Added `schema_version` and structured compatibility details to
+  `stui doctor --json`.
+- Added v1.4.0 release notes under `docs/releases/`.
+
+### Changed
+
+- Promoted `st.bar_chart` and `st.line_chart` to the stable v1 API as compact
+  terminal summaries, not plotting-library replacements.
+- Updated chart examples, API docs, API stability docs, roadmap, feedback docs,
+  terminal compatibility docs, and v1 readiness docs for the v1.4.0 contract.
+- Expanded chart regression coverage for tuple-pair, dict-of-columns, and
+  bundled example rendering paths.
+
+### Fixed
+
+- Fixed stale layout documentation that still described count-only
+  `st.columns` as experimental.
+- Fixed release/publishing docs that used a stale concrete version where a
+  generic release placeholder is clearer.
+
 ## 1.3.0 - 2026-06-22
 
 ### Added

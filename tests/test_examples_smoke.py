@@ -3,6 +3,7 @@ from pathlib import Path
 
 from stui.elements import (
     AlertElement,
+    BarChartElement,
     ButtonElement,
     CaptionElement,
     CheckboxElement,
@@ -12,6 +13,7 @@ from stui.elements import (
     ExceptionElement,
     HeaderElement,
     JsonElement,
+    LineChartElement,
     MarkdownElement,
     NumberInputElement,
     ProgressElement,
@@ -53,6 +55,16 @@ def test_all_bundled_examples_run_without_script_errors() -> None:
         assert not any(isinstance(element, ErrorElement) for element in elements), (
             example.name
         )
+
+
+def test_chart_example_renders_chart_elements() -> None:
+    runtime = Runtime(Path("examples/charts.py"))
+
+    elements = runtime.run_script()
+
+    assert not any(isinstance(element, ErrorElement) for element in elements)
+    assert sum(isinstance(element, BarChartElement) for element in elements) >= 3
+    assert sum(isinstance(element, LineChartElement) for element in elements) >= 3
 
 
 def test_kitchen_sink_example_runs_all_stable_apis() -> None:

@@ -24,7 +24,7 @@ Feedback that is most helpful right now:
 - Terminal reports from real shells, SSH sessions, containers, headless
   environments, narrow terminals, wide terminals, unusual fonts, and different
   color themes. Include whether the app was local, over SSH, in a container, or
-  inside an editor terminal.
+  inside an editor terminal, plus `stui doctor --compat` when possible.
 - Keyboard bugs: focus order, `Tab`/`Shift+Tab`, button activation, text or
   number input submission, checkbox toggles, selectbox/radio movement, slider
   keys, expander toggles, and any keys captured by the terminal instead of the
@@ -67,8 +67,9 @@ Feedback that can shape near-term design:
   work from clean virtual environments and built artifacts.
 - `stui check`: whether non-interactive validation catches useful script errors
   in local or CI workflows.
-- Charts: whether the current bar and line summaries are enough, and which chart
-  types are useful in a terminal without heavy plotting dependencies.
+- Charts: whether the stable bar and line summaries cover real terminal
+  dashboard needs, and which future chart types are useful without heavy
+  plotting dependencies.
 - Richer dataframe support: which table interactions matter first for
   inspection and debugging after `max_rows` and `max_cols`.
 - Layout primitives: whether containers, integer-count columns, and expanders
@@ -83,8 +84,8 @@ Feedback that can shape near-term design:
   control without becoming required.
 - Screenshot and GIF docs: whether the current real terminal screenshot and
   `stui demo model_demo` command set expectations clearly.
-- Remaining experimental APIs: whether charts, status/spinner, or help should
-  graduate, stay experimental, or be redesigned.
+- Remaining experimental APIs: whether status/spinner or help should graduate,
+  stay experimental, or be redesigned.
 
 ## Later v1.x Feedback
 
@@ -115,6 +116,7 @@ When opening an issue or sending feedback, include:
 - Your operating system, terminal emulator, shell, and Python version.
 - The `stui` version and install method.
 - The output of `stui doctor`.
+- The output of `stui doctor --compat` for terminal compatibility reports.
 - `TERM`, `COLORTERM`, `TERM_PROGRAM`, and terminal size if rendering or
   keyboard behavior is involved.
 - A minimal script that reproduces the issue or demonstrates the missing
