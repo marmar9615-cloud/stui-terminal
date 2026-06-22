@@ -139,7 +139,7 @@ st.line_chart(data, *, width=None, height=None) -> None
 st.divider() -> None
 ```
 
-In v1.6.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`,
+In v1.7.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`,
 `st.bar_chart`, and `st.line_chart` are v1-stable static display primitives.
 Tables support scalars, lists or tuples of scalars, lists or tuples of dicts,
 lists or tuples of lists/tuples, dicts of scalar values, dicts of lists/tuples,
@@ -415,20 +415,43 @@ if "token" not in st.session_state:
     st.stop()
 ```
 
-## v1.6 Stable Status
+## CLI Validation
 
-The signatures above are intentionally covered by tests in v1.6.0. The
+```bash
+stui check APP.py
+stui check APP.py --json
+stui check APP.py --strict
+stui selftest
+stui selftest --json
+stui selftest --strict
+```
+
+`stui check` runs a script through the `stui` runtime without launching the
+interactive TUI. It exits `0` when the app renders without runtime errors,
+`1` for script/runtime/API errors, and `2` for invalid script paths. The
+`--json` payload includes `strict`, `warnings`, and
+`summary.warning_count`. In `--strict` mode, authoring warnings such as a script
+that renders no visible elements fail the check while keeping `error: null` and
+`status: "ok"` for warning-only failures.
+
+`stui selftest --strict` is an installed-package/release gate. It validates
+package metadata, bundled demo resources, all init templates, all bundled
+examples, and doctor diagnostics without launching a full TUI.
+
+## v1.7 Stable Status
+
+The signatures above are intentionally covered by tests in v1.7.0. The
 classification table marks each top-level API as either `v1-stable` or
 `post-v1 experimental`; see [API Stability](api-stability.md) for the full
 compatibility promise and post-v1 deprecation policy.
 
-v1.6.0 keeps the v1.4 and v1.5 stable APIs intact while refining status/help
-UX, terminal diagnostics, and release-version safety. Any change to stable
-names in v1.x should be treated as a compatibility event unless it fixes a
-correctness, terminal, or security issue and is documented in the changelog and
-release notes.
+v1.7.0 keeps the v1.4 through v1.6 stable APIs intact while improving
+app-authoring validation, strict installed-package selftests, and starter
+templates. Any change to stable names in v1.x should be treated as a
+compatibility event unless it fixes a correctness, terminal, or security issue
+and is documented in the changelog and release notes.
 
-These APIs stay post-v1 experimental in v1.6.0 and need more feedback before
+These APIs stay post-v1 experimental in v1.7.0 and need more feedback before
 they can be called v1-stable:
 
 - Help and status: `st.help`, `st.status`, and `st.spinner` formatting and

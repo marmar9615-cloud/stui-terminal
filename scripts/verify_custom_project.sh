@@ -75,8 +75,8 @@ PY
 
 (
   cd "$WORKDIR"
-  env -u PYTHONPATH "$PY" -m stui selftest --json > selftest-result.json
-  env -u PYTHONPATH "$PY" -m stui check app.py --json > check-result.json
+  env -u PYTHONPATH "$PY" -m stui selftest --strict --json > selftest-result.json
+  env -u PYTHONPATH "$PY" -m stui check app.py --strict --json > check-result.json
 )
 
 "$PY" - "$WORKDIR/selftest-result.json" <<'PY'
@@ -89,6 +89,7 @@ payload = json.loads(result_path.read_text(encoding="utf-8"))
 
 assert payload["schema_version"] == "stui.selftest.v1", payload
 assert payload["ok"] is True, payload
+assert payload["strict"] is True, payload
 assert payload["summary"]["passed"] == payload["summary"]["total"], payload
 PY
 
@@ -102,15 +103,22 @@ payload = json.loads(result_path.read_text(encoding="utf-8"))
 
 assert payload["schema_version"] == "stui.check.v1", payload
 assert payload["ok"] is True, payload
+assert payload["strict"] is True, payload
 assert payload["status"] == "ok", payload
 assert payload["exit_code"] == 0, payload
+assert payload["summary"]["warning_count"] == 0, payload
 assert payload["script"]["path"].endswith("/app.py"), payload
 types = payload["summary"]["element_types"]
 for required in [
     "TitleElement",
     "WriteElement",
     "ColumnsElement",
+    "MetricElement",
+    "TableElement",
+    "BarChartElement",
+    "LineChartElement",
     "StatusElement",
+    "HelpElement",
     "AlertElement",
 ]:
     assert types.get(required, 0) >= 1, types

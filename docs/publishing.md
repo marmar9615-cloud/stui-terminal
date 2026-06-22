@@ -57,8 +57,14 @@ ruff check .
 python -m pytest
 python -m build
 python -m twine check dist/*
+python scripts/check_release_version.py --tag vX.Y.Z
+python scripts/audit_package_contents.py dist
 stui --version
 python -m stui --version
+stui selftest --strict
+stui init /tmp/stui-app.py
+stui check /tmp/stui-app.py --strict
+./scripts/check.sh
 ```
 
 ## Trigger TestPyPI Publish
@@ -137,6 +143,11 @@ python -m pip install stui-terminal==X.Y.Z
 python -c "import stui; print(stui.__version__)"
 stui --version
 stui selftest
+stui selftest --strict
 stui init /tmp/stui-app.py
-stui check /tmp/stui-app.py
+stui check /tmp/stui-app.py --strict
+stui init /tmp/stui-data-app.py --template data
+stui check /tmp/stui-data-app.py --strict
+stui init /tmp/stui-charts-app.py --template charts
+stui check /tmp/stui-charts-app.py --strict
 ```

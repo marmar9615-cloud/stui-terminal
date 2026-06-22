@@ -5,6 +5,7 @@ import sys
 from os import terminal_size
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 import stui
@@ -232,12 +233,15 @@ def test_check_json_reports_ok_and_errors(tmp_path: Path) -> None:
     assert payload["schema_version"] == "stui.check.v1"
     assert payload["stui_version"] == stui.__version__
     assert payload["ok"] is True
+    assert payload["strict"] is False
     assert payload["status"] == "ok"
     assert payload["exit_code"] == 0
     assert payload["error"] is None
     assert payload["summary"]["error_count"] == 0
+    assert payload["summary"]["warning_count"] == 0
     assert payload["summary"]["element_count"] == 1
     assert payload["summary"]["element_types"] == {"WriteElement": 1}
+    assert payload["warnings"] == []
     assert payload["script"] == {
         "input": str(script),
         "path": str(script.resolve()),
@@ -307,6 +311,65 @@ def test_check_json_reports_syntax_error(tmp_path: Path) -> None:
     assert "SyntaxError" in payload["error"]["traceback"]
 
 
+def test_check_warns_for_empty_script_without_strict_failure(tmp_path: Path) -> None:
+    script = tmp_path / "empty.py"
+    script.write_text("import stui as st\n", encoding="utf-8")
+
+    result = CliRunner().invoke(cli.app, ["check", str(script), "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["strict"] is False
+    assert payload["exit_code"] == 0
+    assert payload["summary"]["warning_count"] == 1
+    assert "script rendered no elements" in payload["warnings"][0]
+
+
+def test_check_non_json_reports_passed_with_warnings(tmp_path: Path) -> None:
+    script = tmp_path / "empty.py"
+    script.write_text("import stui as st\n", encoding="utf-8")
+
+    result = CliRunner().invoke(cli.app, ["check", str(script)])
+
+    assert result.exit_code == 0
+    assert "stui check passed with warnings:" in result.output
+    assert "script rendered no elements" in result.output
+
+
+def test_check_strict_fails_for_empty_script_warning(tmp_path: Path) -> None:
+    script = tmp_path / "empty.py"
+    script.write_text("import stui as st\n", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["check", str(script), "--strict", "--json"],
+    )
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["strict"] is True
+    assert payload["status"] == "ok"
+    assert payload["exit_code"] == 1
+    assert payload["error"] is None
+    assert payload["summary"]["warning_count"] == 1
+    assert "script rendered no elements" in payload["warnings"][0]
+
+
+def test_check_strict_non_json_reports_authoring_warning(tmp_path: Path) -> None:
+    script = tmp_path / "empty.py"
+    script.write_text("import stui as st\n", encoding="utf-8")
+
+    result = CliRunner().invoke(cli.app, ["check", str(script), "--strict"])
+
+    assert result.exit_code == 1
+    assert "stui check passed:" not in result.output
+    assert "stui check strict failed:" in result.output
+    assert "warnings:" in result.output
+    assert "script rendered no elements" in result.output
+
+
 def test_check_json_reports_missing_script() -> None:
     result = CliRunner().invoke(cli.app, ["check", "missing.py", "--json"])
 
@@ -321,6 +384,31 @@ def test_check_json_reports_missing_script() -> None:
     assert payload["summary"]["element_types"] == {}
     assert payload["error"]["kind"] == "missing"
     assert payload["error"]["message"] == "file does not exist: missing.py"
+
+
+def test_check_json_reports_directory_script(tmp_path: Path) -> None:
+    result = CliRunner().invoke(cli.app, ["check", str(tmp_path), "--json"])
+
+    assert result.exit_code == 2
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["status"] == "invalid_script"
+    assert payload["error"]["kind"] == "not_file"
+    assert payload["error"]["message"].startswith("not a file:")
+
+
+def test_check_json_reports_non_python_script(tmp_path: Path) -> None:
+    script = tmp_path / "notes.txt"
+    script.write_text("not python\n", encoding="utf-8")
+
+    result = CliRunner().invoke(cli.app, ["check", str(script), "--json"])
+
+    assert result.exit_code == 2
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["status"] == "invalid_script"
+    assert payload["error"]["kind"] == "not_python"
+    assert payload["error"]["message"].startswith("script must be a .py file:")
 
 
 def test_check_treats_st_error_alert_as_success(tmp_path: Path) -> None:
@@ -554,6 +642,7 @@ def test_selftest_json_output() -> None:
     payload = json.loads(result.output)
     assert payload["schema_version"] == "stui.selftest.v1"
     assert payload["stui_version"] == stui.__version__
+    assert payload["strict"] is False
     assert payload["ok"] is True
     assert payload["summary"]["passed"] == payload["summary"]["total"]
     assert {check["name"] for check in payload["checks"]} == {
@@ -562,6 +651,27 @@ def test_selftest_json_output() -> None:
         "init templates",
         "generated template checks",
         "bundled example check",
+    }
+
+
+def test_selftest_strict_json_output() -> None:
+    result = CliRunner().invoke(cli.app, ["selftest", "--strict", "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "stui.selftest.v1"
+    assert payload["stui_version"] == stui.__version__
+    assert payload["strict"] is True
+    assert payload["ok"] is True
+    assert payload["summary"]["passed"] == payload["summary"]["total"]
+    assert {check["name"] for check in payload["checks"]} == {
+        "package metadata",
+        "bundled demos",
+        "init templates",
+        "generated template checks",
+        "bundled example check",
+        "strict bundled example checks",
+        "strict doctor diagnostics",
     }
 
 
@@ -857,6 +967,36 @@ def test_init_forms_template_long_option(tmp_path: Path) -> None:
     assert "st.checkbox" in content
 
 
+def test_init_data_template(tmp_path: Path) -> None:
+    script = tmp_path / "data.py"
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["init", str(script), "--template", "data"],
+    )
+
+    assert result.exit_code == 0
+    content = script.read_text(encoding="utf-8")
+    assert 'st.title("Data app")' in content
+    assert "st.table(rows" in content
+    assert "from the data template" in result.output
+
+
+def test_init_charts_template(tmp_path: Path) -> None:
+    script = tmp_path / "charts.py"
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["init", str(script), "--template", "charts"],
+    )
+
+    assert result.exit_code == 0
+    content = script.read_text(encoding="utf-8")
+    assert 'st.title("Charts app")' in content
+    assert "st.bar_chart(scores)" in content
+    assert "from the charts template" in result.output
+
+
 def test_init_forms_template_short_option(tmp_path: Path) -> None:
     script = tmp_path / "signup.py"
 
@@ -899,6 +1039,41 @@ def test_all_init_templates_run_without_script_errors(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("template", "expected_type"),
+    [
+        ("basic", "TextInputElement"),
+        ("dashboard", "MetricElement"),
+        ("data", "TableElement"),
+        ("charts", "BarChartElement"),
+        ("forms", "CheckboxElement"),
+    ],
+)
+def test_init_templates_pass_strict_check(
+    tmp_path: Path,
+    template: str,
+    expected_type: str,
+) -> None:
+    script = tmp_path / f"{template}.py"
+
+    init_result = CliRunner().invoke(
+        cli.app,
+        ["init", str(script), "--template", template],
+    )
+    check_result = CliRunner().invoke(
+        cli.app,
+        ["check", str(script), "--strict", "--json"],
+    )
+
+    assert init_result.exit_code == 0
+    assert check_result.exit_code == 0
+    payload = json.loads(check_result.output)
+    assert payload["ok"] is True
+    assert payload["strict"] is True
+    assert payload["summary"]["warning_count"] == 0
+    assert expected_type in payload["summary"]["element_types"]
+
+
 def test_init_rejects_unknown_template(tmp_path: Path) -> None:
     result = CliRunner().invoke(
         cli.app,
@@ -909,4 +1084,6 @@ def test_init_rejects_unknown_template(tmp_path: Path) -> None:
     assert result.exit_code != 0
     assert "unknown template 'unknown'" in normalized_output
     assert "basic, dashboard," in normalized_output
+    assert "data" in normalized_output
+    assert "charts" in normalized_output
     assert "forms" in normalized_output

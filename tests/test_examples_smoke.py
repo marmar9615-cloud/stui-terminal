@@ -32,6 +32,21 @@ from stui.elements import (
 from stui.runtime import Runtime
 
 
+def test_repo_and_bundled_examples_do_not_drift() -> None:
+    repo_examples = {
+        path.name: path.read_text(encoding="utf-8")
+        for path in sorted(Path("examples").glob("*.py"))
+    }
+    bundled_dir = resources.files("stui.examples")
+    bundled_examples = {
+        child.name: child.read_text(encoding="utf-8")
+        for child in sorted(bundled_dir.iterdir(), key=lambda item: item.name)
+        if child.name.endswith(".py") and child.name != "__init__.py"
+    }
+
+    assert bundled_examples == repo_examples
+
+
 def test_all_examples_run_without_script_errors() -> None:
     for path in sorted(Path("examples").glob("*.py")):
         runtime = Runtime(path)

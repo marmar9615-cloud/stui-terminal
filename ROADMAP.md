@@ -57,7 +57,7 @@ call shape and core behavior through v1.x unless a correctness
 issue forces a change.
 
 The experimental API is still public enough to try, but the project is asking
-for feedback before freezing it. In v1.6.0 the remaining experimental APIs are
+for feedback before freezing it. In v1.7.0 the remaining experimental APIs are
 `st.status`, `st.spinner`, and `st.help`.
 
 The command surface is expected to remain stable for v1 docs:
@@ -69,12 +69,16 @@ The command surface is expected to remain stable for v1 docs:
 - `stui examples`
 - `stui example list`
 - `stui example copy NAME DEST`
-- `stui init APP.py --template basic|dashboard|forms`
+- `stui init APP.py --template basic|dashboard|data|charts|forms`
+- `stui check APP.py`
+- `stui check APP.py --json`
+- `stui check APP.py --strict`
 - `stui doctor`
 - `stui doctor --json`
 - `stui doctor --compat`
 - `stui selftest`
 - `stui selftest --json`
+- `stui selftest --strict`
 - `stui --version`
 
 ## Layout Criteria Before Expansion
@@ -166,7 +170,20 @@ The command surface is expected to remain stable for v1 docs:
 - Updated bundled data/layout examples and docs around installed-user copy/run
   flows, static-table limitations, and modest layout patterns.
 
-## v1.6+ Candidates
+## v1.7 Shipped
+
+- Added `stui check --strict` for CI-friendly authoring validation that fails
+  on warnings such as scripts that render no visible elements.
+- Added warning details to `stui check --json`, including `strict`,
+  `warnings`, and `summary.warning_count`.
+- Strengthened `stui selftest --strict` so release gates exercise all bundled
+  examples, all init templates, and doctor diagnostics without launching a TUI.
+- Added `data` and `charts` starter templates for installed users who want a
+  data-display or chart-oriented starting point.
+- Tightened custom external project validation and package audits around
+  bundled examples.
+
+## v1.8+ Candidates
 
 - Revisit additional chart variants and richer static data inspection if users
   are building real terminal dashboards that need them.

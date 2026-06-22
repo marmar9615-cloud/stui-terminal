@@ -47,8 +47,10 @@ For non-interactive validation in CI or before sharing a reproduction, run:
 ```bash
 stui check app.py
 stui check app.py --json
+stui check app.py --strict
 stui selftest
 stui selftest --json
+stui selftest --strict
 ```
 
 The doctor output includes:
@@ -63,9 +65,10 @@ The doctor output includes:
 - Installed example availability.
 - A compatibility report command that can be pasted into issues.
 
-`stui selftest` checks package metadata, bundled demo resources, init templates,
-and non-interactive runtime validation. It is useful for install health, but it
-does not replace a real interactive terminal smoke test.
+`stui selftest --strict` checks package metadata, bundled demo resources, every
+bundled example, init templates, and non-interactive runtime validation. It is
+useful for install health, but it does not replace a real interactive terminal
+smoke test.
 
 `STUI_THEME=high-contrast` enables the high-contrast theme. Any other value
 falls back to the default theme and should be included in reports if the theme
@@ -74,9 +77,9 @@ color-related environment differences; do not assume every terminal front end
 handles it the same way.
 
 Current automated coverage checks the doctor output, `stui doctor --json`,
-`stui doctor --compat`, `stui check`, color capability classification for
-`TERM`/`COLORTERM`, `STUI_THEME` resolution, and small-terminal warnings. It
-does not replace manual visual checks in real terminal emulators.
+`stui doctor --compat`, `stui check --strict`, color capability classification
+for `TERM`/`COLORTERM`, `STUI_THEME` resolution, and small-terminal warnings.
+It does not replace manual visual checks in real terminal emulators.
 
 ## Keyboard Notes
 

@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.7.0 - 2026-06-22
+
+### Added
+
+- Added `stui check --strict` for CI-friendly app-authoring validation that
+  fails on warnings such as scripts that render no visible elements.
+- Added `strict`, `warnings`, and `summary.warning_count` fields to
+  `stui check --json` output.
+- Added `stui selftest --strict` to validate all bundled examples, all starter
+  templates, package metadata, and doctor diagnostics without launching a TUI.
+- Added `data` and `charts` starter templates for `stui init`.
+- Added release notes for v1.7.0 under `docs/releases/`.
+- Added tests for strict check/selftest output, invalid script JSON payloads,
+  new init templates, path-with-spaces custom project validation, recursive
+  element summaries, and repo/bundled example drift.
+
+### Changed
+
+- Updated `scripts/check.sh` and `scripts/verify_custom_project.sh` to use
+  strict validation during release gates.
+- Improved human `stui check` output so warning-only checks say
+  `passed with warnings`, while strict warning failures avoid saying `passed`.
+- Improved `stui check` summaries to include nested elements inside containers,
+  columns, status blocks, expanders, and spinners.
+- Tightened package content audit requirements for all bundled examples.
+- Updated README, API reference, publishing docs, release checklist, roadmap,
+  terminal compatibility docs, feedback docs, and v1 readiness docs for the
+  v1.7.0 app-authoring validation flow.
+
+### Fixed
+
+- Fixed new starter templates with literal dictionary braces so template
+  rendering through `.format(filename=...)` remains safe.
+- Fixed custom external project validation expectations for `st.dataframe`,
+  which intentionally renders through `TableElement`.
+
 ## 1.6.0 - 2026-06-22
 
 ### Added

@@ -18,7 +18,7 @@ Streamlit compatibility layer. Existing Streamlit apps usually need edits; new
 
 ## Preview
 
-![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.6.0/assets/stui-model-demo.png)
+![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.7.0/assets/stui-model-demo.png)
 
 ```text
 ┌─ stui ───────────────────────────────────────────┐
@@ -138,8 +138,10 @@ stui doctor --json
 stui doctor --compat
 stui selftest
 stui selftest --json
+stui selftest --strict
 stui check app.py
 stui check app.py --json
+stui check app.py --strict
 ```
 
 ## Project Links
@@ -218,17 +220,20 @@ stui example copy counter ./counter.py
 stui run ./counter.py
 stui init ./new_app.py
 stui init ./dashboard.py --template dashboard
+stui init ./data_app.py --template data
+stui init ./charts_app.py --template charts
 stui init ./forms_app.py --template forms
 stui selftest
+stui selftest --strict
 ```
 
 Automated tests cover demo CLI behavior and bundled-resource resolution without
 starting a full TUI. For an interactive smoke check, run `stui demo dashboard`
 from any directory and press `q` to quit.
 
-`stui init` currently supports the `basic`, `dashboard`, and `forms` templates.
-Use `python -m stui ...` for the same commands when the `stui` script directory
-is not on `PATH`.
+`stui init` currently supports the `basic`, `dashboard`, `data`, `charts`, and
+`forms` templates. Use `python -m stui ...` for the same commands when the
+`stui` script directory is not on `PATH`.
 
 If `stui doctor` runs from CI or another non-interactive shell, it may report
 `TERM=dumb`, no TTY, or a `0x0` terminal size. For terminal rendering
@@ -246,6 +251,12 @@ python -m stui run ./signup.py
 
 stui init ./ops_dashboard.py --template dashboard
 python -m stui run ./ops_dashboard.py
+
+stui init ./data_app.py --template data
+python -m stui check ./data_app.py --strict
+
+stui init ./charts_app.py --template charts
+python -m stui check ./charts_app.py --strict
 ```
 
 The v1.x releases treat these demo/example/init/copy/check/selftest commands as
@@ -437,7 +448,7 @@ and [docs/v1-readiness.md#stable-api](docs/v1-readiness.md#stable-api).
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v1.6.0 |
+| Area | APIs | Status in v1.7.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
@@ -457,9 +468,9 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v1.6.0 stable surface keeps the v1 core compact while refining status/help
-UX, terminal diagnostics, data display, and count-only layout behavior. Tables
-and dataframes are stable for documented
+The v1.7.0 stable surface keeps the v1 core compact while improving app
+authoring validation, installed-user starter templates, data display, and
+count-only layout behavior. Tables and dataframes are stable for documented
 scalar, list, mapping, dataframe-like, dataclass, namedtuple, and simple
 public-object shapes; charts are stable for the documented scalar, list, mapping,
 tuple-pair, list-of-dicts, and dict-of-columns shapes. These names should keep
@@ -469,7 +480,7 @@ correctness, terminal, or security issue forces a change.
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v1 behavior yet. In v1.6.0 this includes `st.status`,
+promised as frozen v1 behavior yet. In v1.7.0 this includes `st.status`,
 `st.spinner`, and `st.help`.
 Release notes should call out any change with a migration note when practical.
 
@@ -749,13 +760,14 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v1.6.0 Stable Status
+## v1.7.0 Stable Status
 
-v1.6.0 is a status/help UX and release-safety release. It keeps the
-package/import/CLI contract from v1.0.0, keeps v1.4.0 and v1.5.0 behavior
-compatible, improves status/spinner/help example coverage, clarifies that
-collapsed status blocks hide child content unless `expanded=True`, and adds a
-release-version guard so a tag cannot silently build the wrong package version.
+v1.7.0 is an app-authoring and validation release. It keeps the
+package/import/CLI contract from v1.0.0, keeps v1.4.0 through v1.6.0 behavior
+compatible, adds stricter non-interactive validation through
+`stui check --strict`, strengthens `stui selftest --strict`, and adds `data`
+and `charts` starter templates so installed users can begin from common app
+shapes without cloning the repository.
 
 The remaining experimental APIs and terminal compatibility unknowns are visible
 instead of hidden. Post-v1 work should be feedback-driven and kept out of the

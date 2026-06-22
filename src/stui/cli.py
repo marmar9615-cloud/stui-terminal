@@ -91,6 +91,35 @@ st.success("API healthy")
 st.info("Next release window: Friday")
 st.warning("Review queue needs attention")
 ''',
+    "data": '''import stui as st
+
+st.title("Data app")
+st.write("Edit this file, then run:")
+st.code("stui run {filename}")
+
+rows = [
+    {{"name": "alpha", "score": 0.91, "status": "ready"}},
+    {{"name": "beta", "score": 0.87, "status": "review"}},
+    {{"name": "gamma", "score": 0.82, "status": "ready"}},
+]
+
+st.metric("Rows", len(rows), "+3")
+st.table(rows, max_rows=5, max_cols=3)
+st.json({{"source": "local", "rows": len(rows)}})
+''',
+    "charts": '''import stui as st
+
+st.title("Charts app")
+st.write("Edit this file, then run:")
+st.code("stui run {filename}")
+
+scores = {{"alpha": 91, "beta": 87, "gamma": 82}}
+trend = [72, 78, 81, 87, 91]
+
+st.metric("Best score", "91", "+4")
+st.bar_chart(scores)
+st.line_chart(trend)
+''',
     "forms": '''import stui as st
 
 st.title("Signup form")
@@ -465,13 +494,21 @@ def check_app(
         bool,
         typer.Option("--json", help="Print validation result as JSON."),
     ] = False,
+    strict: Annotated[
+        bool,
+        typer.Option(
+            "--strict",
+            help="Fail on authoring warnings such as scripts that render no elements.",
+        ),
+    ] = False,
 ) -> None:
     """Validate a stui script without launching the interactive TUI."""
 
     script_path = script.expanduser()
-    payload = _validate_script(script)
+    payload = _validate_script(script, strict=strict)
     error = payload["error"]
     exit_code = int(payload["exit_code"])
+    warnings = [str(item) for item in payload["warnings"]]
 
     if json_output:
         typer.echo(json_module.dumps(payload, indent=2, sort_keys=True))
@@ -483,12 +520,23 @@ def check_app(
     if error:
         typer.echo(f"stui check failed: {script_path}")
         typer.echo(error["traceback"])
-    else:
+    elif strict and warnings:
         element_count = int(payload["summary"]["element_count"])
         typer.echo(
-            f"stui check passed: {script_path} "
+            f"stui check strict failed: {script_path} "
             f"({element_count} rendered element{'s' if element_count != 1 else ''})"
         )
+    else:
+        element_count = int(payload["summary"]["element_count"])
+        status_label = "passed with warnings" if warnings else "passed"
+        typer.echo(
+            f"stui check {status_label}: {script_path} "
+            f"({element_count} rendered element{'s' if element_count != 1 else ''})"
+        )
+    if warnings:
+        typer.echo("warnings:")
+        for warning in warnings:
+            typer.echo(f"  - {warning}")
 
     if exit_code:
         raise typer.Exit(exit_code)
@@ -504,38 +552,64 @@ def _script_error_kind(script: Path, message: str) -> str:
     return "invalid_script"
 
 
-def _validate_script(script: Path) -> dict[str, object]:
+def _validate_script(script: Path, *, strict: bool = False) -> dict[str, object]:
     script_path = script.expanduser()
     if error := _script_path_error(script_path):
         return _check_payload(
             script,
             script_path if script_path.is_absolute() else None,
             errors=[error],
+            warnings=[],
             status="invalid_script",
             exit_code=2,
             error_kind=_script_error_kind(script_path, error),
             element_types={},
             element_count=0,
+            strict=strict,
         )
 
     runtime = Runtime(script_path.resolve())
     elements = runtime.run_script()
+    all_elements = list(_iter_rendered_elements(elements))
     errors = [
         element.traceback
-        for element in elements
+        for element in all_elements
         if isinstance(element, ErrorElement)
     ]
-    element_types = Counter(type(element).__name__ for element in elements)
+    element_types = Counter(type(element).__name__ for element in all_elements)
+    warnings = []
+    if not all_elements:
+        warnings.append(
+            "script rendered no elements; add st.write(), st.title(), or another "
+            "visible primitive"
+        )
+    exit_code = 1 if errors or (strict and warnings) else 0
     return _check_payload(
         script,
         script_path.resolve(),
         errors=errors,
+        warnings=warnings,
         status="script_error" if errors else "ok",
-        exit_code=1 if errors else 0,
+        exit_code=exit_code,
         error_kind="script_error" if errors else None,
         element_types=dict(sorted(element_types.items())),
-        element_count=len(elements),
+        element_count=len(all_elements),
+        strict=strict,
     )
+
+
+def _iter_rendered_elements(elements: list[object]):
+    for element in elements:
+        yield element
+
+        children = getattr(element, "children", None)
+        if children:
+            yield from _iter_rendered_elements(children)
+
+        columns = getattr(element, "columns", None)
+        if columns:
+            for column in columns:
+                yield from _iter_rendered_elements(column)
 
 
 def _check_payload(
@@ -543,11 +617,13 @@ def _check_payload(
     resolved_script: Path | None,
     *,
     errors: list[str],
+    warnings: list[str],
     status: str,
     exit_code: int,
     error_kind: str | None,
     element_types: dict[str, int],
     element_count: int,
+    strict: bool,
 ) -> dict[str, object]:
     error = None
     if errors:
@@ -559,7 +635,8 @@ def _check_payload(
     return {
         "schema_version": "stui.check.v1",
         "stui_version": __version__,
-        "ok": not errors,
+        "ok": exit_code == 0,
+        "strict": strict,
         "status": status,
         "exit_code": exit_code,
         "script": {
@@ -569,8 +646,10 @@ def _check_payload(
         "summary": {
             "element_count": element_count,
             "error_count": len(errors),
+            "warning_count": len(warnings),
             "element_types": element_types,
         },
+        "warnings": warnings,
         "error": error,
     }
 
@@ -722,7 +801,7 @@ def _selftest_check(
     return check
 
 
-def _run_selftest() -> dict[str, object]:
+def _run_selftest(*, strict: bool = False) -> dict[str, object]:
     checks: list[dict[str, object]] = []
     package_version = _package_version("stui-terminal")
     package_ok = package_version == __version__
@@ -756,7 +835,9 @@ def _run_selftest() -> dict[str, object]:
     checks.append(
         _selftest_check(
             "init templates",
-            {"basic", "dashboard", "forms"}.issubset(INIT_TEMPLATES),
+            {"basic", "dashboard", "data", "charts", "forms"}.issubset(
+                INIT_TEMPLATES
+            ),
             "available templates: " + ", ".join(INIT_TEMPLATE_CHOICES),
         )
     )
@@ -771,7 +852,7 @@ def _run_selftest() -> dict[str, object]:
                 INIT_TEMPLATES[template_name].format(filename=init_script.name),
                 encoding="utf-8",
             )
-            init_payload = _validate_script(init_script)
+            init_payload = _validate_script(init_script, strict=strict)
             if not init_payload["ok"]:
                 template_errors.append(template_name)
         checks.append(
@@ -793,7 +874,7 @@ def _run_selftest() -> dict[str, object]:
                 _read_bundled_example("basic"),
                 encoding="utf-8",
             )
-            example_payload = _validate_script(example_script)
+            example_payload = _validate_script(example_script, strict=strict)
             checks.append(
                 _selftest_check(
                     "bundled example check",
@@ -811,10 +892,45 @@ def _run_selftest() -> dict[str, object]:
                 )
             )
 
+        if strict:
+            bundled_errors = []
+            for example_name in sorted(bundled):
+                example_script = tmp_path / example_name
+                example_script.write_text(
+                    _read_bundled_example(example_name),
+                    encoding="utf-8",
+                )
+                example_payload = _validate_script(example_script, strict=True)
+                if not example_payload["ok"]:
+                    bundled_errors.append(example_name)
+            checks.append(
+                _selftest_check(
+                    "strict bundled example checks",
+                    not bundled_errors,
+                    (
+                        f"{len(bundled) - len(bundled_errors)}/"
+                        f"{len(bundled)} bundled examples rendered"
+                    )
+                    if not bundled_errors
+                    else "example errors: " + ", ".join(bundled_errors),
+                )
+            )
+
+            diagnostics = _doctor_diagnostics()
+            checks.append(
+                _selftest_check(
+                    "strict doctor diagnostics",
+                    diagnostics["schema_version"] == "stui.doctor.v1",
+                    "doctor diagnostics are JSON-serializable",
+                    payload={"schema_version": diagnostics["schema_version"]},
+                )
+            )
+
     passed = sum(1 for check in checks if check["ok"])
     return {
         "schema_version": "stui.selftest.v1",
         "stui_version": __version__,
+        "strict": strict,
         "ok": passed == len(checks),
         "summary": {
             "passed": passed,
@@ -830,10 +946,17 @@ def selftest(
         bool,
         typer.Option("--json", help="Print self-test result as JSON."),
     ] = False,
+    strict: Annotated[
+        bool,
+        typer.Option(
+            "--strict",
+            help="Run all bundled example checks and stricter diagnostics.",
+        ),
+    ] = False,
 ) -> None:
     """Run lightweight installed-package checks without launching a TUI."""
 
-    result = _run_selftest()
+    result = _run_selftest(strict=strict)
     if json_output:
         typer.echo(json_module.dumps(result, indent=2, sort_keys=True))
     else:
@@ -942,7 +1065,10 @@ def init_app(
         typer.Option(
             "--template",
             "-t",
-            help="Starter template to create: basic, dashboard, or forms.",
+            help=(
+                "Starter template to create: basic, dashboard, data, charts, "
+                "or forms."
+            ),
         ),
     ] = "basic",
     force: Annotated[

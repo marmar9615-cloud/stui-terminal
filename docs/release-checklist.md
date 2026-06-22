@@ -10,8 +10,8 @@ Streamlit compatibility layer.
 
 - Patch: bugs, docs, examples, tests, packaging, or project metadata.
 - Minor: new public APIs, new widgets, or meaningful behavior additions.
-- Breaking: do not ship before 1.0 unless a severe correctness or safety issue
-  requires it.
+- Breaking: reserve for a future major release unless a severe correctness or
+  safety issue requires an immediate documented tightening.
 
 If a change adds API surface, it is not a patch release.
 
@@ -59,6 +59,10 @@ python3.11 -m venv /tmp/stui-current
 /tmp/stui-current/bin/stui example list
 /tmp/stui-current/bin/stui example copy basic /tmp/stui-basic.py
 /tmp/stui-current/bin/stui init /tmp/stui-app.py
+/tmp/stui-current/bin/stui init /tmp/stui-data-app.py --template data
+/tmp/stui-current/bin/stui init /tmp/stui-charts-app.py --template charts
+/tmp/stui-current/bin/stui check /tmp/stui-app.py --strict
+/tmp/stui-current/bin/stui selftest --strict
 ```
 
 After publishing, repeat the same check with the exact released version, for
@@ -127,9 +131,10 @@ Use this flow for v1.1.0 and later v1.x maintenance/minor releases:
    the tag so `pyproject.toml`, `stui.__version__`, and the Git tag agree.
 5. Smoke the built wheel in a temporary virtual environment: import `stui`, run
    version/doctor commands, list/copy examples, list demos, create each
-   documented template, run `stui check` on copied or initialized apps, run
-   `stui selftest`, and run at least one copied example with `python -m stui
-   run` when practical.
+   documented template including `data` and `charts`, run
+   `stui check --strict` on copied or initialized apps, run
+   `stui selftest --strict`, and run at least one copied example with
+   `python -m stui run` when practical.
 6. Tag only after the release diff is final and no helper has unreviewed edits.
 7. Wait for `main` and tag CI, then publish from the tag through Trusted
    Publishing with only the real PyPI flag enabled.
@@ -158,7 +163,8 @@ Before tagging v1.x releases, confirm:
   code, or `textual-slider` dependency has been introduced.
 - Installed-package flows work without a repository checkout: `stui examples`,
   `stui demo list`, `stui demo NAME`, `stui example list`,
-  `stui example copy`, `stui init`, `stui check`, and `stui selftest`.
+  `stui example copy`, `stui init`, `stui check --strict`, and
+  `stui selftest --strict`.
 - v1.2.0 and later minor releases run `scripts/verify_custom_project.sh` from
   outside the repository or through `./scripts/check.sh` to prove a multi-file
   external project can import helpers and validate with `stui check`.

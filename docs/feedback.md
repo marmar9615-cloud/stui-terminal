@@ -65,8 +65,8 @@ Feedback that can shape near-term design:
   supported during the v1 series.
 - Package hardening: whether install, copy, init, selftest, and example flows
   work from clean virtual environments and built artifacts.
-- `stui check`: whether non-interactive validation catches useful script errors
-  in local or CI workflows.
+- `stui check --strict`: whether non-interactive validation catches useful
+  script errors and authoring warnings in local or CI workflows.
 - Charts: whether the stable bar and line summaries cover real terminal
   dashboard needs, and which future chart types are useful without heavy
   plotting dependencies.

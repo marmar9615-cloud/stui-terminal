@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import sys
@@ -23,7 +24,8 @@ def test_verify_custom_project_script_runs_from_external_directory(
     )
     env = os.environ.copy()
     env["PYTHON"] = str(python)
-    env["STUI_CUSTOM_PROJECT_DIR"] = str(tmp_path / "custom-project")
+    project_dir = tmp_path / "custom project with spaces"
+    env["STUI_CUSTOM_PROJECT_DIR"] = str(project_dir)
 
     result = subprocess.run(
         [str(ROOT / "scripts" / "verify_custom_project.sh")],
@@ -36,7 +38,19 @@ def test_verify_custom_project_script_runs_from_external_directory(
 
     assert result.returncode == 0, result.stderr or result.stdout
     assert "custom project validation passed:" in result.stdout
-    assert (tmp_path / "custom-project" / "my_project" / "data.py").exists()
-    assert (tmp_path / "custom-project" / "app.py").exists()
-    assert (tmp_path / "custom-project" / "selftest-result.json").exists()
-    assert (tmp_path / "custom-project" / "check-result.json").exists()
+    assert (project_dir / "my_project" / "data.py").exists()
+    assert (project_dir / "app.py").exists()
+    assert (project_dir / "selftest-result.json").exists()
+    assert (project_dir / "check-result.json").exists()
+
+    selftest_payload = json.loads(
+        (project_dir / "selftest-result.json").read_text(encoding="utf-8")
+    )
+    check_payload = json.loads(
+        (project_dir / "check-result.json").read_text(encoding="utf-8")
+    )
+    assert selftest_payload["ok"] is True
+    assert selftest_payload["strict"] is True
+    assert check_payload["ok"] is True
+    assert check_payload["strict"] is True
+    assert check_payload["summary"]["warning_count"] == 0
