@@ -71,10 +71,15 @@ Feedback that can shape near-term design:
   dashboard needs, and which future chart types are useful without heavy
   plotting dependencies.
 - Richer dataframe support: which table interactions matter first for
-  inspection and debugging after `max_rows` and `max_cols`.
+  inspection and debugging after `max_rows` and `max_cols`. For table reports,
+  include terminal width/height, approximate row and column counts, data shape
+  such as list-of-dicts or dict-of-lists, and whether `max_rows` or `max_cols`
+  was used.
 - Layout primitives: whether containers, integer-count columns, and expanders
   are enough for real terminal apps, and what real workflow would justify
-  ratios, tabs, sidebars, or a larger layout system.
+  ratios, tabs, sidebars, or a larger layout system. For layout reports, include
+  whether columns stacked earlier or later than expected and whether the layout
+  was nested inside another column.
 - Forms: where submit-style flows feel natural or surprising in a top-to-bottom
   rerun model.
 - Caching and session persistence: what data should persist, for how long, and

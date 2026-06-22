@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextvars
+import dataclasses as dataclasses_lib
 import inspect
 import json as json_lib
 import math
@@ -1212,7 +1213,7 @@ def _normalize_table(
             max_len = max((len(value) for value in data.values()), default=0)
             rows = tuple(
                 tuple(
-                    str(data[key][row_index])
+                    _table_cell_text(data[key][row_index])
                     if row_index < len(data[key])
                     else ""
                     for key in data
@@ -1221,15 +1222,17 @@ def _normalize_table(
             )
             return _limit_table(headers, rows, max_rows=max_rows, max_cols=max_cols)
         headers, rows = ("key", "value"), tuple(
-            (str(key), str(value)) for key, value in data.items()
+            (_table_cell_text(key), _table_cell_text(value))
+            for key, value in data.items()
         )
         return _limit_table(headers, rows, max_rows=max_rows, max_cols=max_cols)
     if isinstance(data, (list, tuple)):
         if not data:
             return _limit_table(("value",), (), max_rows=max_rows, max_cols=max_cols)
-        if all(isinstance(item, dict) for item in data):
+        records = tuple(_table_record(item) for item in data)
+        if all(record is not None for record in records):
             return _normalize_records_table(
-                data,
+                records,
                 max_rows=max_rows,
                 max_cols=max_cols,
             )
@@ -1238,17 +1241,17 @@ def _normalize_table(
             headers = tuple(f"col_{index + 1}" for index in range(width))
             rows = tuple(
                 tuple(
-                    str(item[index]) if index < len(item) else ""
+                    _table_cell_text(item[index]) if index < len(item) else ""
                     for index in range(width)
                 )
                 for item in data
             )
             return _limit_table(headers, rows, max_rows=max_rows, max_cols=max_cols)
-        headers, rows = ("value",), tuple((str(item),) for item in data)
+        headers, rows = ("value",), tuple((_table_cell_text(item),) for item in data)
         return _limit_table(headers, rows, max_rows=max_rows, max_cols=max_cols)
     return _limit_table(
         ("value",),
-        ((str(data),),),
+        ((_table_cell_text(data),),),
         max_rows=max_rows,
         max_cols=max_cols,
     )
@@ -1278,7 +1281,10 @@ def _normalize_records_table(
         )
     )
     headers = tuple(str(key) for key in keys)
-    rows = tuple(tuple(str(row.get(key, "")) for key in keys) for row in records)
+    rows = tuple(
+        tuple(_table_cell_text(row.get(key, "")) for key in keys)
+        for row in records
+    )
     if not headers:
         headers = ("value",)
     return _limit_table(headers, rows, max_rows=max_rows, max_cols=max_cols)
@@ -1310,3 +1316,33 @@ def _limit_table(
         if hidden_count:
             rows = (*rows, (f"+{hidden_count} rows", *("" for _ in headers[1:])))
     return headers, rows
+
+
+def _table_record(value: Any) -> dict[Any, Any] | None:
+    if isinstance(value, dict):
+        return value
+    if dataclasses_lib.is_dataclass(value) and not isinstance(value, type):
+        return dataclasses_lib.asdict(value)
+    asdict = getattr(value, "_asdict", None)
+    if callable(asdict):
+        record = asdict()
+        if isinstance(record, dict):
+            return record
+    attributes = getattr(value, "__dict__", None)
+    if isinstance(attributes, dict):
+        public = {
+            key: item
+            for key, item in attributes.items()
+            if not str(key).startswith("_") and not callable(item)
+        }
+        if public:
+            return public
+    return None
+
+
+def _table_cell_text(value: Any) -> str:
+    text = str(value)
+    text = text.replace("\r\n", "\n").replace("\r", "\n").replace("\t", "    ")
+    if "\n" in text:
+        return " / ".join(part.strip() for part in text.split("\n"))
+    return text

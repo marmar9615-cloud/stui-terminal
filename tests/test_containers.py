@@ -484,6 +484,37 @@ with right:
     asyncio.run(scenario())
 
 
+def test_nested_columns_stack_against_parent_column_width(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+left, right = st.columns(2)
+with left:
+    inner_left, inner_right = st.columns(2)
+    with inner_left:
+        st.write("inner left")
+    with inner_right:
+        st.write("inner right")
+with right:
+    st.write("outer right")
+""",
+    )
+    runtime = Runtime(script)
+    app = StuiApp(runtime)
+
+    async def scenario() -> None:
+        async with app.run_test(size=(80, 24)) as pilot:
+            await pilot.pause()
+            assert len(list(app.query(".stui-columns"))) == 2
+            assert len(list(app.query(".stui-columns-stacked"))) == 1
+            assert len(list(app.query(".stui-column"))) == 4
+            assert len(list(app.query(".write"))) == 3
+
+    asyncio.run(scenario())
+
+
 def test_textual_expander_keyboard_toggle_persists(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,

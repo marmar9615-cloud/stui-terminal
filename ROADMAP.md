@@ -57,7 +57,7 @@ call shape and core behavior through v1.x unless a correctness
 issue forces a change.
 
 The experimental API is still public enough to try, but the project is asking
-for feedback before freezing it. In v1.4.0 the remaining experimental APIs are
+for feedback before freezing it. In v1.5.0 the remaining experimental APIs are
 `st.status`, `st.spinner`, and `st.help`.
 
 The command surface is expected to remain stable for v1 docs:
@@ -156,7 +156,17 @@ The command surface is expected to remain stable for v1 docs:
 - Updated chart examples, docs, and regression tests around narrow,
   signed-value, unsupported, and column-shaped inputs.
 
-## v1.4+ Candidates
+## v1.5 Shipped
+
+- Improved `st.table` and `st.dataframe` static display for dataclasses,
+  namedtuples, simple public objects, uneven rows, empty tables, multiline cells,
+  and `max_cols` markers in narrow terminals.
+- Refined count-only `st.columns` so nested column groups stack according to
+  their parent column width.
+- Updated bundled data/layout examples and docs around installed-user copy/run
+  flows, static-table limitations, and modest layout patterns.
+
+## v1.6+ Candidates
 
 - Revisit additional chart variants and richer static data inspection if users
   are building real terminal dashboards that need them.

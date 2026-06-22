@@ -63,6 +63,38 @@ st.dataframe({f"column_{index}": [index] for index in range(20)})
     assert rows == (("0", "1", "2", "3", "+16 cols"),)
 
 
+def test_max_cols_marker_survives_render_width_trim(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.table({f"column_{index}": [index] for index in range(20)}, max_cols=6)
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+    table = elements[0]
+    assert isinstance(table, TableElement)
+
+    headers, rows = StuiApp._trim_table(table.headers, table.rows, 24)
+
+    assert headers == ("column_0", "column_1", "column_2", "...")
+    assert rows == (("0", "1", "2", "+14 cols"),)
+
+
+def test_empty_table_render_includes_no_rows_marker() -> None:
+    rendered = StuiApp._render_table(
+        TableElement(headers=("name", "score"), rows=()),
+        40,
+    )
+    console = Console(width=40, record=True)
+    console.print(rendered)
+
+    assert "No rows" in console.export_text()
+
+
 def test_table_warns_in_ultra_narrow_width() -> None:
     table = TableElement(
         headers=("alpha", "beta", "gamma"),
@@ -72,6 +104,19 @@ def test_table_warns_in_ultra_narrow_width() -> None:
     rendered = StuiApp._render_table(table, 12)
 
     assert rendered.plain == "Table requires a wider terminal."
+
+
+def test_table_long_values_are_clipped_in_narrow_render() -> None:
+    rendered = StuiApp._render_table(
+        TableElement(headers=("payload",), rows=(("x" * 120,),)),
+        24,
+    )
+    console = Console(width=24, record=True)
+    console.print(rendered)
+    output = console.export_text()
+
+    assert output.count("x") < 80
+    assert "x" * 80 not in output
 
 
 def test_chart_renderers_handle_one_column_width_and_long_labels() -> None:
@@ -197,5 +242,34 @@ with st.expander("{long_label}", expanded=True):
             assert not list(app.query(".error"))
             assert len(list(app.query(".stui-field-label"))) == 3
             assert len(list(app.query(".stui-expander"))) == 1
+
+    asyncio.run(scenario())
+
+
+def test_expander_label_uses_available_width_in_narrow_layout(tmp_path: Path) -> None:
+    long_label = "Details " + ("x" * 160)
+    script = write_script(
+        tmp_path,
+        f"""
+import stui as st
+
+left, right = st.columns(2)
+with left:
+    with st.expander("{long_label}", expanded=True):
+        st.write("inside")
+with right:
+    st.write("right")
+""",
+    )
+    runtime = Runtime(script)
+    app = StuiApp(runtime)
+
+    async def scenario() -> None:
+        async with app.run_test(size=(80, 20)) as pilot:
+            await pilot.pause()
+            labels = list(app.query(".stui-expander-label"))
+            assert len(labels) == 1
+            assert not list(app.query(".error"))
+            assert "..." in str(labels[0].render())
 
     asyncio.run(scenario())

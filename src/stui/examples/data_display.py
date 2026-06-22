@@ -1,7 +1,7 @@
 import stui as st
 
 st.title("Data Display")
-st.caption("Tables do not require pandas, but pandas-like objects are supported.")
+st.caption("Static terminal tables without a pandas dependency.")
 
 st.subheader("Runs")
 st.table(
@@ -12,13 +12,43 @@ st.table(
     ]
 )
 
+st.subheader("Column Data")
+st.dataframe(
+    {
+        "stage": ["queued", "running", "review", "done"],
+        "jobs": [4, 2, 1, 8],
+        "owner": ["cli", "model", "human", "release"],
+    },
+    max_rows=3,
+    max_cols=2,
+)
+
+st.subheader("Object Rows")
+
+
+class Run:
+    def __init__(self, name, status, note):
+        self.name = name
+        self.status = status
+        self.note = note
+
+
+st.table(
+    [
+        Run("local", "ok", "line one\nline two"),
+        Run("wheel", "ok", "fresh install"),
+    ],
+)
+
 st.subheader("Config")
 st.json({"device": "mps", "batch_size": 16, "features": ["cache", "compile"]})
 
 st.subheader("Snippet")
 st.code(
-    """for run in runs:
-    evaluate(run)
+    """st.table([{"name": "baseline", "accuracy": 0.81}])
+st.dataframe({"stage": ["queued", "done"], "jobs": [4, 8]}, max_rows=2)
 """,
     language="python",
 )
+
+st.info("Tables are static displays: no editing, sorting, or dataframe dependency.")

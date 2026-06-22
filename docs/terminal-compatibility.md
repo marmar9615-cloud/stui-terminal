@@ -26,7 +26,8 @@ well enough to promise support.
 ## Minimum Terminal Shape
 
 Use at least an 80x24 terminal when possible. Smaller terminals may still launch,
-but layouts and charts can clip or become hard to read.
+but layouts and charts can clip or become hard to read. Wide tables and deeply
+nested columns are the first places to simplify when a layout feels cramped.
 
 Run:
 

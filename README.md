@@ -18,7 +18,7 @@ Streamlit compatibility layer. Existing Streamlit apps usually need edits; new
 
 ## Preview
 
-![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.4.0/assets/stui-model-demo.png)
+![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.5.0/assets/stui-model-demo.png)
 
 ```text
 ┌─ stui ───────────────────────────────────────────┐
@@ -437,7 +437,7 @@ and [docs/v1-readiness.md#stable-api](docs/v1-readiness.md#stable-api).
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v1.4.0 |
+| Area | APIs | Status in v1.5.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
@@ -457,18 +457,18 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v1.4.0 stable surface keeps the v1 core compact while graduating
-`st.bar_chart` and `st.line_chart` as compact terminal summaries. Charts are
-stable for the documented scalar, list, mapping, tuple-pair, list-of-dicts, and
-dict-of-columns shapes, but they are still intentionally smaller than plotting
-libraries. These names should keep their call shape, return type, and basic
-behavior through v1 unless a correctness, terminal, or security issue forces a
-change.
+The v1.5.0 stable surface keeps the v1 core compact while refining data display
+and count-only layout behavior. Tables and dataframes are stable for documented
+scalar, list, mapping, dataframe-like, dataclass, namedtuple, and simple
+public-object shapes; charts are stable for the documented scalar, list, mapping,
+tuple-pair, list-of-dicts, and dict-of-columns shapes. These names should keep
+their call shape, return type, and basic behavior through v1 unless a
+correctness, terminal, or security issue forces a change.
 
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v1 behavior yet. In v1.4.0 this includes `st.status`,
+promised as frozen v1 behavior yet. In v1.5.0 this includes `st.status`,
 `st.spinner`, and `st.help`.
 Release notes should call out any change with a migration note when practical.
 
@@ -611,10 +611,20 @@ stui run examples/inputs.py
 
 ### Data Display
 
-`examples/data_display.py` shows tables, JSON, and code output.
+`examples/data_display.py` shows static tables, dataframe-style display, JSON,
+and code output. It includes list-of-dicts rows, dict-of-columns data,
+`max_rows`/`max_cols`, dataclass-like object rows, and multiline cell
+normalization.
 
 ```bash
 stui run examples/data_display.py
+```
+
+From an installed package without a repository checkout:
+
+```bash
+stui example copy data_display ./data_display.py
+stui run ./data_display.py
 ```
 
 ### Dashboard
@@ -637,12 +647,20 @@ stui run examples/forms.py
 
 ### Layouts
 
-`examples/layouts.py` shows responsive columns, container, and
-keyboard-toggleable expander patterns. The design notes are in
+`examples/layouts.py` shows responsive columns, container, data inside grouped
+sections, and keyboard-toggleable expander patterns. Columns stack in narrow
+terminals, including nested columns inside a parent column. The design notes are in
 [`docs/layouts.md`](docs/layouts.md).
 
 ```bash
 stui run examples/layouts.py
+```
+
+From an installed package without a repository checkout:
+
+```bash
+stui example copy layouts ./layouts.py
+stui run ./layouts.py
 ```
 
 ### Charts
@@ -674,7 +692,8 @@ stui run examples/kitchen_sink.py
   this is still a modest terminal grouping primitive, not a full layout system.
 - Columns accept only an integer count, stack when the terminal is narrow, and
   do not support custom ratios, sidebars, tabs, browser grids, or horizontal
-  scrolling.
+  scrolling. Nested columns stack based on the parent column width, but deep
+  nesting can still become hard to read in small terminals.
 - Charts are compact terminal summaries, not plotting-library replacements.
   `st.bar_chart` and `st.line_chart` support documented numeric terminal data
   shapes, including simple sequences, mappings, tuple pairs, list-of-dicts, and
@@ -685,6 +704,8 @@ stui run examples/kitchen_sink.py
   scheduler or async runtime.
 - No sidebars, file upload, browser components, or caching decorators yet.
 - Tables are static display only; there is no full dataframe editing or sorting.
+  Object-row support is for display only and uses dataclasses, namedtuples, or
+  simple public attributes.
 - Slider input supports numeric values only.
 - Layout remains terminal-first and intentionally modest.
 - The app reruns the script as interactions change state, so examples should
@@ -705,12 +726,13 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v1.4.0 Stable Status
+## v1.5.0 Stable Status
 
-v1.4.0 is a chart-contract and terminal-compatibility release. It keeps the
-package/import/CLI contract from v1.0.0, keeps v1.3.0 behavior compatible,
-graduates `st.bar_chart` and `st.line_chart` for compact terminal summaries,
-and adds `stui doctor --compat` plus richer doctor JSON compatibility fields.
+v1.5.0 is a data-display and layout-refinement release. It keeps the
+package/import/CLI contract from v1.0.0, keeps v1.4.0 behavior compatible,
+improves static table/dataframe normalization and empty-table rendering, and
+makes nested columns stack against their parent width instead of the full
+terminal width.
 
 The remaining experimental APIs and terminal compatibility unknowns are visible
 instead of hidden. Post-v1 work should be feedback-driven and kept out of the

@@ -38,7 +38,21 @@ with right:
 
 The `count` argument must be a positive integer. Each returned value is a
 context manager. Columns render side-by-side only when the terminal is wide
-enough for readable columns; otherwise they stack vertically.
+enough for readable columns; otherwise they stack vertically. Nested columns use
+their parent column width for that decision, so an inner column group may stack
+even when the outer group still renders side-by-side.
+
+Recommended patterns:
+
+- Use two or three columns for compact summaries, metrics, and short controls.
+- Use `st.container()` for section grouping when side-by-side display is not
+  important.
+- Use `st.expander(..., key="stable-key")` for optional details, especially in
+  repeated sections.
+- Put wide tables or long text outside columns when possible; they are easier to
+  read in the full terminal width.
+- Avoid deep nested columns. They are supported modestly, but narrow terminals
+  will stack them quickly.
 
 Limitations:
 

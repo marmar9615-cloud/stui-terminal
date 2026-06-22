@@ -326,12 +326,21 @@ class StuiExpander(Vertical, can_focus=True):
             self.expander = expander
             self.expanded = expanded
 
-    def __init__(self, element: ExpanderElement, *children) -> None:
+    def __init__(
+        self,
+        element: ExpanderElement,
+        *children,
+        label_width: int | None = None,
+    ) -> None:
         self.stui_key = element.key
         self.stui_expanded = element.expanded
         marker = "-" if element.expanded else "+"
+        available_label_width = max(
+            8,
+            min(MAX_STATIC_LABEL_WIDTH, (label_width or MAX_STATIC_LABEL_WIDTH) - 4),
+        )
         label = Static(
-            f"[{marker}] {_clip_text(element.label, MAX_STATIC_LABEL_WIDTH)}",
+            f"[{marker}] {_clip_text(element.label, available_label_width)}",
             classes="stui-expander-label",
         )
         super().__init__(
@@ -632,12 +641,16 @@ class StuiApp(App[None]):
     async def render_runtime(self) -> None:
         body = self.query_one("#body", VerticalScroll)
         await body.remove_children()
-        widgets = [self._build_widget(element) for element in self.runtime.elements]
+        widgets = [
+            self._build_widget(element, self.size.width)
+            for element in self.runtime.elements
+        ]
         if widgets:
             await body.mount(*widgets)
         await self._restore_focus()
 
-    def _build_widget(self, element):
+    def _build_widget(self, element, available_width: int | None = None):
+        render_width = available_width or self.size.width or 80
         if isinstance(element, TitleElement):
             return Static(Text(element.body, style="bold"), classes="title")
         if isinstance(element, HeaderElement):
@@ -666,7 +679,7 @@ class StuiApp(App[None]):
             return Static(RichJSON(element.text), classes="json")
         if isinstance(element, TableElement):
             return Static(
-                self._render_table(element, self.size.width),
+                self._render_table(element, render_width),
                 classes="table",
             )
         if isinstance(element, ExceptionElement):
@@ -707,7 +720,7 @@ class StuiApp(App[None]):
             if not element.expanded:
                 return panel
             children = [
-                self._build_widget(child)
+                self._build_widget(child, render_width)
                 for child in (element.children or [])
             ]
             return Vertical(panel, *children, classes="stui-status")
@@ -723,7 +736,7 @@ class StuiApp(App[None]):
                 classes="stui-spinner",
             )
             children = [
-                self._build_widget(child)
+                self._build_widget(child, render_width)
                 for child in (element.children or [])
             ]
             if not children:
@@ -747,29 +760,39 @@ class StuiApp(App[None]):
         if isinstance(element, LineChartElement):
             return Static(self._render_line_chart(element), classes="bar-chart")
         if isinstance(element, ContainerElement):
-            children = [self._build_widget(child) for child in element.children]
+            children = [
+                self._build_widget(child, render_width)
+                for child in element.children
+            ]
             return Vertical(*children, classes="stui-container")
         if isinstance(element, ColumnsElement):
+            column_count = len(element.columns)
+            stack_columns = self._should_stack_columns(column_count, render_width)
+            child_width = (
+                render_width
+                if stack_columns
+                else max(MIN_RENDERED_COLUMN_WIDTH, render_width // column_count)
+            )
             columns = [
                 Vertical(
-                    *(self._build_widget(child) for child in column),
+                    *(self._build_widget(child, child_width) for child in column),
                     classes="stui-column",
                 )
                 for column in element.columns
             ]
-            if self._should_stack_columns(len(columns)):
+            if stack_columns:
                 return Vertical(*columns, classes="stui-columns stui-columns-stacked")
             return Horizontal(*columns, classes="stui-columns")
         if isinstance(element, ExpanderElement):
             if not element.expanded:
-                return StuiExpander(element)
+                return StuiExpander(element, label_width=render_width)
             children = [
-                self._build_widget(child)
+                self._build_widget(child, render_width)
                 for child in (element.children or [])
             ]
-            return StuiExpander(element, *children)
+            return StuiExpander(element, *children, label_width=render_width)
         if isinstance(element, DividerElement):
-            width = max(8, min(40, self.size.width - 4))
+            width = max(8, min(40, render_width - 4))
             return Static("─" * width, classes="divider")
         if isinstance(element, AlertElement):
             kind = element.kind.lower()
@@ -917,11 +940,15 @@ class StuiApp(App[None]):
             return False
         return True
 
-    def _should_stack_columns(self, count: int) -> bool:
+    def _should_stack_columns(
+        self,
+        count: int,
+        available_width: int | None = None,
+    ) -> bool:
         if count < 2:
             return True
-        available_width = self.size.width or 80
-        return available_width // count < MIN_RENDERED_COLUMN_WIDTH
+        render_width = available_width or self.size.width or 80
+        return render_width // count < MIN_RENDERED_COLUMN_WIDTH
 
     @staticmethod
     def _parse_number_input(widget: StuiNumberInput, raw: str) -> int | float:
@@ -956,6 +983,8 @@ class StuiApp(App[None]):
             element.rows,
             available_width,
         )
+        if not rows:
+            rows = (("No rows", *("" for _ in headers[1:])),)
         column_count = max(1, len(headers))
         usable_width = max(20, available_width or 80)
         column_width = max(
@@ -986,6 +1015,17 @@ class StuiApp(App[None]):
         visible_columns = min(MAX_TABLE_COLUMNS, visible_columns, len(headers))
         if visible_columns >= len(headers):
             return headers, rows
+        has_existing_marker = headers[-1] == "..." and all(
+            len(row) == len(headers) for row in rows
+        )
+        if has_existing_marker:
+            kept_columns = max(1, visible_columns - 1)
+            data_headers = headers[:-1]
+            if kept_columns >= len(data_headers):
+                return headers, rows
+            trimmed_headers = (*data_headers[:kept_columns], "...")
+            trimmed_rows = tuple((*row[:kept_columns], row[-1]) for row in rows)
+            return trimmed_headers, trimmed_rows
         kept_columns = max(1, visible_columns - 1)
         trimmed_headers = (*headers[:kept_columns], "...")
         hidden_count = len(headers) - kept_columns

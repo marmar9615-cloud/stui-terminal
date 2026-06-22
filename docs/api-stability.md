@@ -1,6 +1,6 @@
 # API Stability
 
-`stui` v1.4.0 keeps the top-level stable API intentionally small and
+`stui` v1.5.0 keeps the top-level stable API intentionally small and
 Streamlit-inspired, but it is not Streamlit-compatible and does not depend on
 Streamlit at runtime.
 
@@ -48,7 +48,7 @@ rename in the v1.x line.
 | `caption` | v1-stable | Core text output. |
 | `checkbox` | v1-stable | Core input widget. |
 | `code` | v1-stable | Core text output. |
-| `columns` | v1-stable | Count-only responsive terminal columns that stack on narrow terminals. |
+| `columns` | v1-stable | Count-only responsive terminal columns that stack on narrow terminals and inside narrow parent columns. |
 | `container` | v1-stable | Terminal grouping primitive, not a full layout engine. |
 | `dataframe` | v1-stable | Static terminal display; editing and sorting are out of scope. |
 | `divider` | v1-stable | Core visual separator. |

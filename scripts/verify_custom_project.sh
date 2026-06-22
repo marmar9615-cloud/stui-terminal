@@ -14,12 +14,38 @@ else
   PY="$PYTHON_CMD"
 fi
 
-cat > "$WORKDIR/helper.py" <<'PY'
+mkdir -p "$WORKDIR/my_project"
+cat > "$WORKDIR/my_project/__init__.py" <<'PY'
+"""Tiny external project package used by stui release validation."""
+PY
+
+cat > "$WORKDIR/my_project/data.py" <<'PY'
+from collections import namedtuple
+from dataclasses import dataclass
+
+
+@dataclass
+class Run:
+    name: str
+    score: float
+    notes: str
+
+
+Point = namedtuple("Point", ["x", "y"])
+
+
 def rows():
     return [
-        {"step": 1, "loss": 0.9, "accuracy": 0.42},
+        {"step": 1, "loss": 0.9, "accuracy": 0.42, "phase": "warmup"},
         {"step": 2, "loss": 0.5, "accuracy": 0.71},
-        {"step": 3, "loss": 0.25, "accuracy": 0.83},
+        {"step": 3, "loss": 0.25, "accuracy": 0.83, "phase": "eval"},
+    ]
+
+
+def object_rows():
+    return [
+        Run("local", 0.91, "line one\nline two"),
+        Point("wheel", 0.87),
     ]
 
 
@@ -30,7 +56,7 @@ PY
 cat > "$WORKDIR/app.py" <<'PY'
 import stui as st
 
-from helper import project_name, rows
+from my_project.data import object_rows, project_name, rows
 
 st.title("Custom validation")
 st.write("Project:", project_name())
@@ -39,6 +65,7 @@ with left:
     st.metric("Runs", 3, "+1")
     st.table(rows(), max_rows=2, max_cols=2)
 with right:
+    st.dataframe(object_rows(), max_rows=2, max_cols=3)
     st.bar_chart({"passed": 12, "failed": -1})
     st.line_chart(rows())
 with st.status("Validation status", state="complete", expanded=True):

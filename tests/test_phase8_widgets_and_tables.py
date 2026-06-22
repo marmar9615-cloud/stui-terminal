@@ -260,6 +260,117 @@ st.table([{1: "one", "two": 2}, {1: "uno"}])
     assert table.rows == (("one", "2"), ("uno", ""))
 
 
+def test_table_empty_column_dict_preserves_headers(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.table({"a": [], "b": []})
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    table = next(
+        element for element in runtime.elements if isinstance(element, TableElement)
+    )
+
+    assert table.headers == ("a", "b")
+    assert table.rows == ()
+
+
+def test_table_uneven_list_rows_pad_missing_cells(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.table([[1, 2, 3], [4]])
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    table = next(
+        element for element in runtime.elements if isinstance(element, TableElement)
+    )
+
+    assert table.headers == ("col_1", "col_2", "col_3")
+    assert table.rows == (("1", "2", "3"), ("4", "", ""))
+
+
+def test_table_supports_dataclasses_namedtuples_and_public_objects(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+from collections import namedtuple
+from dataclasses import dataclass
+import stui as st
+
+@dataclass
+class Run:
+    name: str
+    score: float
+
+Point = namedtuple("Point", ["x", "y"])
+
+class PublicAttrs:
+    def __init__(self):
+        self.name = "attrs"
+        self.count = 3
+        self._private = "hidden"
+
+st.table([Run("baseline", 0.81), Run("candidate", 0.88)])
+st.table([Point(1, 2), Point(3, 4)])
+st.table([PublicAttrs()])
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    tables = [
+        element
+        for element in runtime.elements
+        if isinstance(element, TableElement)
+    ]
+
+    assert tables[0].headers == ("name", "score")
+    assert tables[0].rows == (("baseline", "0.81"), ("candidate", "0.88"))
+    assert tables[1].headers == ("x", "y")
+    assert tables[1].rows == (("1", "2"), ("3", "4"))
+    assert tables[2].headers == ("name", "count")
+    assert tables[2].rows == (("attrs", "3"),)
+
+
+def test_table_normalizes_multiline_and_tabbed_cells(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.table([
+    {"name": "Ada\\nLovelace", "note": "fast\\tpath"},
+    {"name": "Grace", "note": "line one\\nline two"},
+])
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    table = next(
+        element for element in runtime.elements if isinstance(element, TableElement)
+    )
+
+    assert table.headers == ("name", "note")
+    assert table.rows == (
+        ("Ada / Lovelace", "fast    path"),
+        ("Grace", "line one / line two"),
+    )
+
+
 def test_dataframe_preserves_empty_declared_columns_without_pandas(
     tmp_path: Path,
 ) -> None:

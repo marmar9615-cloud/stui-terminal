@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.0 - 2026-06-22
+
+### Added
+
+- Added v1.5.0 release notes under `docs/releases/`.
+- Added regression coverage for dataclass, namedtuple, public-object,
+  empty-table, uneven-row, multiline-cell, narrow-table, and nested-column
+  rendering behavior.
+
+### Changed
+
+- Improved `st.table` and `st.dataframe` static display for dataclasses,
+  namedtuples, simple public objects, multiline or tabbed cells, uneven rows,
+  empty data, and narrow terminals.
+- Refined count-only `st.columns` so nested column groups stack based on the
+  parent column width instead of the full terminal width.
+- Updated data-display and layout examples to show installed-user copy/run
+  flows, `max_rows`/`max_cols`, object rows, grouped tables, and explicit
+  expander keys.
+- Updated README, API docs, layout docs, roadmap, feedback docs, and v1
+  readiness docs for the v1.5.0 data/layout contract.
+
+### Fixed
+
+- Fixed renderer trimming so a runtime `max_cols` marker such as `+14 cols`
+  survives additional narrow-terminal trimming.
+- Fixed empty static tables so they render a readable `No rows` body marker
+  instead of an empty bordered header.
+- Fixed nested column rendering so inner columns stack when their parent column
+  is too narrow, even if the full terminal is wide enough for the outer columns.
+
 ## 1.4.0 - 2026-06-22
 
 ### Added

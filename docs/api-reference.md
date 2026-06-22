@@ -136,13 +136,15 @@ st.line_chart(data, *, width=None, height=None) -> None
 st.divider() -> None
 ```
 
-In v1.4.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`,
+In v1.5.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`,
 `st.bar_chart`, and `st.line_chart` are v1-stable static display primitives.
 Tables support scalars, lists or tuples of scalars, lists or tuples of dicts,
 lists or tuples of lists/tuples, dicts of scalar values, dicts of lists/tuples,
-and pandas-like objects with `to_dict(orient="records")` and `columns`
-attributes. `st.dataframe` is an alias for static table display; it does not add
-editing, sorting, selection, or pandas as a required dependency.
+dataclass instances, namedtuple-like objects, simple objects with public
+attributes, and pandas-like objects with `to_dict(orient="records")` and
+`columns` attributes. Multiline table cells are normalized for terminal display.
+`st.dataframe` is an alias for static table display; it does not add editing,
+sorting, selection, or pandas as a required dependency.
 Use `max_rows` and `max_cols` to cap static output; hidden rows or columns are
 called out with visible `+N rows` or `+N cols` markers.
 
@@ -410,20 +412,19 @@ if "token" not in st.session_state:
     st.stop()
 ```
 
-## v1.4 Stable Status
+## v1.5 Stable Status
 
-The signatures above are intentionally covered by tests in v1.4.0. The
+The signatures above are intentionally covered by tests in v1.5.0. The
 classification table marks each top-level API as either `v1-stable` or
 `post-v1 experimental`; see [API Stability](api-stability.md) for the full
 compatibility promise and post-v1 deprecation policy.
 
-v1.4.0 keeps the v1.3 stable API intact and graduates the compact chart
-summaries after adding tuple-pair and dict-of-columns coverage. Any change to
-stable names in v1.x should be treated as a compatibility event unless it fixes
-a correctness, terminal, or security issue and is documented in the changelog
-and release notes.
+v1.5.0 keeps the v1.4 stable API intact while refining static data display and
+count-only layout rendering. Any change to stable names in v1.x should be
+treated as a compatibility event unless it fixes a correctness, terminal, or
+security issue and is documented in the changelog and release notes.
 
-These APIs stay post-v1 experimental in v1.4.0 and need more feedback before
+These APIs stay post-v1 experimental in v1.5.0 and need more feedback before
 they can be called v1-stable:
 
 - Help and status: `st.help`, `st.status`, and `st.spinner` formatting and
