@@ -188,6 +188,108 @@ def test_run_rejects_non_python_file(tmp_path: Path) -> None:
     assert "script must be a .py file:" in result.output
 
 
+def test_check_validates_script_without_launching_tui(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(
+        "import stui as st\nst.title('OK')\nst.write('ready')\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(cli.app, ["check", str(script)])
+
+    assert result.exit_code == 0
+    assert "stui check passed:" in result.output
+    assert "(2 rendered elements)" in result.output
+
+
+def test_check_reports_runtime_error(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(
+        "import stui as st\nst.write('before')\nraise RuntimeError('boom')\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(cli.app, ["check", str(script)])
+
+    assert result.exit_code == 1
+    assert "stui check failed:" in result.output
+    assert "Traceback (most recent call last):\n" in result.output
+    assert "RuntimeError: boom" in result.output
+
+
+def test_check_json_reports_ok_and_errors(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text("import stui as st\nst.write('ok')\n", encoding="utf-8")
+
+    result = CliRunner().invoke(cli.app, ["check", str(script), "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "stui.check.v1"
+    assert payload["stui_version"] == stui.__version__
+    assert payload["ok"] is True
+    assert payload["status"] == "ok"
+    assert payload["exit_code"] == 0
+    assert payload["error"] is None
+    assert payload["summary"]["error_count"] == 0
+    assert payload["summary"]["element_count"] == 1
+    assert payload["summary"]["element_types"] == {"WriteElement": 1}
+    assert payload["script"] == {
+        "input": str(script),
+        "path": str(script.resolve()),
+    }
+
+
+def test_check_json_reports_syntax_error(tmp_path: Path) -> None:
+    script = tmp_path / "bad.py"
+    script.write_text("if True print('bad')\n", encoding="utf-8")
+
+    result = CliRunner().invoke(cli.app, ["check", str(script), "--json"])
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["status"] == "script_error"
+    assert payload["exit_code"] == 1
+    assert payload["summary"]["element_count"] == 1
+    assert payload["summary"]["error_count"] == 1
+    assert payload["summary"]["element_types"] == {"ErrorElement": 1}
+    assert payload["error"]["kind"] == "script_error"
+    assert "SyntaxError" in payload["error"]["traceback"]
+
+
+def test_check_json_reports_missing_script() -> None:
+    result = CliRunner().invoke(cli.app, ["check", "missing.py", "--json"])
+
+    assert result.exit_code == 2
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["status"] == "invalid_script"
+    assert payload["exit_code"] == 2
+    assert payload["script"] == {"input": "missing.py", "path": None}
+    assert payload["summary"]["element_count"] == 0
+    assert payload["summary"]["error_count"] == 1
+    assert payload["summary"]["element_types"] == {}
+    assert payload["error"]["kind"] == "missing"
+    assert payload["error"]["message"] == "file does not exist: missing.py"
+
+
+def test_check_treats_st_error_alert_as_success(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(
+        "import stui as st\nst.error('visible app error')\n",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(cli.app, ["check", str(script), "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["ok"] is True
+    assert payload["status"] == "ok"
+    assert payload["summary"]["element_types"] == {"AlertElement": 1}
+
+
 def test_version_option() -> None:
     result = CliRunner().invoke(cli.app, ["--version"])
 
@@ -464,6 +566,19 @@ def test_example_copy_force_overwrites(tmp_path: Path) -> None:
 def test_example_copy_into_existing_directory(tmp_path: Path) -> None:
     dest = tmp_path / "examples"
     dest.mkdir()
+
+    result = CliRunner().invoke(cli.app, ["example", "copy", "basic", str(dest)])
+
+    copied = dest / "basic.py"
+    assert result.exit_code == 0
+    assert copied.exists()
+    assert "Copied basic.py" in result.output
+
+
+def test_example_copy_extensionless_destination_is_treated_as_directory(
+    tmp_path: Path,
+) -> None:
+    dest = tmp_path / "copied"
 
     result = CliRunner().invoke(cli.app, ["example", "copy", "basic", str(dest)])
 

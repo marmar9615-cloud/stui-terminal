@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.2.0 - 2026-06-21
+
+### Added
+
+- Added `stui check APP.py` and `stui check APP.py --json` for
+  non-interactive app validation in local development and CI.
+- Added a repeatable custom external project validation script at
+  `scripts/verify_custom_project.sh`, and wired it into `scripts/check.sh`.
+- Added regression coverage for `stui check`, chart empty-state handling,
+  list-of-dicts line charts, static table/dataframe limits, dataframe
+  duck-typing edge cases, and external-project validation.
+- Added v1.2.0 release notes under `docs/releases/`.
+
+### Changed
+
+- Promoted `st.columns` to the stable v1 API as a count-only terminal grouping
+  primitive with documented narrow-terminal stacking behavior.
+- Extended `st.table` and `st.dataframe` with `max_rows` and `max_cols` limits
+  that render visible truncation markers instead of silently dropping data.
+- Improved dataframe duck typing for pandas-like empty data and missing record
+  keys without adding pandas as a required dependency.
+- Improved chart normalization so unsupported or all-invalid chart data renders
+  a clear empty chart state instead of a misleading zero-valued fallback.
+- Added simple list-of-dicts support to `st.line_chart` when numeric series can
+  be inferred safely.
+- Updated README, API reference, API stability docs, v1 readiness docs,
+  feedback docs, roadmap, publishing docs, and release checklist for the v1.2.0
+  validation flow.
+
+### Fixed
+
+- Fixed raw chart width/height type errors so invalid chart sizes render as
+  readable `stui` API errors.
+- Fixed static dataframe rendering for empty pandas-like records with declared
+  columns.
+- Fixed list-of-dicts table rendering with missing keys so the union of keys is
+  preserved consistently.
+
 ## 1.1.0 - 2026-06-21
 
 ### Added

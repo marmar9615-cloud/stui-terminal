@@ -63,7 +63,7 @@ EXPECTED_API_CLASSIFICATIONS = {
     "caption": "v1-stable",
     "checkbox": "v1-stable",
     "code": "v1-stable",
-    "columns": "post-v1 experimental",
+    "columns": "v1-stable",
     "container": "v1-stable",
     "dataframe": "v1-stable",
     "divider": "v1-stable",
@@ -113,7 +113,6 @@ EXPECTED_EXPERIMENTAL_APIS = {
 
 EXPECTED_EXPERIMENTAL_FREEZE_DECISIONS = {
     "bar_chart",
-    "columns",
     "help",
     "line_chart",
     "spinner",
@@ -170,7 +169,10 @@ EXPECTED_PUBLIC_SIGNATURES = {
     "code": "(body: 'Any', language: 'str | None' = None) -> 'None'",
     "columns": "(count: 'int')",
     "container": "()",
-    "dataframe": "(data: 'Any') -> 'None'",
+    "dataframe": _sig(
+        "(data: 'Any', *, max_rows: 'int | None' = None, ",
+        "max_cols: 'int | None' = None) -> 'None'",
+    ),
     "divider": "() -> 'None'",
     "error": "(body: 'Any') -> 'None'",
     "exception": "(exc: 'BaseException') -> 'None'",
@@ -233,7 +235,10 @@ EXPECTED_PUBLIC_SIGNATURES = {
         "expanded: 'bool' = False)",
     ),
     "success": "(body: 'Any') -> 'None'",
-    "table": "(data: 'Any') -> 'None'",
+    "table": _sig(
+        "(data: 'Any', *, max_rows: 'int | None' = None, ",
+        "max_cols: 'int | None' = None) -> 'None'",
+    ),
     "text": "(body: 'Any') -> 'None'",
     "text_input": _sig(
         "(label: 'str', value: 'str' = '', *, ",
@@ -262,7 +267,7 @@ EXPECTED_REFERENCE_SIGNATURES = {
     "code": "st.code(body, language=None) -> None",
     "columns": "st.columns(count)",
     "container": "st.container()",
-    "dataframe": "st.dataframe(data) -> None",
+    "dataframe": "st.dataframe(data, *, max_rows=None, max_cols=None) -> None",
     "divider": "st.divider() -> None",
     "error": "st.error(body) -> None",
     "exception": "st.exception(exc) -> None",
@@ -309,7 +314,7 @@ EXPECTED_REFERENCE_SIGNATURES = {
     "subheader": "st.subheader(body, *, key=None) -> None",
     "status": "st.status(label, state=\"running\", expanded=False)",
     "success": "st.success(body) -> None",
-    "table": "st.table(data) -> None",
+    "table": "st.table(data, *, max_rows=None, max_cols=None) -> None",
     "text": "st.text(body) -> None",
     "text_input": _sig(
         "st.text_input(\n    label,\n    value=\"\",\n    *,\n",

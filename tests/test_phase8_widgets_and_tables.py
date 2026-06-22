@@ -188,6 +188,58 @@ st.dataframe("scalar")
     assert tables[3].rows == (("scalar",),)
 
 
+def test_table_max_rows_and_max_cols_add_truncation_markers(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.table(
+    [
+        {"a": 1, "b": 2, "c": 3, "d": 4},
+        {"a": 5, "b": 6, "c": 7, "d": 8},
+        {"a": 9, "b": 10, "c": 11, "d": 12},
+    ],
+    max_rows=2,
+    max_cols=2,
+)
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    table = next(
+        element for element in runtime.elements if isinstance(element, TableElement)
+    )
+
+    assert table.headers == ("a", "b", "...")
+    assert table.rows == (
+        ("1", "2", "+2 cols"),
+        ("5", "6", "+2 cols"),
+        ("+1 rows", "", ""),
+    )
+
+
+def test_table_rejects_invalid_max_rows_and_max_cols(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.table([1, 2, 3], max_rows=0)
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+
+    assert len(runtime.elements) == 1
+    assert isinstance(runtime.elements[0], ErrorElement)
+    assert "st.table max_rows must be a positive integer or None" in (
+        runtime.elements[0].traceback
+    )
+
+
 def test_table_list_of_dicts_preserves_non_string_keys(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,
@@ -206,6 +258,62 @@ st.table([{1: "one", "two": 2}, {1: "uno"}])
 
     assert table.headers == ("1", "two")
     assert table.rows == (("one", "2"), ("uno", ""))
+
+
+def test_dataframe_preserves_empty_declared_columns_without_pandas(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+class Frame:
+    columns = ("name", "score")
+
+    def to_dict(self, orient):
+        assert orient == "records"
+        return []
+
+st.dataframe(Frame())
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    table = next(
+        element for element in runtime.elements if isinstance(element, TableElement)
+    )
+
+    assert table.headers == ("name", "score")
+    assert table.rows == ()
+
+
+def test_dataframe_declared_columns_fill_missing_record_keys(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+class Frame:
+    columns = ("name", "score", "status")
+
+    def to_dict(self, orient):
+        assert orient == "records"
+        return [{"name": "Ada", "score": 10}, {"name": "Grace", "status": "ok"}]
+
+st.dataframe(Frame(), max_cols=2)
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    table = next(
+        element for element in runtime.elements if isinstance(element, TableElement)
+    )
+
+    assert table.headers == ("name", "score", "...")
+    assert table.rows == (("Ada", "10", "+1 cols"), ("Grace", "", "+1 cols"))
 
 
 def test_json_progress_and_dataframe_stable_fallbacks(tmp_path: Path) -> None:

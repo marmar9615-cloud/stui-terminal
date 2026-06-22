@@ -99,6 +99,7 @@ class BarChartElement:
     points: tuple[BarChartPoint, ...]
     width: int | None = None
     height: int | None = None
+    empty: bool = False
 
 
 @dataclass(frozen=True)
@@ -112,6 +113,7 @@ class LineChartElement:
     series: tuple[LineChartSeries, ...]
     width: int | None = None
     height: int | None = None
+    empty: bool = False
 
 
 @dataclass(frozen=True)

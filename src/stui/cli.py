@@ -5,6 +5,7 @@ import os
 import platform
 import shutil
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from importlib import metadata, resources
 from pathlib import Path
@@ -14,6 +15,7 @@ import typer
 
 from . import __version__
 from .app import StuiApp, resolve_theme
+from .elements import ErrorElement
 from .runtime import Runtime
 
 app = typer.Typer(
@@ -217,6 +219,16 @@ def _missing_script_message(script: Path) -> str:
     return message
 
 
+def _script_path_error(script: Path) -> str | None:
+    if not script.exists():
+        return _missing_script_message(script)
+    if not script.is_file():
+        return f"not a file: {script}"
+    if script.suffix != ".py":
+        return f"script must be a .py file: {script}"
+    return None
+
+
 def _version_callback(value: bool) -> None:
     if value:
         typer.echo(f"stui {__version__}")
@@ -365,15 +377,120 @@ def run(script: Path) -> None:
     """Run a Python stui script in the terminal."""
 
     script_path = script.expanduser()
-    if not script_path.exists():
-        raise typer.BadParameter(_missing_script_message(script))
-    if not script_path.is_file():
-        raise typer.BadParameter(f"not a file: {script}")
-    if script_path.suffix != ".py":
-        raise typer.BadParameter(f"script must be a .py file: {script}")
+    if error := _script_path_error(script_path):
+        raise typer.BadParameter(error)
 
     runtime = Runtime(script_path.resolve())
     StuiApp(runtime).run()
+
+
+@app.command("check")
+def check_app(
+    script: Path,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print validation result as JSON."),
+    ] = False,
+) -> None:
+    """Validate a stui script without launching the interactive TUI."""
+
+    script_path = script.expanduser()
+    if error := _script_path_error(script_path):
+        payload = _check_payload(
+            script,
+            script_path if script_path.is_absolute() else None,
+            errors=[error],
+            status="invalid_script",
+            exit_code=2,
+            error_kind=_script_error_kind(script_path, error),
+            element_types={},
+            element_count=0,
+        )
+        if json_output:
+            typer.echo(json_module.dumps(payload, indent=2, sort_keys=True))
+            raise typer.Exit(2)
+        raise typer.BadParameter(error)
+
+    runtime = Runtime(script_path.resolve())
+    elements = runtime.run_script()
+    errors = [
+        element.traceback
+        for element in elements
+        if isinstance(element, ErrorElement)
+    ]
+    element_types = Counter(type(element).__name__ for element in elements)
+    payload = _check_payload(
+        script,
+        script_path.resolve(),
+        errors=errors,
+        status="script_error" if errors else "ok",
+        exit_code=1 if errors else 0,
+        error_kind="script_error" if errors else None,
+        element_types=dict(sorted(element_types.items())),
+        element_count=len(elements),
+    )
+
+    if json_output:
+        typer.echo(json_module.dumps(payload, indent=2, sort_keys=True))
+    elif errors:
+        typer.echo(f"stui check failed: {script_path}")
+        for error in errors:
+            typer.echo(error)
+    else:
+        typer.echo(
+            f"stui check passed: {script_path} "
+            f"({len(elements)} rendered element{'s' if len(elements) != 1 else ''})"
+        )
+
+    if errors:
+        raise typer.Exit(1)
+
+
+def _script_error_kind(script: Path, message: str) -> str:
+    if not script.exists():
+        return "missing"
+    if not script.is_file():
+        return "not_file"
+    if "must be a .py file" in message:
+        return "not_python"
+    return "invalid_script"
+
+
+def _check_payload(
+    input_script: Path,
+    resolved_script: Path | None,
+    *,
+    errors: list[str],
+    status: str,
+    exit_code: int,
+    error_kind: str | None,
+    element_types: dict[str, int],
+    element_count: int,
+) -> dict[str, object]:
+    error = None
+    if errors:
+        error = {
+            "kind": error_kind or status,
+            "message": errors[0].splitlines()[-1] if errors[0] else "",
+            "traceback": errors[0],
+        }
+    return {
+        "schema_version": "stui.check.v1",
+        "stui_version": __version__,
+        "ok": not errors,
+        "status": status,
+        "exit_code": exit_code,
+        "script": {
+            "input": str(input_script),
+            "path": str(resolved_script) if resolved_script is not None else None,
+        },
+        "summary": {
+            "element_count": element_count,
+            "error_count": len(errors),
+            "element_types": element_types,
+        },
+        "error": error,
+    }
 
 
 @app.command("demo")
@@ -532,6 +649,11 @@ def copy_example(
     content = _read_bundled_example(name)
     dest_path = dest.expanduser()
     if dest_path.is_dir():
+        dest_path = dest_path / example_name
+        if dest_path.exists() and not force:
+            raise typer.BadParameter(f"destination exists: {dest_path}")
+    elif dest_path.suffix == "":
+        dest_path.mkdir(parents=True, exist_ok=True)
         dest_path = dest_path / example_name
         if dest_path.exists() and not force:
             raise typer.BadParameter(f"destination exists: {dest_path}")

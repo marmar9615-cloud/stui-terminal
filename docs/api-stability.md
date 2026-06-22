@@ -1,6 +1,6 @@
 # API Stability
 
-`stui` v1.1.0 keeps the top-level stable API intentionally small and
+`stui` v1.2.0 keeps the top-level stable API intentionally small and
 Streamlit-inspired, but it is not Streamlit-compatible and does not depend on
 Streamlit at runtime.
 
@@ -48,14 +48,14 @@ rename in the v1.x line.
 | `caption` | v1-stable | Core text output. |
 | `checkbox` | v1-stable | Core input widget. |
 | `code` | v1-stable | Core text output. |
-| `columns` | post-v1 experimental | Responsive terminal layout behavior may still tighten. |
+| `columns` | v1-stable | Count-only responsive terminal columns that stack on narrow terminals. |
 | `container` | v1-stable | Terminal grouping primitive, not a full layout engine. |
 | `dataframe` | v1-stable | Static terminal display; editing and sorting are out of scope. |
 | `divider` | v1-stable | Core visual separator. |
 | `error` | v1-stable | Core status output. |
 | `exception` | v1-stable | Core status output for exceptions. |
 | `expander` | v1-stable | Keyboard-toggleable terminal grouping primitive. |
-| `form` | v1-stable | Deferred submit behavior is part of the v1.1 contract. |
+| `form` | v1-stable | Deferred submit behavior is part of the v1 contract. |
 | `form_submit_button` | v1-stable | One-shot form submit button. |
 | `header` | v1-stable | Core text output. |
 | `help` | post-v1 experimental | Help formatting and the public name need more feedback. |
@@ -114,7 +114,7 @@ surface:
 | `st.cache_data` | deferred for v1 | Caching decorators are out of scope for the v1 API freeze. |
 | `st.cache_resource` | deferred for v1 | Caching decorators are out of scope for the v1 API freeze. |
 | `st.components` | deferred for v1 | Browser component embedding is intentionally unsupported. |
-| custom column ratios/gaps | deferred for v1 | `st.columns` remains a count-only experimental terminal primitive. |
+| custom column ratios/gaps | deferred for v1 | `st.columns` remains a count-only terminal primitive. |
 | editable dataframes | deferred for v1 | `st.dataframe` remains static display only. |
 | plotting-library parity | deferred for v1 | Charts remain compact terminal summaries. |
 | browser/server runtime | deferred for v1 | No browser, server, websocket, or port-forwarding runtime is planned for v1. |

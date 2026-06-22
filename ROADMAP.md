@@ -17,8 +17,8 @@ Streamlit compatibility layer.
 - Ensure every stable API has focused tests and at least one README,
   example, or reference-doc mention.
 - Scope layout primitives honestly: `st.container`, `st.expander`, and
-  `st.columns` are terminal grouping helpers, not sidebars, tabs, browser
-  grids, or a full layout engine. `st.columns` remains post-v1 experimental.
+  count-only `st.columns` are terminal grouping helpers, not sidebars, tabs,
+  browser grids, or a full layout engine.
 - Keep charts and richer dataframe behavior experimental or explicitly modest
   until real v1 feedback says they should graduate.
 - Keep release notes, changelog, README, feedback docs, and v1 readiness docs
@@ -56,9 +56,8 @@ call shape and core behavior through v1.x unless a correctness
 issue forces a change.
 
 The experimental API is still public enough to try, but the project is asking
-for feedback before freezing it. In v1.1.0 the remaining experimental APIs are
-`st.columns`, `st.bar_chart`, `st.line_chart`, `st.status`, `st.spinner`, and
-`st.help`.
+for feedback before freezing it. In v1.2.0 the remaining experimental APIs are
+`st.bar_chart`, `st.line_chart`, `st.status`, `st.spinner`, and `st.help`.
 
 The command surface is expected to remain stable for v1 docs:
 
@@ -79,8 +78,8 @@ The command surface is expected to remain stable for v1 docs:
 - `st.columns` must keep passing focused runtime/rendering tests for child order,
   nesting, wide rendering, and narrow stacking.
 - Terminal reports should show readable behavior in at least one local macOS
-  terminal and one Linux or SSH/headless-style environment before promoting
-  columns beyond post-v1 experimental.
+  terminal and one Linux or SSH/headless-style environment before expanding
+  columns beyond count-only behavior.
 - Do not add tabs until keyboard navigation, hidden-content state semantics, and
   generated widget keys are predictable enough to document.
 - Do not add sidebars, custom ratios, browser-grid behavior, or horizontal
@@ -109,21 +108,37 @@ The command surface is expected to remain stable for v1 docs:
   explicit flow control.
 - Hardened generated-key collision checks, form callback commit timing, progress
   validation, JSON display fallbacks, and installed-user CLI diagnostics.
-- Improve installed-package examples, `stui init` templates, and terminal
+- Improved installed-package examples, `stui init` templates, and terminal
   compatibility docs based on early v1 feedback.
-- Tighten narrow-width rendering and keyboard documentation where reports show
+- Tightened narrow-width rendering and keyboard documentation where reports show
   reproducible friction.
 - Keep patch releases boring: bugs, docs, examples, packaging, and compatibility
   evidence.
 
-## v1.2 Candidates
+## v1.2 Shipped
+
+- Added `stui check APP.py` and `stui check APP.py --json` for
+  non-interactive app validation in local scripts and CI.
+- Added a repeatable custom external-project validation script that creates an
+  app outside the repository and checks local imports plus rendered element
+  summaries.
+- Added stable `max_rows` and `max_cols` keyword limits for `st.table` and
+  `st.dataframe`, including visible `+N rows` and `+N cols` markers.
+- Improved dataframe-like empty-record handling so declared columns are
+  preserved without requiring pandas.
+- Hardened chart empty states so unsupported or all-invalid data renders as
+  `No chart data` instead of a misleading zero value.
+- Graduated count-only `st.columns(count)` to stable while keeping ratios, tabs,
+  sidebars, and larger layout systems deferred.
+
+## v1.3+ Candidates
 
 - Revisit chart variants and richer static data inspection if users are building
   real terminal dashboards that need them.
 - Explore table formatting hooks or lightweight selection only if they can stay
   terminal-native and dependency-light.
-- Reassess `st.columns`, containers, expanders, forms, status, spinner, and
-  help after they have enough v1 usage to either stabilize or redesign.
+- Reassess charts, status, spinner, and help after they have enough v1 usage to
+  either stabilize or redesign.
 - Continue expanding compatibility evidence across macOS, Linux, SSH/headless,
   editor terminals, containers, and Windows setups without overstating
   environments the project has not tested.
@@ -156,7 +171,7 @@ The most useful feedback is specific and tied to a real terminal workflow:
 - Which API felt natural, confusing, too small, or too surprising.
 - Which widget or display primitive blocked the app from being useful.
 - Whether forms, containers, expanders, metrics, or charts are expressive enough
-  for a real terminal app before v1.
+  for a real terminal app in the v1 series.
 - Whether the terminal UI behaved well with your shell, font, theme, and
   terminal emulator.
 - Where keyboard or mouse behavior made the app feel slower than a script or a

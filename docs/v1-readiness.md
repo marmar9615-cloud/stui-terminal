@@ -1,6 +1,6 @@
 # v1 Readiness
 
-`stui` v1.1.0 is the first post-v1 improvement release. The goal for the v1
+`stui` v1.2.0 is a practical post-v1 improvement release. The goal for the v1
 series is not to become Streamlit-compatible or to grow a large component
 catalog. The goal is a small, stable, terminal-native API that can be installed
 from PyPI, explained quickly, and trusted for local tools.
@@ -8,12 +8,14 @@ from PyPI, explained quickly, and trusted for local tools.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## Status After v1.1.0
+## Status After v1.2.0
 
-v1.1.0 keeps the v1.0.0 baseline intact and graduates the safest experimental
-APIs after additional docs and regression coverage. The release keeps remaining
-layout/chart/status/help APIs labeled as post-v1 experimental instead of
-quietly freezing behavior that still needs terminal evidence.
+v1.2.0 keeps the v1.0.0 baseline intact, adds non-interactive `stui check`
+validation for app scripts, improves table/dataframe output limits, and
+graduates count-only `st.columns(count)` after additional docs and regression
+coverage. The release keeps chart/status/help APIs labeled as post-v1
+experimental instead of quietly freezing behavior that still needs terminal
+evidence.
 
 On the v1.x line, the stable API list is frozen. The freeze covers the
 top-level names in `stui.__all__`, their stability classifications, and the
@@ -32,20 +34,22 @@ Normal v1.x release work should include changelog and GitHub Release notes only.
 Do not generate social launch copy for maintenance or minor releases unless a
 separate task explicitly asks for it.
 
-## Complete For v1.1.0
+## Complete For v1.2.0
 
 - The PyPI distribution/import/CLI naming is settled: install
   `stui-terminal`, import `stui`, and run `stui`.
 - The stable API is documented in the README, API reference, API
   stability table, and public API tests.
-- v1.1.0 graduates the safest post-v1 APIs: static JSON/progress/table/dataframe
-  display, numeric and choice inputs, forms, containers, expanders, metrics, and
-  explicit `st.rerun` / `st.stop` flow control.
+- v1.2.0 keeps the v1.1 stable API intact, adds stable table/dataframe
+  `max_rows` and `max_cols` output limits, and graduates count-only
+  `st.columns(count)`.
+- `stui check APP.py` provides a non-interactive runtime validation command for
+  local and CI use.
 - Remaining experimental APIs stay labeled instead of being quietly promoted.
 - Deferred Streamlit-style features are listed as out of scope for v1.
 - The README quickstart, first app, API table, terminal compatibility link,
   examples/templates, limitations, and troubleshooting sections all point users
-  at the same v1.1.0 contract.
+  at the same v1.2.0 contract.
 - Bundled demo/example listing/copying and `stui init` are part of the v1
   documentation contract rather than checkout-only conveniences.
 
@@ -60,7 +64,7 @@ separate task explicitly asks for it.
 
 ## API Stability Status
 
-The project should keep the public API small. v1.1.0 treats the table below as
+The project should keep the public API small. v1.2.0 treats the table below as
 the stable v1 reference.
 
 Stable APIs should not change casually. If a signature or return value
@@ -69,7 +73,6 @@ examples should be updated in the same release.
 
 Post-v1 experimental APIs:
 
-- `st.columns` is a grouping primitive, not a general layout system.
 - `st.bar_chart` and `st.line_chart` are compact terminal summaries, not
   replacements for plotting libraries.
 - `st.status`, `st.spinner`, and `st.help` are simple terminal display
@@ -86,7 +89,7 @@ Explicitly deferred APIs and feature areas:
 
 ## API Contract Status
 
-v1.1.0 considers the stable public contract documented and frozen for the v1
+v1.2.0 considers the stable public contract documented and frozen for the v1
 series.
 The current contract lives in [`docs/api-reference.md`](api-reference.md) and
 covers:
@@ -127,8 +130,6 @@ Experimental in v1:
 - `st.status`, `st.spinner`, and `st.help` as terminal status/help primitives
   while their exact grouping and formatting contract gathers feedback.
 - `st.bar_chart` and `st.line_chart` as compact terminal summaries.
-- `st.columns` as a simple responsive terminal primitive. It accepts only an
-  integer count and stacks on narrow terminals.
 - Wider layout concepts such as sidebars, grids, tabs, custom ratios, or
   responsive layout engines.
 - Rich dataframe interactions such as editing, sorting, selection, pagination,
@@ -148,14 +149,14 @@ must match the `v1-stable` rows in `docs/api-stability.md` and
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` |
 | Display | `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric` |
 | Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` |
-| Forms and grouping | `st.form`, `st.form_submit_button`, `st.container`, `st.expander` |
+| Forms and grouping | `st.form`, `st.form_submit_button`, `st.container`, `st.expander`, `st.columns` |
 | State and flow | `st.session_state`, `st.rerun`, `st.stop` |
 | Package metadata | `st.__version__` |
-| CLI | `stui run`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` |
+| CLI | `stui run`, `stui check`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` |
 
 The experimental API is public and documented, but not part of the stable table
-yet. Current experimental areas are `st.columns`, `st.bar_chart`,
-`st.line_chart`, `st.status`, `st.spinner`, and `st.help`, plus larger deferred
+yet. Current experimental areas are `st.bar_chart`, `st.line_chart`,
+`st.status`, `st.spinner`, and `st.help`, plus larger deferred
 layout, charting, dataframe-editing, caching, file-upload, and browser/server
 runtime areas.
 
@@ -206,6 +207,8 @@ stui --version
 python -m stui --version
 stui doctor
 stui doctor --json
+stui check app.py
+stui check app.py --json
 stui run app.py
 python -m stui run app.py
 stui examples
@@ -226,6 +229,8 @@ The v1 release should verify:
 - Wheel and source distribution pass `twine check`.
 - `python -m stui run ...` works when the `stui` script directory is not on
   `PATH`.
+- `stui check APP.py` works from outside a repository checkout and returns
+  structured JSON for CI use.
 - The installed package exposes examples or an explicit example-copy/listing
   workflow, so users are not forced to clone the repository just to try forms,
   expanders, charts, or the kitchen sink example.
@@ -309,19 +314,18 @@ The README, release notes, and API docs should keep these limits explicit:
 - Static tables/dataframes do not support editing, sorting, or rich dataframe
   integrations.
 - Charts are terminal summaries and can lose detail at narrow widths.
-- Layout is intentionally modest. `st.columns` is post-v1 experimental and
-  limited to integer-count responsive columns; there are no sidebars, tabs,
-  custom layout ratios, arbitrary browser components, or hosted auth features in
-  the v1 gate.
+- Layout is intentionally modest. `st.columns` is stable but limited to
+  integer-count responsive columns; there are no sidebars, tabs, custom layout
+  ratios, arbitrary browser components, or hosted auth features in the v1 gate.
 - API signatures, callback behavior, disabled behavior, generated-key behavior,
   and form submit semantics are documented as the current contract, and must
   stay synchronized with implementation changes in v1.x.
 
 ## v1.x Release Checklist
 
-| Gate | v1.1.0 status | v1.x decision |
+| Gate | v1.2.0 status | v1.x decision |
 | --- | --- | --- |
-| Stable API list | Expanded with the safest post-v1 graduations. | Do not change unless a correctness, terminal, or safety issue appears. |
+| Stable API list | Adds table/dataframe output limits and graduates count-only columns. | Do not change unless a correctness, terminal, or safety issue appears. |
 | Experimental APIs | Labeled in README, API reference, API stability docs, v1 readiness docs, and tests. | Keep experimental until tests, docs, and terminal evidence justify promotion. |
 | Deferred Streamlit-style APIs | Explicitly deferred in API stability docs and README. | Do not add to v1. |
 | State/rerun/widget correctness | Covered by regression tests for known issues. | Fix reproducible blockers; document non-blocking limitations. |
@@ -329,7 +333,7 @@ The README, release notes, and API docs should keep these limits explicit:
 | Terminal compatibility | Evidence-driven matrix remains open. | Document unknowns instead of overclaiming support. |
 | Narrow rendering | Covered by regression tests for known table/chart/layout edges. | Fix reproducible blockers; document non-blocking limitations. |
 | Release process | Checklist and publishing docs are explicit. | Follow the same gates for v1.x releases. |
-| Public announcement | Not part of v1.1.0. | Generate no social or discussion copy for routine v1.x releases unless explicitly requested. |
+| Public announcement | Not part of v1.2.0. | Generate no social or discussion copy for routine v1.x releases unless explicitly requested. |
 
 ## Post-v1 Plan
 

@@ -1018,6 +1018,8 @@ class StuiApp(App[None]):
 
     @staticmethod
     def _render_bar_chart(element: BarChartElement) -> Text:
+        if element.empty:
+            return Text("No chart data", style="dim")
         points = tuple(
             point for point in element.points if math.isfinite(point.value)
         )
@@ -1061,6 +1063,8 @@ class StuiApp(App[None]):
 
     @staticmethod
     def _render_line_chart(element: LineChartElement) -> Text:
+        if element.empty:
+            return Text("No chart data", style="dim")
         series = tuple(
             item
             for item in element.series

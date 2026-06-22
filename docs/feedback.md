@@ -57,7 +57,7 @@ Feedback that is most helpful right now:
   behavior, plotting behavior, layout, tabs, sidebars, or GPL widget code.
 - Bugs that can be reproduced with a short `stui run` script.
 
-## v1.1 Feedback
+## v1.2 Feedback
 
 Feedback that can shape near-term design:
 
@@ -65,13 +65,15 @@ Feedback that can shape near-term design:
   supported during the v1 series.
 - Package hardening: whether install, copy, init, and example flows work from
   clean virtual environments and built artifacts.
-- Charts: whether the first bar chart helper is enough, and which chart
-  types are useful in a terminal without color.
+- `stui check`: whether non-interactive validation catches useful script errors
+  in local or CI workflows.
+- Charts: whether the current bar and line summaries are enough, and which chart
+  types are useful in a terminal without heavy plotting dependencies.
 - Richer dataframe support: which table interactions matter first for
-  inspection and debugging.
+  inspection and debugging after `max_rows` and `max_cols`.
 - Layout primitives: whether containers, integer-count columns, and expanders
-  are enough for real terminal apps, and what real workflow would justify ratios, tabs,
-  sidebars, or a larger layout system.
+  are enough for real terminal apps, and what real workflow would justify
+  ratios, tabs, sidebars, or a larger layout system.
 - Forms: where submit-style flows feel natural or surprising in a top-to-bottom
   rerun model.
 - Caching and session persistence: what data should persist, for how long, and
@@ -81,8 +83,8 @@ Feedback that can shape near-term design:
   control without becoming required.
 - Screenshot and GIF docs: which workflows would be clearer with recorded
   terminal examples.
-- Remaining experimental APIs: whether `st.columns`, charts, status/spinner, or
-  help should graduate, stay experimental, or be redesigned.
+- Remaining experimental APIs: whether charts, status/spinner, or help should
+  graduate, stay experimental, or be redesigned.
 
 ## v1.2 And Later Feedback
 

@@ -40,6 +40,13 @@ For machine-readable bug reports or CI artifacts, run:
 stui doctor --json
 ```
 
+For non-interactive validation in CI or before sharing a reproduction, run:
+
+```bash
+stui check app.py
+stui check app.py --json
+```
+
 The doctor output includes:
 
 - `stui`, package, Python, Textual, Rich, and Typer versions.
@@ -56,10 +63,10 @@ does not look right. `NO_COLOR` is reported by `stui doctor` so users can spot
 color-related environment differences; do not assume every terminal front end
 handles it the same way.
 
-Current automated coverage checks the doctor output, `stui doctor --json`, color
-capability classification for `TERM`/`COLORTERM`, `STUI_THEME` resolution, and
-small-terminal warnings. It does not replace manual visual checks in real
-terminal emulators.
+Current automated coverage checks the doctor output, `stui doctor --json`,
+`stui check`, color capability classification for `TERM`/`COLORTERM`,
+`STUI_THEME` resolution, and small-terminal warnings. It does not replace
+manual visual checks in real terminal emulators.
 
 ## Keyboard Notes
 
@@ -67,7 +74,7 @@ Automated Textual harness coverage verifies button activation, text and number
 input submission, checkbox toggles, selectbox arrow movement, slider
 arrow/Home/End movement, expander toggles, `r` rerun, `q` quit, and focus moving
 through widgets inside columns. Radio focus is covered in the harness, but
-radio arrow movement remains terminal/Textual-sensitive enough that this RC
+radio arrow movement remains terminal/Textual-sensitive enough that this guide
 documents it rather than adding a brittle timing assertion.
 
 One focus bootstrap path remains terminal/Textual-dependent: when the first

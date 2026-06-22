@@ -28,14 +28,14 @@ defined in [API Stability](api-stability.md).
 | `caption` | v1-stable | Core text output. |
 | `checkbox` | v1-stable | Core input widget. |
 | `code` | v1-stable | Core text output. |
-| `columns` | post-v1 experimental | Responsive terminal layout behavior may still tighten. |
+| `columns` | v1-stable | Count-only responsive terminal columns that stack on narrow terminals. |
 | `container` | v1-stable | Terminal grouping primitive, not a full layout engine. |
 | `dataframe` | v1-stable | Static terminal display; editing and sorting are out of scope. |
 | `divider` | v1-stable | Core visual separator. |
 | `error` | v1-stable | Core status output. |
 | `exception` | v1-stable | Core status output for exceptions. |
 | `expander` | v1-stable | Keyboard-toggleable terminal grouping primitive. |
-| `form` | v1-stable | Deferred submit behavior is part of the v1.1 contract. |
+| `form` | v1-stable | Deferred submit behavior is part of the v1 contract. |
 | `form_submit_button` | v1-stable | One-shot form submit button. |
 | `header` | v1-stable | Core text output. |
 | `help` | post-v1 experimental | Help formatting and the public name need more feedback. |
@@ -127,8 +127,8 @@ or a simple signature and docstring for Python objects.
 
 ```python
 st.json(obj) -> None
-st.table(data) -> None
-st.dataframe(data) -> None
+st.table(data, *, max_rows=None, max_cols=None) -> None
+st.dataframe(data, *, max_rows=None, max_cols=None) -> None
 st.metric(label, value, delta=None) -> None
 st.progress(value, text=None) -> None
 st.bar_chart(data, *, width=None, height=None) -> None
@@ -136,13 +136,16 @@ st.line_chart(data, *, width=None, height=None) -> None
 st.divider() -> None
 ```
 
-In v1.1.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, and
+In v1.2.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, and
 `st.metric` are v1-stable static display primitives. Tables support scalars,
 lists or tuples of scalars, lists or tuples of dicts, lists or tuples of
 lists/tuples, dicts of scalar values, dicts of lists/tuples, and pandas-like
 objects with `to_dict(orient="records")` and `columns` attributes. `st.dataframe`
 is an alias for static table display; it does not add editing, sorting,
 selection, or pandas as a required dependency.
+Use `max_rows` and `max_cols` to cap static output; hidden rows or columns are
+called out with visible `+N rows` or `+N cols` markers. Chart `width` and
+`height` values, when provided, must be positive integers.
 
 ```python
 import stui as st
@@ -158,10 +161,9 @@ st.bar_chart({"baseline": 42, "quantized": 24})
 
 ## Layout
 
-`st.container`, `st.expander`, `st.form`, and `st.form_submit_button` are
-v1-stable in v1.1.0. They are terminal grouping primitives, not browser layout
-compatibility APIs. `st.columns` remains post-v1 experimental while the project
-collects more terminal layout evidence.
+`st.container`, `st.expander`, `st.columns`, `st.form`, and
+`st.form_submit_button` are v1-stable. They are terminal grouping primitives,
+not browser layout compatibility APIs.
 
 ```python
 st.container()
@@ -399,25 +401,23 @@ if "token" not in st.session_state:
     st.stop()
 ```
 
-## v1.1 Stable Status
+## v1.2 Stable Status
 
-The signatures above are intentionally covered by tests in v1.1.0. The
+The signatures above are intentionally covered by tests in v1.2.0. The
 classification table marks each top-level API as either `v1-stable` or
 `post-v1 experimental`; see [API Stability](api-stability.md) for the full
 compatibility promise and post-v1 deprecation policy.
 
-v1.1.0 graduates the safest post-v1 APIs: static JSON/progress/table/dataframe
-display, numeric and choice inputs, forms, containers, expanders, metrics, and
-explicit `st.rerun` / `st.stop` flow control. Any change to stable names in v1.x
+v1.2.0 keeps the v1.1 stable API intact, adds stable `max_rows` and `max_cols`
+table/dataframe output limits, and graduates `st.columns(count)` as a
+count-only terminal grouping primitive. Any change to stable names in v1.x
 should be treated as a compatibility event unless it fixes a correctness,
 terminal, or security issue and is documented in the changelog and release
 notes.
 
-These APIs stay post-v1 experimental in v1.1.0 and need more feedback before
+These APIs stay post-v1 experimental in v1.2.0 and need more feedback before
 they can be called v1-stable:
 
-- Layout: `st.columns` as an integer-count terminal primitive, not a full layout
-  engine.
 - Charts: compact terminal summaries from `st.bar_chart` and `st.line_chart`,
   not plotting-library replacements.
 - Help and status: `st.help`, `st.status`, and `st.spinner` formatting and

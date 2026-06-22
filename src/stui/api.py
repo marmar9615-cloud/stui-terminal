@@ -124,12 +124,22 @@ def line_chart(
     get_current_runtime().line_chart(data, width=width, height=height)
 
 
-def table(data: Any) -> None:
-    get_current_runtime().table(data)
+def table(
+    data: Any,
+    *,
+    max_rows: int | None = None,
+    max_cols: int | None = None,
+) -> None:
+    get_current_runtime().table(data, max_rows=max_rows, max_cols=max_cols)
 
 
-def dataframe(data: Any) -> None:
-    get_current_runtime().dataframe(data)
+def dataframe(
+    data: Any,
+    *,
+    max_rows: int | None = None,
+    max_cols: int | None = None,
+) -> None:
+    get_current_runtime().dataframe(data, max_rows=max_rows, max_cols=max_cols)
 
 
 def divider() -> None:

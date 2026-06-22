@@ -5,6 +5,7 @@ from stui.app import StuiApp
 from stui.elements import (
     BarChartElement,
     BarChartPoint,
+    ErrorElement,
     LineChartElement,
     LineChartSeries,
     MetricElement,
@@ -126,9 +127,8 @@ st.bar_chart(object())
     assert [(point.label, point.value) for point in charts[0].points] == [
         ("value", 9.0),
     ]
-    assert [(point.label, point.value) for point in charts[1].points] == [
-        ("value", 0.0),
-    ]
+    assert charts[1].points == ()
+    assert charts[1].empty is True
 
 
 def test_bar_chart_ignores_nan_and_infinite_values(tmp_path: Path) -> None:
@@ -151,9 +151,8 @@ st.bar_chart({"bad": math.nan})
         ("0", 1.0),
         ("4", 2.0),
     ]
-    assert [(point.label, point.value) for point in charts[1].points] == [
-        ("value", 0.0),
-    ]
+    assert charts[1].points == ()
+    assert charts[1].empty is True
 
 
 def test_bar_chart_keeps_negative_and_zero_only_data(tmp_path: Path) -> None:
@@ -200,6 +199,65 @@ def test_bar_chart_render_handles_small_width_and_blank_labels() -> None:
 
     assert "2" in rendered
     assert "█" in rendered
+
+
+def test_bar_chart_invalid_data_renders_no_chart_data(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import math
+import stui as st
+
+st.bar_chart(object())
+st.bar_chart({"bad": math.nan})
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    charts = chart_elements(runtime)
+
+    assert [chart.empty for chart in charts] == [True, True]
+    assert StuiApp._render_bar_chart(charts[0]).plain == "No chart data"
+    assert StuiApp._render_bar_chart(charts[1]).plain == "No chart data"
+
+
+def test_charts_reject_nonpositive_width_and_height(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.bar_chart([1, 2], width=0)
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+
+    assert len(runtime.elements) == 1
+    assert isinstance(runtime.elements[0], ErrorElement)
+    assert "st.bar_chart width must be a positive int or None" in (
+        runtime.elements[0].traceback
+    )
+
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.line_chart([1, 2], height=-1)
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+
+    assert len(runtime.elements) == 1
+    assert isinstance(runtime.elements[0], ErrorElement)
+    assert "st.line_chart height must be a positive int or None" in (
+        runtime.elements[0].traceback
+    )
 
 
 def test_charts_render_edge_finite_values() -> None:
@@ -257,6 +315,30 @@ st.line_chart({"alpha": [1, 2, 3], "beta": [3, float("nan"), 1]}, height=1)
     assert StuiApp._render_line_chart(charts[1]).plain.count("\n") == 0
 
 
+def test_line_chart_accepts_simple_list_of_dicts(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.line_chart([
+    {"step": 1, "loss": 0.9, "accuracy": 0.3},
+    {"step": 2, "loss": 0.4, "accuracy": 0.8},
+    {"step": 3, "loss": "skip", "accuracy": 0.9},
+])
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    chart = line_chart_elements(runtime)[0]
+
+    assert [(series.label, series.values) for series in chart.series] == [
+        ("loss", (0.9, 0.4)),
+        ("accuracy", (0.3, 0.8, 0.9)),
+    ]
+
+
 def test_line_chart_fallback_for_unsupported_and_all_invalid(
     tmp_path: Path,
 ) -> None:
@@ -275,9 +357,8 @@ st.line_chart({"bad": [math.nan, math.inf]})
     runtime.run_script()
     charts = line_chart_elements(runtime)
 
-    assert [(series.label, series.values) for series in charts[0].series] == [
-        ("value", (0.0,)),
-    ]
-    assert [(series.label, series.values) for series in charts[1].series] == [
-        ("value", (0.0,)),
-    ]
+    assert charts[0].series == ()
+    assert charts[0].empty is True
+    assert charts[1].series == ()
+    assert charts[1].empty is True
+    assert StuiApp._render_line_chart(charts[0]).plain == "No chart data"

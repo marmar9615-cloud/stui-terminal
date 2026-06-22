@@ -251,6 +251,7 @@ class Runtime:
                 points=_normalize_chart_points(data),
                 width=_normalize_optional_size(width, "width"),
                 height=_normalize_optional_size(height, "height"),
+                empty=not _has_chart_data(data),
             )
         )
 
@@ -266,15 +267,28 @@ class Runtime:
                 series=_normalize_line_chart_series(data),
                 width=_normalize_optional_size(width, "width", "line_chart"),
                 height=_normalize_optional_size(height, "height", "line_chart"),
+                empty=not _has_line_chart_data(data),
             )
         )
 
-    def table(self, data: Any) -> None:
-        headers, rows = _normalize_table(data)
+    def table(
+        self,
+        data: Any,
+        *,
+        max_rows: int | None = None,
+        max_cols: int | None = None,
+    ) -> None:
+        headers, rows = _normalize_table(data, max_rows=max_rows, max_cols=max_cols)
         self._append_element(TableElement(headers=headers, rows=rows))
 
-    def dataframe(self, data: Any) -> None:
-        self.table(data)
+    def dataframe(
+        self,
+        data: Any,
+        *,
+        max_rows: int | None = None,
+        max_cols: int | None = None,
+    ) -> None:
+        self.table(data, max_rows=max_rows, max_cols=max_cols)
 
     def divider(self) -> None:
         self._append_element(DividerElement())
@@ -842,7 +856,7 @@ def _format_script_exception(exc: BaseException, script_path: Path) -> str:
         if Path(frame.filename).resolve() == script_path
     ]
     frames = script_frames or list(extracted[-1:])
-    rendered_frames = ["Traceback (most recent call last):"]
+    rendered_frames = ["Traceback (most recent call last):\n"]
     rendered_frames.extend(traceback.format_list(frames))
     rendered_frames.extend(traceback.format_exception_only(type(exc), exc))
     return "".join(rendered_frames).rstrip()
@@ -946,8 +960,19 @@ def _normalize_optional_size(
     if value is None:
         return None
     if not isinstance(value, int) or isinstance(value, bool):
-        raise TypeError(f"{chart_name} {name} must be an int or None.")
-    return max(1, value)
+        raise ApiUsageError(f"st.{chart_name} {name} must be an int or None.")
+    if value < 1:
+        raise ApiUsageError(f"st.{chart_name} {name} must be a positive int or None.")
+    return value
+
+
+def _has_chart_data(data: Any) -> bool:
+    return bool(_normalize_chart_points(data))
+
+
+def _has_line_chart_data(data: Any) -> bool:
+    series = _normalize_line_chart_series(data)
+    return any(any(_is_number(value) for value in item.values) for item in series)
 
 
 def _normalize_chart_points(data: Any) -> tuple[BarChartPoint, ...]:
@@ -959,7 +984,7 @@ def _normalize_chart_points(data: Any) -> tuple[BarChartPoint, ...]:
             for key, value in data.items()
             if _is_number(value)
         ]
-        return tuple(points) or (BarChartPoint("value", 0.0),)
+        return tuple(points)
     if isinstance(data, (list, tuple)):
         if not data:
             return ()
@@ -977,7 +1002,7 @@ def _normalize_chart_points(data: Any) -> tuple[BarChartPoint, ...]:
                 for index, row in enumerate(data)
             )
             return tuple(point for point in points if point is not None)
-    return (BarChartPoint("value", 0.0),)
+    return ()
 
 
 def _normalize_line_chart_series(data: Any) -> tuple[LineChartSeries, ...]:
@@ -988,13 +1013,15 @@ def _normalize_line_chart_series(data: Any) -> tuple[LineChartSeries, ...]:
             LineChartSeries(str(key), _numeric_values(value))
             for key, value in data.items()
         ]
-        return tuple(item for item in series if item.values) or (
-            LineChartSeries("value", (0.0,)),
-        )
+        return tuple(item for item in series if item.values)
+    if isinstance(data, (list, tuple)) and all(isinstance(item, dict) for item in data):
+        row_series = _line_series_from_rows(data)
+        if row_series:
+            return row_series
     values = _numeric_values(data)
     if values:
         return (LineChartSeries("value", values),)
-    return (LineChartSeries("value", (0.0,)),)
+    return ()
 
 
 def _numeric_values(data: Any) -> tuple[float, ...]:
@@ -1039,6 +1066,35 @@ def _chart_value_from_row(
     return numeric_items[-1][1]
 
 
+def _line_series_from_rows(
+    rows: list[Any] | tuple[Any, ...],
+) -> tuple[LineChartSeries, ...]:
+    numeric_keys = list(
+        dict.fromkeys(
+            key
+            for row in rows
+            for key, value in row.items()
+            if _is_number(value)
+        )
+    )
+    if len(numeric_keys) > 1:
+        numeric_keys = [
+            key
+            for key in numeric_keys
+            if str(key).lower() not in {"x", "step", "index"}
+        ] or numeric_keys
+    series = []
+    for key in numeric_keys:
+        values = tuple(
+            float(row[key])
+            for row in rows
+            if key in row and _is_number(row[key])
+        )
+        if values:
+            series.append(LineChartSeries(str(key), values))
+    return tuple(series)
+
+
 def _is_number(value: Any) -> bool:
     return (
         isinstance(value, (int, float))
@@ -1047,9 +1103,23 @@ def _is_number(value: Any) -> bool:
     )
 
 
-def _normalize_table(data: Any) -> tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]:
+def _normalize_table(
+    data: Any,
+    *,
+    max_rows: int | None = None,
+    max_cols: int | None = None,
+) -> tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]:
     if hasattr(data, "to_dict") and hasattr(data, "columns"):
-        return _normalize_table(data.to_dict(orient="records"))
+        records = data.to_dict(orient="records")
+        columns = tuple(getattr(data, "columns", ()))
+        if isinstance(records, list) and all(isinstance(row, dict) for row in records):
+            return _normalize_records_table(
+                records,
+                declared_columns=columns,
+                max_rows=max_rows,
+                max_cols=max_cols,
+            )
+        return _normalize_table(records, max_rows=max_rows, max_cols=max_cols)
     if isinstance(data, dict):
         if data and all(isinstance(value, (list, tuple)) for value in data.values()):
             headers = tuple(str(key) for key in data)
@@ -1063,21 +1133,20 @@ def _normalize_table(data: Any) -> tuple[tuple[str, ...], tuple[tuple[str, ...],
                 )
                 for row_index in range(max_len)
             )
-            return headers, rows
-        return ("key", "value"), tuple(
+            return _limit_table(headers, rows, max_rows=max_rows, max_cols=max_cols)
+        headers, rows = ("key", "value"), tuple(
             (str(key), str(value)) for key, value in data.items()
         )
+        return _limit_table(headers, rows, max_rows=max_rows, max_cols=max_cols)
     if isinstance(data, (list, tuple)):
         if not data:
-            return ("value",), ()
+            return _limit_table(("value",), (), max_rows=max_rows, max_cols=max_cols)
         if all(isinstance(item, dict) for item in data):
-            keys = tuple(dict.fromkeys(key for row in data for key in row))
-            headers = tuple(str(key) for key in keys)
-            rows = tuple(
-                tuple(str(row.get(key, "")) for key in keys)
-                for row in data
+            return _normalize_records_table(
+                data,
+                max_rows=max_rows,
+                max_cols=max_cols,
             )
-            return headers, rows
         if all(isinstance(item, (list, tuple)) for item in data):
             width = max((len(item) for item in data), default=0)
             headers = tuple(f"col_{index + 1}" for index in range(width))
@@ -1088,6 +1157,70 @@ def _normalize_table(data: Any) -> tuple[tuple[str, ...], tuple[tuple[str, ...],
                 )
                 for item in data
             )
-            return headers, rows
-        return ("value",), tuple((str(item),) for item in data)
-    return ("value",), ((str(data),),)
+            return _limit_table(headers, rows, max_rows=max_rows, max_cols=max_cols)
+        headers, rows = ("value",), tuple((str(item),) for item in data)
+        return _limit_table(headers, rows, max_rows=max_rows, max_cols=max_cols)
+    return _limit_table(
+        ("value",),
+        ((str(data),),),
+        max_rows=max_rows,
+        max_cols=max_cols,
+    )
+
+
+def _normalize_table_limit(value: int | None, name: str) -> int | None:
+    if value is None:
+        return None
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise ApiUsageError(f"st.table {name} must be a positive integer or None.")
+    return value
+
+
+def _normalize_records_table(
+    records: list[Any] | tuple[Any, ...],
+    *,
+    declared_columns: tuple[Any, ...] = (),
+    max_rows: int | None,
+    max_cols: int | None,
+) -> tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]:
+    keys = tuple(
+        dict.fromkeys(
+            (
+                *declared_columns,
+                *(key for row in records for key in row),
+            )
+        )
+    )
+    headers = tuple(str(key) for key in keys)
+    rows = tuple(tuple(str(row.get(key, "")) for key in keys) for row in records)
+    if not headers:
+        headers = ("value",)
+    return _limit_table(headers, rows, max_rows=max_rows, max_cols=max_cols)
+
+
+def _limit_table(
+    headers: tuple[str, ...],
+    rows: tuple[tuple[str, ...], ...],
+    *,
+    max_rows: int | None,
+    max_cols: int | None,
+) -> tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]:
+    row_limit = _normalize_table_limit(max_rows, "max_rows")
+    col_limit = _normalize_table_limit(max_cols, "max_cols")
+    original_header_count = len(headers)
+    original_row_count = len(rows)
+    if col_limit is not None:
+        visible_headers = headers[:col_limit]
+        hidden_count = max(0, original_header_count - len(visible_headers))
+        headers = visible_headers
+        rows = tuple(row[:col_limit] for row in rows)
+        if hidden_count:
+            headers = (*headers, "...")
+            rows = tuple((*row, f"+{hidden_count} cols") for row in rows)
+    if row_limit is not None:
+        visible_rows = rows[:row_limit]
+        hidden_count = max(0, original_row_count - len(visible_rows))
+        rows = visible_rows
+        if hidden_count:
+            rows = (*rows, (f"+{hidden_count} rows", *("" for _ in headers[1:])))
+    return headers, rows

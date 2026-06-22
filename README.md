@@ -110,6 +110,8 @@ stui demo dashboard
 stui run app.py
 ```
 
+Press `q` to quit the demo.
+
 Or generate a starter file instead of writing `app.py` by hand:
 
 ```bash
@@ -129,6 +131,8 @@ Check your install and terminal details:
 stui --version
 stui doctor
 stui doctor --json
+stui check app.py
+stui check app.py --json
 ```
 
 ## Build Your First App
@@ -161,7 +165,8 @@ Run it with:
 stui run app.py
 ```
 
-Start from the repository examples when you want a larger reference:
+Start from the repository examples when you want a larger reference. These
+paths exist only after you clone the repository:
 
 ```bash
 stui run examples/counter.py
@@ -202,6 +207,10 @@ from any directory and press `q` to quit.
 `stui init` currently supports the `basic`, `dashboard`, and `forms` templates.
 Use `python -m stui ...` for the same commands when the `stui` script directory
 is not on `PATH`.
+
+If `stui doctor` runs from CI or another non-interactive shell, it may report
+`TERM=dumb`, no TTY, or a `0x0` terminal size. For terminal rendering
+diagnostics, run it in the real terminal where you plan to use `stui`.
 
 Copied examples and generated starter files are plain Python scripts. They do
 not require a checkout after they are copied:
@@ -327,6 +336,7 @@ python -m pip install stui-terminal
 # Run a bundled first-run demo, then create and run an app.
 stui demo dashboard
 stui init app.py
+stui check app.py
 stui run app.py
 python -m stui run app.py
 
@@ -343,6 +353,7 @@ stui init ./forms_app.py --template forms
 stui --version
 stui doctor
 stui doctor --json
+stui check app.py --json
 
 # Install the project for local development from a checkout.
 python3.11 -m venv .venv
@@ -404,7 +415,7 @@ and [docs/v1-readiness.md#stable-api](docs/v1-readiness.md#stable-api).
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v1.1.0 |
+| Area | APIs | Status in v1.2.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
@@ -412,11 +423,11 @@ The terminal support checklist lives in
 | Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | v1-stable static terminal displays |
 | Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | v1-stable input widgets |
 | Forms | `st.form`, `st.form_submit_button` | v1-stable deferred commit to `session_state` until submit |
-| Layout/grouping | `st.container`, `st.expander`, `st.columns` | Mixed: `st.container` and `st.expander` are v1-stable; `st.columns` remains post-v1 experimental and stacks on narrow terminals |
+| Layout/grouping | `st.container`, `st.expander`, `st.columns` | v1-stable terminal grouping primitives; `st.columns` is count-only and stacks on narrow terminals |
 | Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Mixed: `st.metric` is v1-stable; charts remain post-v1 experimental terminal summaries, not plotting replacements |
 | State and flow | `st.session_state`, `st.rerun`, `st.stop` | v1-stable state and flow-control helpers |
 | Package metadata | `st.__version__` | v1-stable package version string |
-| CLI and examples | `stui run`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | v1-stable command surface |
+| CLI and examples | `stui run`, `stui check`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | v1-stable command surface |
 
 Inputs support stable `key` values and optional callbacks where the function
 signature documents them. Tables and charts are simple static displays and do
@@ -424,18 +435,19 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v1.1.0 stable surface keeps the v1 core compact while graduating the safest
-post-v1 APIs: static JSON/progress/table/dataframe display, numeric and choice
-inputs, forms, containers, expanders, metrics, and explicit `st.rerun` /
-`st.stop` flow control. These names should keep their call shape, return type,
-and basic behavior through v1 unless a correctness, terminal, or security issue
-forces a change.
+The v1.2.0 stable surface keeps the v1 core compact while adding
+`st.table(..., max_rows=..., max_cols=...)` and
+`st.dataframe(..., max_rows=..., max_cols=...)` for bounded static output, and
+graduating count-only `st.columns(count)` as a stable terminal grouping
+primitive. These names should keep their call shape, return type, and basic
+behavior through v1 unless a correctness, terminal, or security issue forces a
+change.
 
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v1 behavior yet. In v1.1.0 this includes `st.columns`,
-`st.bar_chart`, `st.line_chart`, `st.status`, `st.spinner`, and `st.help`.
+promised as frozen v1 behavior yet. In v1.2.0 this includes `st.bar_chart`,
+`st.line_chart`, `st.status`, `st.spinner`, and `st.help`.
 Release notes should call out any change with a migration note when practical.
 
 APIs not shown in this table should be treated as private implementation
@@ -594,9 +606,8 @@ stui run examples/dashboard.py
 
 ### Forms
 
-`examples/forms.py` shows the experimental form flow: form widget display
-values can change during reruns, but keyed values commit to `session_state` on
-submit.
+`examples/forms.py` shows the stable form flow: form widget display values can
+change during reruns, but keyed values commit to `session_state` on submit.
 
 ```bash
 stui run examples/forms.py
@@ -671,11 +682,12 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v1.1.0 Stable Status
+## v1.2.0 Stable Status
 
-v1.1.0 is the first post-v1 improvement release. It keeps the package/import/CLI
-contract from v1.0.0 and graduates the safest experimental APIs after adding
-regression coverage and documentation updates.
+v1.2.0 is a practical post-v1 improvement release. It keeps the
+package/import/CLI contract from v1.0.0, adds `stui check APP.py` for
+non-interactive app validation, improves static table/dataframe limits, hardens
+chart empty states, and promotes count-only `st.columns(count)` to stable.
 
 The remaining experimental APIs and terminal compatibility unknowns are visible
 instead of hidden. Post-v1 work should be feedback-driven and kept out of the
