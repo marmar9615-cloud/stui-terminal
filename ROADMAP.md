@@ -57,7 +57,7 @@ call shape and core behavior through v1.x unless a correctness
 issue forces a change.
 
 The experimental API is still public enough to try, but the project is asking
-for feedback before freezing it. In v1.8.0 the remaining experimental APIs are
+for feedback before freezing it. In v1.9.0 the remaining experimental APIs are
 `st.status`, `st.spinner`, and `st.help`.
 
 The command surface is expected to remain stable for v1 docs:
@@ -207,7 +207,26 @@ The command surface is expected to remain stable for v1 docs:
 - Added an advisory `scripts/benchmark_runtime.py` helper for local timing
   probes without making CI timing-dependent.
 
-## v1.9+ Candidates
+## v1.9 Shipped
+
+- Added `docs/v2-readiness.md` as the final v2.0.0 candidate checklist.
+- Kept the stable API list unchanged from v1.8.0 and documented it as the v2
+  stable candidate.
+- Kept `st.status`, `st.spinner`, and `st.help` experimental through the v2
+  candidate unless v2.0.0 explicitly promotes them.
+- Fixed disabled-form and empty-choice form state edge cases found during the
+  final v2 candidate audit.
+
+## v2.0.0 Next
+
+- Ship v2.0.0 as a contract, docs, packaging, release-proof, and trust
+  milestone rather than a risky feature wave.
+- Update `docs/v2-readiness.md` and release notes with the final v2 decision.
+- Verify the exact package through local gates, clean wheel install, custom
+  external project validation, GitHub CI, PyPI publish, GitHub Release, and
+  fresh exact-version PyPI install before calling v2 shipped.
+
+## Post-v2 Candidates
 
 - Revisit additional chart variants and richer static data inspection if users
   are building real terminal dashboards that need them.

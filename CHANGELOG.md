@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.9.0 - 2026-06-22
+
+### Added
+
+- Added `docs/v2-readiness.md` as the final v2.0.0 candidate checklist for the
+  stable API, experimental APIs, deferred roadmap, release proof, and migration
+  expectations.
+- Added public API tests that verify the v2 readiness stable and experimental
+  lists match the canonical API stability classifications.
+- Added regression coverage for disabled form widgets dropping stale pending
+  form values before submit.
+- Added regression coverage for empty choice widgets inside forms preserving
+  deferred form state instead of writing to `st.session_state` before submit.
+- Added release notes for v1.9.0 under `docs/releases/`.
+
+### Changed
+
+- Updated README, API reference, API stability docs, roadmap, feedback docs,
+  release checklist, publishing docs, and v1 readiness docs to describe v1.9.0
+  as the final v2.0.0 candidate.
+- Kept the stable API list unchanged from v1.8.0 so v2.0.0 can be mostly a
+  contract, documentation, and release-proof milestone.
+- Clarified that `st.status`, `st.spinner`, and `st.help` remain experimental
+  through the v2 candidate unless v2.0.0 explicitly promotes them.
+
+### Fixed
+
+- Fixed disabled form widgets so stale pending values from earlier enabled runs
+  cannot be committed by a later form submit.
+- Fixed empty `st.selectbox` and `st.radio` calls inside forms so they no
+  longer bypass deferred form semantics by mutating session state before
+  submit.
+- Fixed release documentation drift by adding a single v2 readiness source of
+  truth instead of spreading v2 blockers across release notes and the roadmap.
+
 ## 1.8.0 - 2026-06-22
 
 ### Added

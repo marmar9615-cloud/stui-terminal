@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import re
+import tomllib
 from pathlib import Path
 
 import stui as st
@@ -369,12 +370,39 @@ def _v1_stable_candidate_apis(path: Path) -> set[str]:
     return set(re.findall(r"`st\.([a-z_]+|__version__)`", table))
 
 
-def _v1_experimental_mentions(path: Path) -> set[str]:
+def _api_mentions_between(path: Path, start: str, end: str) -> set[str]:
     text = path.read_text(encoding="utf-8")
-    start = "Experimental in v1:"
-    end = "## Stable API"
     section = text.split(start, 1)[1].split(end, 1)[0]
-    return set(re.findall(r"`st\.([a-z_]+)`", section))
+    return set(re.findall(r"`st\.([a-z_]+|__version__)`", section))
+
+
+def _v2_stable_candidate_apis(path: Path) -> set[str]:
+    return _api_mentions_between(
+        path,
+        "## Stable API Candidate",
+        "## Experimental Through The v2 Candidate",
+    )
+
+
+def _v1_experimental_mentions(path: Path) -> set[str]:
+    return _api_mentions_between(
+        path,
+        "Experimental in v1:",
+        "## Stable API",
+    )
+
+
+def _v2_experimental_mentions(path: Path) -> set[str]:
+    return _api_mentions_between(
+        path,
+        "## Experimental Through The v2 Candidate",
+        "## Deferred Roadmap",
+    )
+
+
+def _project_version() -> str:
+    data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    return str(data["project"]["version"])
 
 
 def _readme_api_rows(path: Path) -> list[tuple[list[str], str]]:
@@ -449,11 +477,31 @@ def test_v1_readiness_stable_table_matches_stable_classification() -> None:
     assert stable_candidates.isdisjoint(EXPECTED_EXPERIMENTAL_APIS)
 
 
+def test_v1_readiness_status_list_matches_stable_classification() -> None:
+    stable_mentions = _api_mentions_between(
+        ROOT / "docs/v1-readiness.md",
+        "Stable in v1:",
+        "Experimental in v1:",
+    )
+
+    assert stable_mentions == EXPECTED_STABLE_APIS
+    assert stable_mentions.isdisjoint(EXPECTED_EXPERIMENTAL_APIS)
+
+
+def test_v2_readiness_matches_public_api_classification() -> None:
+    readiness = ROOT / "docs/v2-readiness.md"
+
+    assert _v2_stable_candidate_apis(readiness) == EXPECTED_STABLE_APIS
+    assert _v2_experimental_mentions(readiness) == EXPECTED_EXPERIMENTAL_APIS
+
+
 def test_experimental_freeze_decisions_are_documented() -> None:
     readiness_mentions = _v1_experimental_mentions(ROOT / "docs/v1-readiness.md")
+    v2_mentions = _v2_experimental_mentions(ROOT / "docs/v2-readiness.md")
 
     assert EXPECTED_EXPERIMENTAL_FREEZE_DECISIONS <= EXPECTED_EXPERIMENTAL_APIS
     assert EXPECTED_EXPERIMENTAL_FREEZE_DECISIONS <= readiness_mentions
+    assert EXPECTED_EXPERIMENTAL_FREEZE_DECISIONS <= v2_mentions
 
 
 def test_deferred_v1_api_areas_are_explicit() -> None:
@@ -480,6 +528,24 @@ def test_readme_api_table_matches_public_api_stability_labels() -> None:
             assert "experimental" in status, apis
         if classifications == {"v1-stable"}:
             assert "v1-stable" in status, apis
+
+
+def test_current_release_labels_match_project_version() -> None:
+    version = _project_version()
+    major_minor = ".".join(version.split(".")[:2])
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    reference = (ROOT / "docs/api-reference.md").read_text(encoding="utf-8")
+    stability = (ROOT / "docs/api-stability.md").read_text(encoding="utf-8")
+    readiness = (ROOT / "docs/v1-readiness.md").read_text(encoding="utf-8")
+    release_notes = (
+        ROOT / f"docs/releases/RELEASE_NOTES_v{version}.md"
+    ).read_text(encoding="utf-8")
+
+    assert f"Status in v{version}" in readme
+    assert f"## v{major_minor} Stable Status" in reference
+    assert f"`stui` v{version}" in stability
+    assert f"`stui` v{version}" in readiness
+    assert f"# stui v{version}" in release_notes
 
 
 def test_public_api_signatures_are_intentional() -> None:

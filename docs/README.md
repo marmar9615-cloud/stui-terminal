@@ -10,6 +10,7 @@ Streamlit, and not a Streamlit compatibility layer.
 
 - [API reference](api-reference.md)
 - [API stability](api-stability.md)
+- [v2 readiness](v2-readiness.md)
 - [Layout primitives](layouts.md)
 - [Terminal compatibility](terminal-compatibility.md)
 - [Feedback guide](feedback.md)

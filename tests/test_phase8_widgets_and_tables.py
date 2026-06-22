@@ -117,6 +117,36 @@ st.write("value =", value)
     assert writes(runtime) == ["value = None"]
 
 
+def test_empty_choice_widget_inside_form_does_not_commit_before_submit(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+with st.form("choices"):
+    value = st.selectbox("Choice", [], key="choice")
+    submitted = st.form_submit_button("Save")
+
+st.write("submitted =", submitted)
+st.write("value =", value)
+st.write("state =", st.session_state.get("choice", "missing"))
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+
+    assert isinstance(runtime.elements[0], AlertElement)
+    assert writes(runtime) == [
+        "submitted = False",
+        "value = None",
+        "state = missing",
+    ]
+    assert "choice" not in runtime.session_state
+
+
 def test_new_widget_callbacks_and_disabled_behavior(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,

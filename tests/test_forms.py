@@ -293,6 +293,47 @@ st.write("state =", st.session_state.get("name", "missing"))
     assert "name" not in runtime.session_state
 
 
+def test_form_widget_drops_pending_value_when_disabled_before_submit(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+is_disabled = st.session_state.get("is_disabled", False)
+
+with st.form("profile"):
+    name = st.text_input(
+        "Name",
+        value="Ada",
+        key="name",
+        disabled=is_disabled,
+    )
+    submitted = st.form_submit_button("Save")
+
+st.write("submitted =", submitted)
+st.write("name =", name)
+st.write("state =", st.session_state.get("name", "missing"))
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    runtime.set_widget_value("name", "Grace")
+    runtime.run_script()
+    runtime.session_state.is_disabled = True
+    runtime.press_button("form_submit_button:profile:Save:0")
+    runtime.run_script()
+
+    assert rendered_texts(runtime) == [
+        "submitted = True",
+        "name = Ada",
+        "state = missing",
+    ]
+    assert "name" not in runtime.session_state
+
+
 def test_nested_form_renders_readable_error(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,

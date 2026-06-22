@@ -139,7 +139,7 @@ st.line_chart(data, *, width=None, height=None) -> None
 st.divider() -> None
 ```
 
-In v1.8.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`,
+In v1.9.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`,
 `st.bar_chart`, and `st.line_chart` are v1-stable static display primitives.
 Tables support scalars, lists or tuples of scalars, lists or tuples of dicts,
 lists or tuples of lists/tuples, dicts of scalar values, dicts of lists/tuples,
@@ -444,21 +444,20 @@ package metadata, bundled demo resources, all init templates, all bundled
 examples, and doctor diagnostics without launching a full TUI. Use
 `--repeat N` to repeat generated-template and bundled-example checks.
 
-## v1.8 Stable Status
+## v1.9 Stable Status
 
-The signatures above are intentionally covered by tests in v1.8.0. The
+The signatures above are intentionally covered by tests in v1.9.0. The
 classification table marks each top-level API as either `v1-stable` or
 `post-v1 experimental`; see [API Stability](api-stability.md) for the full
 compatibility promise and post-v1 deprecation policy.
 
-v1.8.0 keeps the v1.4 through v1.7 stable APIs intact while improving
-repeat-run validation, release-script hygiene, package audit strictness, and
-runtime rollback behavior. Any change to stable names in v1.x should be treated as a
+v1.9.0 keeps the v1.4 through v1.8 stable APIs intact while freezing the v2
+candidate contract in [v2 readiness](v2-readiness.md). Any change to stable names in v1.x should be treated as a
 compatibility event unless it fixes a correctness, terminal, or security issue
 and is documented in the changelog and release notes.
 
-These APIs stay post-v1 experimental in v1.8.0 and need more feedback before
-they can be called v1-stable:
+These APIs stay post-v1 experimental in v1.9.0 and remain outside the v2 stable
+candidate unless v2.0.0 explicitly promotes them:
 
 - Help and status: `st.help`, `st.status`, and `st.spinner` formatting and
   grouping behavior.

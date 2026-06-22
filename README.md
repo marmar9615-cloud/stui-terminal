@@ -18,7 +18,7 @@ Streamlit compatibility layer. Existing Streamlit apps usually need edits; new
 
 ## Preview
 
-![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.8.0/assets/stui-model-demo.png)
+![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.9.0/assets/stui-model-demo.png)
 
 ```text
 ┌─ stui ───────────────────────────────────────────┐
@@ -452,7 +452,7 @@ and [docs/v1-readiness.md#stable-api](docs/v1-readiness.md#stable-api).
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v1.8.0 |
+| Area | APIs | Status in v1.9.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
@@ -472,9 +472,9 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v1.8.0 stable surface keeps the v1 core compact while improving repeated
-validation, release evidence, state rollback, data display, and count-only
-layout behavior. Tables and dataframes are stable for documented
+The v1.9.0 stable surface is the final v2.0.0 candidate surface. It keeps the
+v1.8.0 API intact while making the v2 contract, migration expectations,
+release-proof gates, and deferred roadmap explicit. Tables and dataframes are stable for documented
 scalar, list, mapping, dataframe-like, dataclass, namedtuple, and simple
 public-object shapes; charts are stable for the documented scalar, list, mapping,
 tuple-pair, list-of-dicts, and dict-of-columns shapes. These names should keep
@@ -484,8 +484,9 @@ correctness, terminal, or security issue forces a change.
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v1 behavior yet. In v1.8.0 this includes `st.status`,
-`st.spinner`, and `st.help`.
+promised as frozen v1 behavior yet. In v1.9.0 this includes `st.status`,
+`st.spinner`, and `st.help`; they stay experimental for the v2 candidate unless
+v2.0.0 explicitly promotes them.
 Release notes should call out any change with a migration note when practical.
 
 APIs not shown in this table should be treated as private implementation
@@ -767,13 +768,12 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v1.8.0 Stable Status
+## v1.9.0 Stable Status
 
-v1.8.0 is a performance, reliability, and long-run quality release. It keeps
-the package/import/CLI contract from v1.0.0, keeps v1.4.0 through v1.7.0
-behavior compatible, adds repeated non-interactive validation through
-`stui check --repeat` and `stui selftest --repeat`, and hardens rollback
-behavior for authoring errors, hidden form fields, and rerun storms.
+v1.9.0 is the final v2.0.0 candidate. It keeps the package/import/CLI contract
+from v1.0.0, keeps v1.4.0 through v1.8.0 behavior compatible, freezes the v2
+candidate stable API list, and points release work at
+[docs/v2-readiness.md](docs/v2-readiness.md).
 
 The remaining experimental APIs and terminal compatibility unknowns are visible
 instead of hidden. Post-v1 work should be feedback-driven and kept out of the

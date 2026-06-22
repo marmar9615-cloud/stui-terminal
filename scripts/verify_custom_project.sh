@@ -29,6 +29,14 @@ else
 fi
 
 mkdir -p "$WORKDIR/my_project"
+cat > "$WORKDIR/pyproject.toml" <<'PYPROJECT'
+[project]
+name = "stui-custom-project"
+version = "0.0.0"
+requires-python = ">=3.11"
+dependencies = ["stui-terminal"]
+PYPROJECT
+
 cat > "$WORKDIR/my_project/__init__.py" <<'PY'
 """Tiny external project package used by stui release validation."""
 PY
@@ -91,6 +99,7 @@ PY
   cd "$WORKDIR"
   if [ -n "${STUI_WHEEL:-}" ]; then
     env -u PYTHONPATH "$STUI_BIN" --version >/dev/null
+    env -u PYTHONPATH "$PY" -m stui --version >/dev/null
     env -u PYTHONPATH "$STUI_BIN" doctor --json >/dev/null
     env -u PYTHONPATH "$STUI_BIN" selftest --strict --repeat 2 --json > selftest-result.json
     env -u PYTHONPATH "$STUI_BIN" check app.py --strict --repeat 2 --json > check-result.json

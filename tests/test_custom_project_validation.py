@@ -38,6 +38,7 @@ def test_verify_custom_project_script_runs_from_external_directory(
 
     assert result.returncode == 0, result.stderr or result.stdout
     assert "custom project validation passed:" in result.stdout
+    assert (project_dir / "pyproject.toml").exists()
     assert (project_dir / "my_project" / "data.py").exists()
     assert (project_dir / "app.py").exists()
     assert (project_dir / "selftest-result.json").exists()

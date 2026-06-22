@@ -1,6 +1,6 @@
 # API Stability
 
-`stui` v1.8.0 keeps the top-level stable API intentionally small and
+`stui` v1.9.0 keeps the top-level stable API intentionally small and
 Streamlit-inspired, but it is not Streamlit-compatible and does not depend on
 Streamlit at runtime.
 
@@ -143,4 +143,12 @@ Post-v1 experimental APIs must keep that label in the API reference. They may
 change in a v1.x minor release, but the release notes should explain the
 migration path when practical. Promoting an experimental API to stable requires
 updating this page, the API reference, the README API table, the v1 readiness
-docs, and `tests/test_public_api.py` in the same release.
+docs, the v2 readiness docs, and `tests/test_public_api.py` in the same
+release.
+
+## v2 Candidate Decision
+
+v1.9.0 does not remove or rename any top-level public APIs. The v2.0.0 stable
+candidate is the current `v1-stable` set. `st.status`, `st.spinner`, and
+`st.help` remain `post-v1 experimental` unless v2.0.0 explicitly promotes them
+with synchronized docs, tests, changelog, and release notes.

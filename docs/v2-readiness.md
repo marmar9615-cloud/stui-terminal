@@ -1,0 +1,99 @@
+# v2 Readiness
+
+`stui` v1.9.0 is the final v2.0.0 candidate. The v2 release should be a stable
+contract, documentation, packaging, and release-proof milestone rather than a
+large feature wave.
+
+`stui` remains terminal-native, Streamlit-inspired, and deliberately not
+Streamlit-compatible. The PyPI distribution remains `stui-terminal`; the import
+package and CLI remain `stui`.
+
+## v2.0.0 Release Decision
+
+Ship v2.0.0 only when all of these are true:
+
+- the stable API list below matches `docs/api-stability.md`,
+  `docs/api-reference.md`, the README API table, and `tests/test_public_api.py`;
+- experimental APIs are still clearly labeled or explicitly promoted with tests
+  and migration notes;
+- deferred APIs remain documented as post-v2 work;
+- local lint, tests, build, `twine check`, release-version checks, package
+  contents audit, and static policy checks pass;
+- fresh wheel install, fresh PyPI install, exhaustive CLI checks, and custom
+  external project validation pass;
+- GitHub CI passes on `main` and the tag;
+- PyPI publish and GitHub Release proof are verified before saying v2 shipped.
+
+## Stable API Candidate
+
+These APIs are the v2.0.0 stable candidate. They should keep their top-level
+names, signatures, return values, and basic behavior unless a correctness,
+terminal, or security issue requires tightening.
+
+| Area | APIs |
+| --- | --- |
+| Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider`, `st.code` |
+| Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` |
+| Display | `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`, `st.bar_chart`, `st.line_chart` |
+| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` |
+| Forms and grouping | `st.form`, `st.form_submit_button`, `st.container`, `st.expander`, `st.columns` |
+| State and flow | `st.session_state`, `st.rerun`, `st.stop` |
+| Package metadata | `st.__version__` |
+| CLI | `stui run`, `stui check`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui selftest`, `stui --version` |
+
+## Experimental Through The v2 Candidate
+
+These APIs remain public but experimental in v1.9.0:
+
+- `st.status`
+- `st.spinner`
+- `st.help`
+
+They are tested and documented, but their exact terminal formatting,
+grouping/context-manager behavior, and help rendering contract still need more
+real use before being called stable.
+
+## Deferred Roadmap
+
+These APIs and feature areas are explicitly deferred from the v2.0.0 stable
+candidate:
+
+- `st.sidebar`
+- `st.tabs`
+- `st.file_uploader`
+- `st.cache_data`
+- `st.cache_resource`
+- `st.components`
+- `st.empty`
+- custom column ratios/gaps
+- editable dataframes
+- plotting-library parity
+- browser/server runtime
+
+## Migration Notes From v1.x
+
+No migration should be required for apps that use the v1.9.0 stable candidate
+API. The v2.0.0 release should preserve the `stui-terminal` distribution name,
+`stui` import package, `stui` console command, and documented CLI workflow.
+
+Apps using `st.status`, `st.spinner`, or `st.help` should treat those APIs as
+experimental until they are promoted in release notes.
+
+## Final v2 Checklist
+
+Before publishing v2.0.0:
+
+- bump versions in `pyproject.toml` and `src/stui/__init__.py`;
+- update README, `docs/api-reference.md`, `docs/api-stability.md`,
+  `docs/v2-readiness.md`, `ROADMAP.md`, `CHANGELOG.md`, and
+  `docs/releases/RELEASE_NOTES_v2.0.0.md`;
+- run the full local verification gate from `docs/release-checklist.md`;
+- run exhaustive CLI checks from both the repo checkout and a clean wheel
+  install;
+- run custom external project validation with the built wheel;
+- verify the previous public PyPI version before publishing;
+- wait for GitHub CI on `main` and the tag;
+- publish with Trusted Publishing only after all gates pass;
+- verify fresh exact-version PyPI install;
+- create the GitHub Release from `docs/releases/RELEASE_NOTES_v2.0.0.md`;
+- confirm the working tree is clean.

@@ -609,7 +609,11 @@ class Runtime:
     ) -> Any:
         widget_key = self.next_widget_key(widget_type, label, key)
         if not options:
-            self.session_state[widget_key] = None
+            form_key = self._active_form_key()
+            if form_key is None:
+                self.session_state[widget_key] = None
+            else:
+                self.form_pending_values.get(form_key, {}).pop(widget_key, None)
             self._append_element(
                 AlertElement(
                     f"{widget_type} '{label}' requires at least one option.",
@@ -751,6 +755,9 @@ class Runtime:
             if changed:
                 self._committed_widget_values[key] = value
             return changed
+        if disabled:
+            self.form_pending_values.get(form_key, {}).pop(key, None)
+            return False
         self._form_rendered_widget_keys.setdefault(form_key, set()).add(key)
         if changed:
             self.form_pending_values.setdefault(form_key, {})[key] = value

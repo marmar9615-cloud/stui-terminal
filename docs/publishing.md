@@ -61,9 +61,13 @@ python scripts/check_release_version.py --tag vX.Y.Z
 python scripts/audit_package_contents.py dist --version X.Y.Z
 stui --version
 python -m stui --version
+stui doctor --compat
 stui selftest --strict --repeat 2
 stui init /tmp/stui-app.py
 stui check /tmp/stui-app.py --strict --repeat 2
+STUI_WHEEL=dist/stui_terminal-X.Y.Z-py3-none-any.whl \
+  STUI_CUSTOM_PROJECT_DIR=/tmp/stui-X.Y.Z-custom-project \
+  ./scripts/verify_custom_project.sh
 ./scripts/check.sh
 ```
 
