@@ -149,18 +149,18 @@ Use this flow for v1.1.0 and later v1.x maintenance/minor releases:
 11. Do not generate X, LinkedIn, X thread, or GitHub Discussion copy unless a
    separate task explicitly asks for it.
 
-## v2 Candidate / Major Release Prep
+## v2 Major Release Prep
 
 Use this extra gate for v1.9.0 and v2.0.0:
 
-1. Update `docs/v2-readiness.md` with the stable API candidate, experimental
+1. Update `docs/v2-readiness.md` with the stable API contract, experimental
    APIs, deferred roadmap, migration expectations, and release-proof checklist.
 2. Confirm the stable and experimental API lists in `docs/v2-readiness.md`
    match `docs/api-stability.md`, `docs/api-reference.md`, README, and public
    API tests.
 3. Keep broad post-v2 work deferred unless a small bug fix is necessary for the
    v2 contract.
-4. Verify current PyPI stable before publishing the candidate or major release.
+4. Verify current PyPI stable before publishing the major release.
 5. Run clean wheel install, exhaustive CLI checks, package audit, repo hygiene
    audit, and custom external project validation before tagging and publishing.
 6. Do not say v2 is shipped until PyPI, GitHub tag/release, CI, fresh install,

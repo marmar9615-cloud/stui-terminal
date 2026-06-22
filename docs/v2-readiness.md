@@ -1,8 +1,8 @@
 # v2 Readiness
 
-`stui` v1.9.0 is the final v2.0.0 candidate. The v2 release should be a stable
-contract, documentation, packaging, and release-proof milestone rather than a
-large feature wave.
+`stui` v2.0.0 is the first v2 stable release. It is a stable contract,
+documentation, packaging, and release-proof milestone rather than a large
+feature wave.
 
 `stui` remains terminal-native, Streamlit-inspired, and deliberately not
 Streamlit-compatible. The PyPI distribution remains `stui-terminal`; the import
@@ -10,7 +10,7 @@ package and CLI remain `stui`.
 
 ## v2.0.0 Release Decision
 
-Ship v2.0.0 only when all of these are true:
+v2.0.0 ships when all of these are true:
 
 - the stable API list below matches `docs/api-stability.md`,
   `docs/api-reference.md`, the README API table, and `tests/test_public_api.py`;
@@ -24,9 +24,9 @@ Ship v2.0.0 only when all of these are true:
 - GitHub CI passes on `main` and the tag;
 - PyPI publish and GitHub Release proof are verified before saying v2 shipped.
 
-## Stable API Candidate
+## Stable API
 
-These APIs are the v2.0.0 stable candidate. They should keep their top-level
+These APIs are the v2.0.0 stable contract. They should keep their top-level
 names, signatures, return values, and basic behavior unless a correctness,
 terminal, or security issue requires tightening.
 
@@ -41,9 +41,9 @@ terminal, or security issue requires tightening.
 | Package metadata | `st.__version__` |
 | CLI | `stui run`, `stui check`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui selftest`, `stui --version` |
 
-## Experimental Through The v2 Candidate
+## Experimental APIs
 
-These APIs remain public but experimental in v1.9.0:
+These APIs remain public but experimental in v2.0.0:
 
 - `st.status`
 - `st.spinner`
@@ -56,7 +56,7 @@ real use before being called stable.
 ## Deferred Roadmap
 
 These APIs and feature areas are explicitly deferred from the v2.0.0 stable
-candidate:
+contract:
 
 - `st.sidebar`
 - `st.tabs`
@@ -72,8 +72,8 @@ candidate:
 
 ## Migration Notes From v1.x
 
-No migration should be required for apps that use the v1.9.0 stable candidate
-API. The v2.0.0 release should preserve the `stui-terminal` distribution name,
+No migration is required for apps that use the v1.9.0 stable candidate API.
+The v2.0.0 release preserves the `stui-terminal` distribution name,
 `stui` import package, `stui` console command, and documented CLI workflow.
 
 Apps using `st.status`, `st.spinner`, or `st.help` should treat those APIs as

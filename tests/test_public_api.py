@@ -379,8 +379,8 @@ def _api_mentions_between(path: Path, start: str, end: str) -> set[str]:
 def _v2_stable_candidate_apis(path: Path) -> set[str]:
     return _api_mentions_between(
         path,
-        "## Stable API Candidate",
-        "## Experimental Through The v2 Candidate",
+        "## Stable API",
+        "## Experimental APIs",
     )
 
 
@@ -395,7 +395,7 @@ def _v1_experimental_mentions(path: Path) -> set[str]:
 def _v2_experimental_mentions(path: Path) -> set[str]:
     return _api_mentions_between(
         path,
-        "## Experimental Through The v2 Candidate",
+        "## Experimental APIs",
         "## Deferred Roadmap",
     )
 

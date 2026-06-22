@@ -53,11 +53,11 @@ Streamlit compatibility layer.
 
 The stable API is the top-level `stui` surface marked `v1-stable` in
 [`docs/api-stability.md`](docs/api-stability.md). These names should keep their
-call shape and core behavior through v1.x unless a correctness
+call shape and core behavior through the v2 stable line unless a correctness
 issue forces a change.
 
 The experimental API is still public enough to try, but the project is asking
-for feedback before freezing it. In v1.9.0 the remaining experimental APIs are
+for feedback before freezing it. In v2.0.0 the remaining experimental APIs are
 `st.status`, `st.spinner`, and `st.help`.
 
 The command surface is expected to remain stable for v1 docs:
@@ -217,12 +217,12 @@ The command surface is expected to remain stable for v1 docs:
 - Fixed disabled-form and empty-choice form state edge cases found during the
   final v2 candidate audit.
 
-## v2.0.0 Next
+## v2.0.0 Shipped
 
-- Ship v2.0.0 as a contract, docs, packaging, release-proof, and trust
+- Shipped v2.0.0 as a contract, docs, packaging, release-proof, and trust
   milestone rather than a risky feature wave.
-- Update `docs/v2-readiness.md` and release notes with the final v2 decision.
-- Verify the exact package through local gates, clean wheel install, custom
+- Published `docs/v2-readiness.md` and release notes with the final v2 decision.
+- Verified the exact package through local gates, clean wheel install, custom
   external project validation, GitHub CI, PyPI publish, GitHub Release, and
   fresh exact-version PyPI install before calling v2 shipped.
 

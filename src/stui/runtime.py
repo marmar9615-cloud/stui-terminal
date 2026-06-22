@@ -613,7 +613,13 @@ class Runtime:
             if form_key is None:
                 self.session_state[widget_key] = None
             else:
-                self.form_pending_values.get(form_key, {}).pop(widget_key, None)
+                self._form_rendered_widget_keys.setdefault(form_key, set()).add(
+                    widget_key
+                )
+                if not disabled:
+                    self.form_pending_values.setdefault(form_key, {})[
+                        widget_key
+                    ] = None
             self._append_element(
                 AlertElement(
                     f"{widget_type} '{label}' requires at least one option.",

@@ -147,6 +147,54 @@ st.write("state =", st.session_state.get("choice", "missing"))
     assert "choice" not in runtime.session_state
 
 
+def test_empty_selectbox_inside_form_clears_stale_state_on_submit(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+empty = st.session_state.get("empty", False)
+
+with st.form("choices"):
+    options = [] if empty else ["a", "b"]
+    value = st.selectbox("Choice", options, key="choice")
+    submitted = st.form_submit_button("Save")
+
+st.write("submitted =", submitted)
+st.write("value =", value)
+st.write("state =", st.session_state.get("choice", "missing"))
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    runtime.set_widget_value("choice", "b")
+    runtime.press_button("form_submit_button:choices:Save:0")
+    runtime.run_script()
+    assert runtime.session_state["choice"] == "b"
+
+    runtime.session_state.empty = True
+    runtime.run_script()
+    assert isinstance(runtime.elements[0], AlertElement)
+    assert writes(runtime) == [
+        "submitted = False",
+        "value = None",
+        "state = b",
+    ]
+
+    runtime.press_button("form_submit_button:choices:Save:0")
+    runtime.run_script()
+
+    assert writes(runtime) == [
+        "submitted = True",
+        "value = None",
+        "state = None",
+    ]
+    assert runtime.session_state["choice"] is None
+
+
 def test_new_widget_callbacks_and_disabled_behavior(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,

@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.0.0 - 2026-06-22
+
+### Added
+
+- Added release notes for v2.0.0 under `docs/releases/`.
+- Added final v2.0.0 release status to the README, API reference, API stability
+  docs, v1/v2 readiness docs, roadmap, and release checklist.
+
+### Changed
+
+- Published the v2.0.0 stable contract without adding a broad feature batch.
+  The stable API is the same tested surface frozen in v1.9.0.
+- Clarified that `st.status`, `st.spinner`, and `st.help` remain public but
+  experimental after v2.0.0 so their terminal formatting and grouping behavior
+  can keep gathering real-world feedback.
+- Updated the roadmap from the v2 candidate phase to post-v2 maintenance and
+  feedback-driven improvement work.
+
+### Fixed
+
+- Tightened release documentation so v2.0.0 is presented as the major stable
+  release rather than another candidate.
+
 ## 1.9.0 - 2026-06-22
 
 ### Added

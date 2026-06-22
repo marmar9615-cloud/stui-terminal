@@ -18,7 +18,7 @@ Streamlit compatibility layer. Existing Streamlit apps usually need edits; new
 
 ## Preview
 
-![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.9.0/assets/stui-model-demo.png)
+![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v2.0.0/assets/stui-model-demo.png)
 
 ```text
 ┌─ stui ───────────────────────────────────────────┐
@@ -261,8 +261,8 @@ stui init ./charts_app.py --template charts
 python -m stui check ./charts_app.py --strict
 ```
 
-The v1.x releases treat these demo/example/init/copy/check/selftest commands as
-part of the stable documentation contract. If an installed-package flow does
+The stable release line treats these demo/example/init/copy/check/selftest commands
+as part of the documentation contract. If an installed-package flow does
 not work without a repository checkout, that is patch-release-worthy docs or
 packaging debt.
 
@@ -273,7 +273,7 @@ from the current package behavior, treat that as release polish debt.
 For more detail, see the [API reference](docs/api-reference.md),
 [API stability labels](docs/api-stability.md), [terminal compatibility
 matrix](docs/terminal-compatibility.md), and
-[v1 readiness checklist](docs/v1-readiness.md).
+[v2 readiness checklist](docs/v2-readiness.md).
 
 ## Copy-Paste Examples
 
@@ -430,7 +430,7 @@ python3.11 -m pytest
 
 Some lower-level editing and focus behavior comes from Textual and can vary by
 terminal. See [Terminal Compatibility](docs/terminal-compatibility.md) and the
-[v1 compatibility gate](docs/v1-readiness.md#terminal-compatibility) for the
+[v2 compatibility gate](docs/v2-readiness.md#v20-release-decision) for the
 current checklist.
 
 ## API
@@ -447,12 +447,12 @@ Streamlit-compatible.
 For the working API reference, see
 [docs/api-reference.md](docs/api-reference.md). The current API contract and v1
 stability checklist are tracked in
-[docs/v1-readiness.md#api-contract-status](docs/v1-readiness.md#api-contract-status)
-and [docs/v1-readiness.md#stable-api](docs/v1-readiness.md#stable-api).
+[docs/v2-readiness.md#stable-api](docs/v2-readiness.md#stable-api) and
+[docs/api-stability.md](docs/api-stability.md).
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v1.9.0 |
+| Area | APIs | Status in v2.0.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
@@ -472,27 +472,28 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v1.9.0 stable surface is the final v2.0.0 candidate surface. It keeps the
-v1.8.0 API intact while making the v2 contract, migration expectations,
-release-proof gates, and deferred roadmap explicit. Tables and dataframes are stable for documented
+The v2.0.0 stable surface is the tested API frozen in v1.9.0 and verified for
+the v2 major release. It keeps the v1.9.0 API intact while making the v2
+contract, migration expectations, release-proof gates, and deferred roadmap
+explicit. Tables and dataframes are stable for documented
 scalar, list, mapping, dataframe-like, dataclass, namedtuple, and simple
 public-object shapes; charts are stable for the documented scalar, list, mapping,
 tuple-pair, list-of-dicts, and dict-of-columns shapes. These names should keep
-their call shape, return type, and basic behavior through v1 unless a
+their call shape, return type, and basic behavior through v2 unless a
 correctness, terminal, or security issue forces a change.
 
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v1 behavior yet. In v1.9.0 this includes `st.status`,
-`st.spinner`, and `st.help`; they stay experimental for the v2 candidate unless
-v2.0.0 explicitly promotes them.
+promised as frozen v2 behavior yet. In v2.0.0 this includes `st.status`,
+`st.spinner`, and `st.help`.
 Release notes should call out any change with a migration note when practical.
 
 APIs not shown in this table should be treated as private implementation
-details. Experimental display/status helpers may still tighten in v1.x unless they
+details. Experimental display/status helpers may still tighten in future minor
+releases unless they
 are promoted in the API stability docs and covered by release notes.
-Deferred APIs for v1 include `st.sidebar`, `st.tabs`, `st.file_uploader`,
+Deferred APIs include `st.sidebar`, `st.tabs`, `st.file_uploader`,
 `st.cache_data`, `st.cache_resource`, `st.components`, editable dataframes,
 custom column ratios/gaps, `st.empty`, plotting-library parity, and
 browser/server runtime features.
@@ -715,7 +716,7 @@ stui run examples/charts.py
 
 `examples/kitchen_sink.py` exercises the stable API surface plus the
 experimental status/help terminal primitives that remain useful feedback
-targets before v1.
+targets after v2.
 
 ```bash
 stui run examples/kitchen_sink.py
@@ -753,7 +754,7 @@ stui run examples/kitchen_sink.py
   loading work behind normal Python guards or user-triggered actions.
 - Error handling is development-oriented, but `stui check --strict` and
   repeated validation help catch common app-authoring problems before sharing.
-- Experimental APIs remain public, but may still tighten in v1.x releases with
+- Experimental APIs remain public, but may still tighten in future minor releases with
   release-note coverage and migration notes when practical.
 
 ## Non-Goals
@@ -768,20 +769,20 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v1.9.0 Stable Status
+## v2.0 Stable Status
 
-v1.9.0 is the final v2.0.0 candidate. It keeps the package/import/CLI contract
-from v1.0.0, keeps v1.4.0 through v1.8.0 behavior compatible, freezes the v2
-candidate stable API list, and points release work at
+v2.0.0 is the first v2 stable release. It keeps the package/import/CLI contract
+from v1.0.0, keeps v1.4.0 through v1.9.0 behavior compatible, finalizes the v2
+stable API list, and points release work at
 [docs/v2-readiness.md](docs/v2-readiness.md).
 
 The remaining experimental APIs and terminal compatibility unknowns are visible
-instead of hidden. Post-v1 work should be feedback-driven and kept out of the
+instead of hidden. Post-v2 work should be feedback-driven and kept out of the
 core stable API unless it has enough real terminal evidence.
 
 See [ROADMAP.md](ROADMAP.md), [docs/README.md](docs/README.md), and
-[docs/v1-readiness.md](docs/v1-readiness.md) for the current v1.x contract and
-post-v1 direction.
+[docs/v2-readiness.md](docs/v2-readiness.md) for the current v2 contract and
+post-v2 direction.
 
 ## Contributing
 

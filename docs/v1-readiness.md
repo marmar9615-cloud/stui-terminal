@@ -1,6 +1,6 @@
 # v1 Readiness
 
-`stui` v1.9.0 is the final v2.0.0 candidate release. The goal
+`stui` v2.0.0 is the first v2 stable release. The goal
 for the v1 series is not to become Streamlit-compatible or to grow a large
 component catalog. The goal is a small, stable, terminal-native API that can be
 installed from PyPI, explained quickly, and trusted for local tools.
@@ -8,17 +8,16 @@ installed from PyPI, explained quickly, and trusted for local tools.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## Status After v1.9.0
+## Status After v2.0.0
 
-v1.9.0 keeps the v1.0.0 baseline intact and preserves v1.4.0 through v1.8.0
-behavior while freezing the v2.0.0 candidate contract in
-[`docs/v2-readiness.md`](v2-readiness.md). It fixes the last self-audited form
-state edge cases found before the v2 candidate: disabled form widgets discard
-stale pending values, and empty choice widgets inside forms no longer bypass
-deferred form semantics.
+v2.0.0 keeps the v1.0.0 baseline intact and preserves v1.4.0 through v1.9.0
+behavior while publishing the v2.0.0 stable contract in
+[`docs/v2-readiness.md`](v2-readiness.md). It is intentionally a contract,
+documentation, packaging, and release-proof milestone rather than a risky
+feature wave.
 
 The release keeps the remaining `st.status`, `st.spinner`, and `st.help` APIs
-post-v1 experimental unless v2.0.0 explicitly promotes them.
+post-v1 experimental.
 
 On the v1.x line, the stable API list is frozen. The freeze covers the
 top-level names in `stui.__all__`, their stability classifications, and the
@@ -37,7 +36,7 @@ Normal v1.x release work should include changelog and GitHub Release notes only.
 Do not generate social launch copy for maintenance or minor releases unless a
 separate task explicitly asks for it.
 
-## Complete Through v1.9.0
+## Complete Through v2.0.0
 
 - The PyPI distribution/import/CLI naming is settled: install
   `stui-terminal`, import `stui`, and run `stui`.
@@ -82,7 +81,7 @@ separate task explicitly asks for it.
 - Deferred Streamlit-style features are listed as out of scope for v1.
 - The README quickstart, first app, API table, terminal compatibility link,
   examples/templates, limitations, and troubleshooting sections all point users
-  at the same v1.9.0 contract.
+  at the same v2.0.0 contract.
 - Bundled demo/example listing/copying and `stui init` are part of the v1
   documentation contract rather than checkout-only conveniences.
 
@@ -97,8 +96,8 @@ separate task explicitly asks for it.
 
 ## API Stability Status
 
-The project should keep the public API small. v1.9.0 treats the table below as
-the stable v1 reference and the v2.0.0 stable candidate.
+The project should keep the public API small. v2.0.0 treats the table below as
+the stable v1 reference and the v2.0.0 stable contract.
 
 Stable APIs should not change casually. If a signature or return value
 changes after v1.0.0, the changelog should call it out plainly and the README
@@ -121,7 +120,7 @@ Explicitly deferred APIs and feature areas:
 
 ## API Contract Status
 
-v1.9.0 considers the stable public contract documented and frozen for the v1
+v2.0.0 considers the stable public contract documented and frozen for the v1
 series.
 The current contract lives in [`docs/api-reference.md`](api-reference.md) and
 covers:
@@ -359,7 +358,7 @@ The README, release notes, and API docs should keep these limits explicit:
 
 ## v1.x Release Checklist
 
-| Gate | v1.9.0 status | v1.x decision |
+| Gate | v2.0.0 status | v1.x decision |
 | --- | --- | --- |
 | Stable API list | Includes bounded tables/dataframes, count-only columns, and compact terminal charts. | Do not change unless a correctness, terminal, or safety issue appears. |
 | Experimental APIs | Labeled in README, API reference, API stability docs, v1 readiness docs, and tests. | Keep experimental until tests, docs, and terminal evidence justify promotion. |
@@ -369,7 +368,7 @@ The README, release notes, and API docs should keep these limits explicit:
 | Terminal compatibility | Evidence-driven matrix remains open. | Document unknowns instead of overclaiming support. |
 | Narrow rendering | Covered by regression tests for known table/chart/layout edges. | Fix reproducible blockers; document non-blocking limitations. |
 | Release process | Checklist and publishing docs are explicit. | Follow the same gates for v1.x releases. |
-| Public announcement | Not part of v1.9.0. | Generate no social or discussion copy for routine v1.x releases unless explicitly requested. |
+| Public announcement | Not part of v2.0.0 in this release train. | Generate no social or discussion copy for routine releases unless explicitly requested. |
 
 ## Post-v1 Plan
 
