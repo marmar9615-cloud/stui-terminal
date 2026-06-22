@@ -1,6 +1,6 @@
 # API Stability
 
-`stui` v1.5.0 keeps the top-level stable API intentionally small and
+`stui` v1.6.0 keeps the top-level stable API intentionally small and
 Streamlit-inspired, but it is not Streamlit-compatible and does not depend on
 Streamlit at runtime.
 

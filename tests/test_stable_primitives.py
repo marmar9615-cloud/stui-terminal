@@ -1,6 +1,7 @@
 import asyncio
 from pathlib import Path
 
+import stui as st
 from stui.app import StuiApp
 from stui.elements import (
     ErrorElement,
@@ -68,6 +69,100 @@ st.help("plain help text")
     assert elements[4].body == "plain help text"
 
 
+def test_status_context_defaults_to_collapsed_but_keeps_children(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+with st.status("Collapsed details"):
+    st.text("hidden until expanded")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert [type(element) for element in elements] == [StatusElement]
+    status = elements[0]
+    assert status.expanded is False
+    assert status.children is not None
+    assert [type(child) for child in status.children] == [TextElement]
+    assert status.children[0].body == "hidden until expanded"
+
+
+def test_status_accepts_all_documented_states(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.status("Running", state="running")
+st.status("Complete", state="complete")
+st.status("Error", state="error")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert [element.state for element in elements] == [
+        "running",
+        "complete",
+        "error",
+    ]
+
+
+def test_spinner_default_text_and_nested_status_children(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+with st.spinner():
+    with st.status("Nested", expanded=True):
+        st.text("child")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert [type(element) for element in elements] == [SpinnerElement]
+    spinner = elements[0]
+    assert spinner.text == "Working..."
+    assert spinner.children is not None
+    assert [type(child) for child in spinner.children] == [StatusElement]
+    nested_status = spinner.children[0]
+    assert nested_status.children is not None
+    assert [type(child) for child in nested_status.children] == [TextElement]
+
+
+def test_help_formats_stui_public_function_and_fallback_object(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+class PlainObject:
+    pass
+
+st.help(st.progress)
+st.help(PlainObject())
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert [type(element) for element in elements] == [HelpElement, HelpElement]
+    assert "progress(" in elements[0].body
+    assert "value:" in elements[0].body
+    assert "PlainObject object at" in elements[1].body
+
+
 def test_status_rejects_unknown_state_without_traceback(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,
@@ -109,3 +204,21 @@ st.help("help text")
             assert len(list(app.query(".stui-help"))) == 1
 
     asyncio.run(scenario())
+
+
+def test_high_contrast_panel_styles_are_theme_aware(tmp_path: Path) -> None:
+    script = write_script(tmp_path, "import stui as st\nst.write('ok')\n")
+    app = StuiApp(Runtime(script))
+    app.stui_theme = "high-contrast"
+
+    assert app._status_style("running") == "#ffff00"
+    assert app._status_style("complete") == "#ffffff"
+    assert app._alert_style("warning") == "#ffff00"
+    assert app._panel_style("help") == "#ffff00"
+    assert app._panel_style("error") == "#ffffff"
+    assert app._traceback_text_style() == "#ffffff"
+
+
+def test_help_public_function_probe_is_real() -> None:
+    # Keep this public-object probe grounded in the imported package API.
+    assert callable(st.progress)

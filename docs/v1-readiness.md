@@ -1,6 +1,6 @@
 # v1 Readiness
 
-`stui` v1.5.0 is a data-display and layout-refinement release. The goal
+`stui` v1.6.0 is a status/help UX and release-safety release. The goal
 for the v1 series is not to become Streamlit-compatible or to grow a large
 component catalog. The goal is a small, stable, terminal-native API that can be
 installed from PyPI, explained quickly, and trusted for local tools.
@@ -8,14 +8,17 @@ installed from PyPI, explained quickly, and trusted for local tools.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## Status After v1.5.0
+## Status After v1.6.0
 
-v1.5.0 keeps the v1.0.0 baseline intact and preserves v1.4.0 behavior while
-hardening static data display and count-only layout rendering. Tables now cover
-more common Python row shapes, empty tables render a readable no-row marker, and
-nested columns stack based on their parent width. The release keeps status/help
-APIs labeled as post-v1 experimental instead of quietly freezing behavior that
-still needs terminal evidence.
+v1.6.0 keeps the v1.0.0 baseline intact and preserves v1.4.0 and v1.5.0
+behavior while hardening the remaining status/help experimental surface.
+`st.status`, `st.spinner`, and `st.help` now have clearer examples, tests, and
+documentation around their limits, but they remain post-v1 experimental instead
+of quietly freezing behavior that still needs terminal evidence.
+
+The release also adds a release-version guard so a mismatched Git tag cannot
+silently build the wrong package version, and it improves terminal diagnostics
+for unsupported `STUI_THEME` values and `NO_COLOR` reports.
 
 On the v1.x line, the stable API list is frozen. The freeze covers the
 top-level names in `stui.__all__`, their stability classifications, and the
@@ -34,7 +37,7 @@ Normal v1.x release work should include changelog and GitHub Release notes only.
 Do not generate social launch copy for maintenance or minor releases unless a
 separate task explicitly asks for it.
 
-## Complete Through v1.5.0
+## Complete Through v1.6.0
 
 - The PyPI distribution/import/CLI naming is settled: install
   `stui-terminal`, import `stui`, and run `stui`.
@@ -57,11 +60,18 @@ separate task explicitly asks for it.
   empty tables, and `max_rows`/`max_cols` markers.
 - Count-only `st.columns` stays stable and now stacks nested column groups using
   the parent column width.
+- `st.status`, `st.spinner`, and `st.help` have explicit example coverage in the
+  kitchen-sink app and tests for collapsed status children, nested grouping,
+  default spinner text, documented states, and simple help formatting.
+- `stui doctor --json` and `stui doctor --compat` make unsupported themes and
+  `NO_COLOR` diagnostics easier to paste into terminal compatibility reports.
+- `scripts/check_release_version.py` verifies that release metadata and tag names
+  agree before publishing.
 - Remaining experimental APIs stay labeled instead of being quietly promoted.
 - Deferred Streamlit-style features are listed as out of scope for v1.
 - The README quickstart, first app, API table, terminal compatibility link,
   examples/templates, limitations, and troubleshooting sections all point users
-  at the same v1.5.0 contract.
+  at the same v1.6.0 contract.
 - Bundled demo/example listing/copying and `stui init` are part of the v1
   documentation contract rather than checkout-only conveniences.
 
@@ -76,7 +86,7 @@ separate task explicitly asks for it.
 
 ## API Stability Status
 
-The project should keep the public API small. v1.5.0 treats the table below as
+The project should keep the public API small. v1.6.0 treats the table below as
 the stable v1 reference.
 
 Stable APIs should not change casually. If a signature or return value
@@ -100,7 +110,7 @@ Explicitly deferred APIs and feature areas:
 
 ## API Contract Status
 
-v1.5.0 considers the stable public contract documented and frozen for the v1
+v1.6.0 considers the stable public contract documented and frozen for the v1
 series.
 The current contract lives in [`docs/api-reference.md`](api-reference.md) and
 covers:
@@ -333,7 +343,7 @@ The README, release notes, and API docs should keep these limits explicit:
 
 ## v1.x Release Checklist
 
-| Gate | v1.5.0 status | v1.x decision |
+| Gate | v1.6.0 status | v1.x decision |
 | --- | --- | --- |
 | Stable API list | Includes bounded tables/dataframes, count-only columns, and compact terminal charts. | Do not change unless a correctness, terminal, or safety issue appears. |
 | Experimental APIs | Labeled in README, API reference, API stability docs, v1 readiness docs, and tests. | Keep experimental until tests, docs, and terminal evidence justify promotion. |
@@ -343,7 +353,7 @@ The README, release notes, and API docs should keep these limits explicit:
 | Terminal compatibility | Evidence-driven matrix remains open. | Document unknowns instead of overclaiming support. |
 | Narrow rendering | Covered by regression tests for known table/chart/layout edges. | Fix reproducible blockers; document non-blocking limitations. |
 | Release process | Checklist and publishing docs are explicit. | Follow the same gates for v1.x releases. |
-| Public announcement | Not part of v1.5.0. | Generate no social or discussion copy for routine v1.x releases unless explicitly requested. |
+| Public announcement | Not part of v1.6.0. | Generate no social or discussion copy for routine v1.x releases unless explicitly requested. |
 
 ## Post-v1 Plan
 

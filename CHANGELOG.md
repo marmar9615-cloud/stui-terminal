@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.6.0 - 2026-06-22
+
+### Added
+
+- Added v1.6.0 release notes under `docs/releases/`.
+- Added release-version validation for `pyproject.toml`, `stui.__version__`,
+  and release tags before publishing.
+- Added status/help/spinner coverage to the kitchen-sink example and bundled
+  package example.
+- Added regression tests for collapsed status children, documented status
+  states, default spinner text, nested status/spinner groups, `st.help` fallback
+  formatting, high-contrast panel styles, and doctor compatibility notes.
+
+### Changed
+
+- Kept `st.status`, `st.spinner`, and `st.help` labeled post-v1 experimental
+  while making their current terminal behavior clearer and better tested.
+- Updated README, API reference, API stability docs, roadmap, feedback docs, and
+  v1 readiness docs for the v1.6.0 status/help UX contract.
+- Improved `stui doctor --json` and `stui doctor --compat` diagnostics for
+  unsupported `STUI_THEME` values and `NO_COLOR` reports.
+- Improved high-contrast styling for Rich-backed status, spinner, help, alert,
+  and error panels.
+
+### Fixed
+
+- Fixed the API reference example for `st.status` children by showing
+  `expanded=True` when child content should be visible.
+- Fixed kitchen-sink documentation drift by exercising the experimental
+  status/help primitives it claims to cover.
+- Fixed a release workflow risk where a mismatched `v*` tag could build package
+  artifacts for a different project version.
+
 ## 1.5.0 - 2026-06-22
 
 ### Added

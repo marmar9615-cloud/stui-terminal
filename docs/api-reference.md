@@ -108,7 +108,7 @@ try:
 except RuntimeError as exc:
     st.exception(exc)
 
-with st.status("Indexing", state="running"):
+with st.status("Indexing", state="running", expanded=True):
     st.write("Reading local files")
 
 with st.spinner("Waiting for job"):
@@ -117,11 +117,14 @@ with st.spinner("Waiting for job"):
 st.help(st.progress)
 ```
 
-`st.status` accepts `state="running"`, `"complete"`, or `"error"`. It renders a
-terminal status block and can group child elements when used as a context
-manager. `st.spinner` is a simple display/context primitive; it does not animate
-or update after the script pass completes. `st.help` renders plain text directly
-or a simple signature and docstring for Python objects.
+`st.status` accepts `state="running"`, `"complete"`, or `"error"`. It returns a
+context-manager object, renders a terminal status block, and can capture child
+elements when used with `with`. Child elements are visible when
+`expanded=True`; the default collapsed block keeps children grouped but hides
+them from the visible TUI. `st.spinner` returns a simple static display/context
+primitive; it does not animate, run background work, or expose a mutable update
+object. `st.help` renders plain text directly or a simple signature and
+docstring for Python objects; it is not a pager or object browser.
 
 ## Data Display
 
@@ -136,7 +139,7 @@ st.line_chart(data, *, width=None, height=None) -> None
 st.divider() -> None
 ```
 
-In v1.5.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`,
+In v1.6.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`,
 `st.bar_chart`, and `st.line_chart` are v1-stable static display primitives.
 Tables support scalars, lists or tuples of scalars, lists or tuples of dicts,
 lists or tuples of lists/tuples, dicts of scalar values, dicts of lists/tuples,
@@ -412,19 +415,20 @@ if "token" not in st.session_state:
     st.stop()
 ```
 
-## v1.5 Stable Status
+## v1.6 Stable Status
 
-The signatures above are intentionally covered by tests in v1.5.0. The
+The signatures above are intentionally covered by tests in v1.6.0. The
 classification table marks each top-level API as either `v1-stable` or
 `post-v1 experimental`; see [API Stability](api-stability.md) for the full
 compatibility promise and post-v1 deprecation policy.
 
-v1.5.0 keeps the v1.4 stable API intact while refining static data display and
-count-only layout rendering. Any change to stable names in v1.x should be
-treated as a compatibility event unless it fixes a correctness, terminal, or
-security issue and is documented in the changelog and release notes.
+v1.6.0 keeps the v1.4 and v1.5 stable APIs intact while refining status/help
+UX, terminal diagnostics, and release-version safety. Any change to stable
+names in v1.x should be treated as a compatibility event unless it fixes a
+correctness, terminal, or security issue and is documented in the changelog and
+release notes.
 
-These APIs stay post-v1 experimental in v1.5.0 and need more feedback before
+These APIs stay post-v1 experimental in v1.6.0 and need more feedback before
 they can be called v1-stable:
 
 - Help and status: `st.help`, `st.status`, and `st.spinner` formatting and

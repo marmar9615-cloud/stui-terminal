@@ -477,8 +477,19 @@ def test_doctor_json_output(monkeypatch) -> None:
     assert diagnostics["compatibility"]["profile"] == "limited"
     assert diagnostics["compatibility"]["minimum_size"] == "80x24"
     assert "stui doctor --json" in diagnostics["compatibility"]["report_command"]
+    assert any(
+        "NO_COLOR is set" in item for item in diagnostics["compatibility"]["notes"]
+    )
+    assert any(
+        "STUI_THEME='not-a-theme'" in item
+        for item in diagnostics["compatibility"]["notes"]
+    )
     assert any("terminal is too small" in item for item in diagnostics["warnings"])
     assert any("TERM=dumb" in item for item in diagnostics["warnings"])
+    assert any(
+        "unsupported STUI_THEME='not-a-theme'" in item
+        for item in diagnostics["warnings"]
+    )
 
 
 def test_doctor_compat_output(monkeypatch) -> None:
@@ -495,6 +506,7 @@ def test_doctor_compat_output(monkeypatch) -> None:
             "TERM": "xterm-256color",
             "COLORTERM": "truecolor",
             "TERM_PROGRAM": "Apple_Terminal",
+            "NO_COLOR": "1",
         },
     )
 
@@ -503,6 +515,7 @@ def test_doctor_compat_output(monkeypatch) -> None:
     assert "profile:" in result.output
     assert "minimum size: 80x24" in result.output
     assert "report command: stui doctor --json" in result.output
+    assert "NO_COLOR is set" in result.output
     assert "notes:" in result.output
 
 

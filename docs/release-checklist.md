@@ -123,19 +123,21 @@ Use this flow for v1.1.0 and later v1.x maintenance/minor releases:
    `git diff --check`.
 3. Inspect built artifacts for README/assets/examples/release-note inclusion
    before creating the tag.
-4. Smoke the built wheel in a temporary virtual environment: import `stui`, run
+4. Run `python scripts/check_release_version.py --tag vX.Y.Z` before pushing
+   the tag so `pyproject.toml`, `stui.__version__`, and the Git tag agree.
+5. Smoke the built wheel in a temporary virtual environment: import `stui`, run
    version/doctor commands, list/copy examples, list demos, create each
    documented template, run `stui check` on copied or initialized apps, run
    `stui selftest`, and run at least one copied example with `python -m stui
    run` when practical.
-5. Tag only after the release diff is final and no helper has unreviewed edits.
-6. Wait for `main` and tag CI, then publish from the tag through Trusted
+6. Tag only after the release diff is final and no helper has unreviewed edits.
+7. Wait for `main` and tag CI, then publish from the tag through Trusted
    Publishing with only the real PyPI flag enabled.
-7. Verify PyPI JSON, the Simple API, and a clean exact-version install from
+8. Verify PyPI JSON, the Simple API, and a clean exact-version install from
    PyPI.
-8. Create the GitHub Release from the matching release notes in
+9. Create the GitHub Release from the matching release notes in
    `docs/releases/`.
-9. Do not generate X, LinkedIn, X thread, or GitHub Discussion copy unless a
+10. Do not generate X, LinkedIn, X thread, or GitHub Discussion copy unless a
    separate task explicitly asks for it.
 
 ## v1 Release Gates
@@ -144,6 +146,7 @@ Before tagging v1.x releases, confirm:
 
 - Version metadata, README, `CHANGELOG.md`, `docs/releases/` release notes, and
   `docs/v1-readiness.md` all name the same release.
+- `scripts/check_release_version.py --tag vX.Y.Z` passes for the intended tag.
 - Stable and experimental API labels agree across README,
   `docs/api-reference.md`, `docs/api-stability.md`, and public API tests.
 - `stui-terminal` remains the PyPI distribution name; `stui` remains the import

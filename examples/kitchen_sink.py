@@ -116,6 +116,15 @@ with st.container():
     st.metric("Runs", st.session_state.runs, delta="+1" if form_submitted else None)
     st.bar_chart([1, 3, 2, 5], width=20)
 
+st.status("Validation complete", state="complete")
+with st.status("Visible grouped status", state="running", expanded=True):
+    st.text("Status children render when expanded=True.")
+
+with st.spinner("Static spinner block"):
+    st.text("Spinner children are grouped under the spinner panel.")
+
+st.help(st.progress)
+
 with st.expander("Primitive snippets", expanded=True):
     st.code(
         """with st.form("settings"):
@@ -125,6 +134,12 @@ with st.expander("Primitive snippets", expanded=True):
 with st.container():
     st.metric("Runs", 3)
     st.bar_chart([1, 3, 2, 5])
+
+with st.status("Visible details", expanded=True):
+    st.write("Children render when expanded=True")
+
+with st.spinner("Working"):
+    st.write("Static progress grouping")
 """,
         language="python",
     )

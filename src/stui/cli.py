@@ -283,6 +283,8 @@ def _compatibility_summary(
     color_capability: str,
     stdin_tty: bool,
     stdout_tty: bool,
+    stui_theme: str,
+    no_color: str,
 ) -> dict[str, object]:
     normalized_term = term.lower()
     if not term or normalized_term == "dumb" or color_capability == "none/dumb":
@@ -305,6 +307,15 @@ def _compatibility_summary(
         notes.append("Terminal is below the recommended size for charts and layouts.")
     if not stdin_tty or not stdout_tty:
         notes.append("Run inside a real interactive terminal for rendering reports.")
+    if no_color:
+        notes.append(
+            "NO_COLOR is set; stui reports this preference, but final color "
+            "rendering still depends on Rich, Textual, and the terminal."
+        )
+    if stui_theme.strip() and resolve_theme(stui_theme) == "default":
+        notes.append(
+            f"STUI_THEME={stui_theme!r} is not supported; using the default theme."
+        )
     if not notes:
         notes.append(
             "Environment looks suitable for a normal stui terminal smoke test."
@@ -343,6 +354,10 @@ def _doctor_diagnostics() -> dict[str, object]:
         )
     if term.lower() == "dumb":
         warnings.append("TERM=dumb; interactive rendering and color may be limited")
+    if stui_theme.strip() and resolve_theme(stui_theme) == "default":
+        warnings.append(
+            f"unsupported STUI_THEME={stui_theme!r}; using the default theme"
+        )
     if package_version not in {"not installed", __version__}:
         warnings.append(
             "imported stui version and stui-terminal distribution version differ"
@@ -404,6 +419,8 @@ def _doctor_diagnostics() -> dict[str, object]:
             color_capability=color_capability,
             stdin_tty=stdin_tty,
             stdout_tty=stdout_tty,
+            stui_theme=stui_theme,
+            no_color=no_color,
         ),
         "examples": {
             "bundled": bundled_count,

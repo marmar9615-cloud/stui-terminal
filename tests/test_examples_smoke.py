@@ -12,6 +12,7 @@ from stui.elements import (
     ErrorElement,
     ExceptionElement,
     HeaderElement,
+    HelpElement,
     JsonElement,
     LineChartElement,
     MarkdownElement,
@@ -19,6 +20,8 @@ from stui.elements import (
     ProgressElement,
     RadioElement,
     SelectboxElement,
+    SpinnerElement,
+    StatusElement,
     SubheaderElement,
     TableElement,
     TextElement,
@@ -94,6 +97,9 @@ def test_kitchen_sink_example_runs_all_stable_apis() -> None:
         NumberInputElement,
         SelectboxElement,
         RadioElement,
+        StatusElement,
+        SpinnerElement,
+        HelpElement,
     }.issubset({type(element) for element in elements})
     assert sum(isinstance(element, TableElement) for element in elements) == 2
     assert {

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from stui.elements import WriteElement
+from stui.elements import ErrorElement, WriteElement
 from stui.runtime import Runtime
 
 
@@ -161,3 +161,38 @@ st.write("events =", ",".join(st.session_state.events))
     runtime.set_widget_value("enabled", True)
     runtime.run_script()
     assert rendered_texts(runtime) == ["value = True", "events = checkbox:True"]
+
+
+def test_callback_state_changes_roll_back_when_script_crashes(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+if "events" not in st.session_state:
+    st.session_state.events = []
+
+def record():
+    st.session_state.events.append("clicked")
+
+pressed = st.button("Crash", on_click=record)
+if pressed:
+    raise RuntimeError("after callback")
+
+st.write("events =", ",".join(st.session_state.events))
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    assert rendered_texts(runtime) == ["events = "]
+
+    runtime.press_button("button:Crash:0")
+    elements = runtime.run_script()
+    assert [type(element) for element in elements] == [ErrorElement]
+    assert runtime.session_state.events == []
+
+    runtime.run_script()
+    assert rendered_texts(runtime) == ["events = "]

@@ -685,9 +685,13 @@ class StuiApp(App[None]):
         if isinstance(element, ExceptionElement):
             return Static(
                 Panel(
-                    Text(element.traceback, style="#ffd7d7", overflow="fold"),
+                    Text(
+                        element.traceback,
+                        style=self._traceback_text_style(),
+                        overflow="fold",
+                    ),
                     title="Exception",
-                    border_style="red",
+                    border_style=self._panel_style("error"),
                     title_align="left",
                     padding=(0, 1),
                 ),
@@ -730,7 +734,7 @@ class StuiApp(App[None]):
                     Text(_clip_text(element.text, MAX_STATIC_LABEL_WIDTH)),
                     title="spinner",
                     title_align="left",
-                    border_style="cyan",
+                    border_style=self._panel_style("accent"),
                     padding=(0, 1),
                 ),
                 classes="stui-spinner",
@@ -748,7 +752,7 @@ class StuiApp(App[None]):
                     Text(element.body, overflow="fold"),
                     title="help",
                     title_align="left",
-                    border_style="#6f7cff",
+                    border_style=self._panel_style("help"),
                     padding=(0, 1),
                 ),
                 classes="stui-help",
@@ -886,9 +890,13 @@ class StuiApp(App[None]):
         if isinstance(element, ErrorElement):
             return Static(
                 Panel(
-                    Text(element.traceback, style="#ffd7d7", overflow="fold"),
+                    Text(
+                        element.traceback,
+                        style=self._traceback_text_style(),
+                        overflow="fold",
+                    ),
                     title=self._script_error_title(element.traceback),
-                    border_style="red",
+                    border_style=self._panel_style("error"),
                     title_align="left",
                     padding=(0, 1),
                 ),
@@ -1175,8 +1183,9 @@ class StuiApp(App[None]):
         normalized = min(1.0, max(0.0, normalized))
         return round(normalized * scale)
 
-    @staticmethod
-    def _alert_style(kind: str) -> str:
+    def _alert_style(self, kind: str) -> str:
+        if self.stui_theme == "high-contrast":
+            return self._panel_style("warning" if kind == "warning" else "default")
         return {
             "success": "green",
             "info": "blue",
@@ -1184,13 +1193,29 @@ class StuiApp(App[None]):
             "error": "red",
         }.get(kind, "white")
 
-    @staticmethod
-    def _status_style(state: str) -> str:
+    def _status_style(self, state: str) -> str:
+        if self.stui_theme == "high-contrast":
+            return self._panel_style("warning" if state == "running" else "default")
         return {
             "running": "blue",
             "complete": "green",
             "error": "red",
         }.get(state, "white")
+
+    def _panel_style(self, kind: str) -> str:
+        if self.stui_theme == "high-contrast":
+            return "#ffff00" if kind in {"accent", "help", "warning"} else "#ffffff"
+        return {
+            "accent": "cyan",
+            "error": "red",
+            "help": "#6f7cff",
+            "warning": "yellow",
+        }.get(kind, "white")
+
+    def _traceback_text_style(self) -> str:
+        if self.stui_theme == "high-contrast":
+            return "#ffffff"
+        return "#ffd7d7"
 
     @staticmethod
     def _script_error_title(traceback: str) -> str:

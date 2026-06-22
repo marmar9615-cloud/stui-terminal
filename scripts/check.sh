@@ -8,6 +8,7 @@ else
 fi
 
 "$PYTHON" -m ruff check .
+"$PYTHON" scripts/check_release_version.py
 "$PYTHON" -m pytest
 "$PYTHON" -m stui selftest --json >/tmp/stui-selftest-result.json
 PYTHON="$PYTHON" ./scripts/verify_custom_project.sh

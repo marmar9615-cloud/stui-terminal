@@ -18,7 +18,7 @@ Streamlit compatibility layer. Existing Streamlit apps usually need edits; new
 
 ## Preview
 
-![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.5.0/assets/stui-model-demo.png)
+![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.6.0/assets/stui-model-demo.png)
 
 ```text
 ┌─ stui ───────────────────────────────────────────┐
@@ -437,7 +437,7 @@ and [docs/v1-readiness.md#stable-api](docs/v1-readiness.md#stable-api).
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v1.5.0 |
+| Area | APIs | Status in v1.6.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
@@ -457,8 +457,9 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v1.5.0 stable surface keeps the v1 core compact while refining data display
-and count-only layout behavior. Tables and dataframes are stable for documented
+The v1.6.0 stable surface keeps the v1 core compact while refining status/help
+UX, terminal diagnostics, data display, and count-only layout behavior. Tables
+and dataframes are stable for documented
 scalar, list, mapping, dataframe-like, dataclass, namedtuple, and simple
 public-object shapes; charts are stable for the documented scalar, list, mapping,
 tuple-pair, list-of-dicts, and dict-of-columns shapes. These names should keep
@@ -468,7 +469,7 @@ correctness, terminal, or security issue forces a change.
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v1 behavior yet. In v1.5.0 this includes `st.status`,
+promised as frozen v1 behavior yet. In v1.6.0 this includes `st.status`,
 `st.spinner`, and `st.help`.
 Release notes should call out any change with a migration note when practical.
 
@@ -556,6 +557,28 @@ modern terminal with UTF-8 and color support. If borders, focus rings, or block
 characters look wrong, try another terminal app, make the window wider, and
 check that `TERM` is set to a normal interactive terminal value such as
 `xterm-256color`.
+
+If a report involves color or theme behavior, include:
+
+```bash
+stui doctor --compat
+stui doctor --json
+```
+
+`NO_COLOR` is reported for diagnostics, but final color behavior still depends
+on Rich, Textual, and the terminal. Unsupported `STUI_THEME` values fall back to
+the default theme and are reported by `stui doctor`.
+
+### Selftest Version Mismatch
+
+If `stui --version` and `stui selftest` disagree about the installed package
+version, the active environment probably has stale editable-install metadata.
+Reinstall in the active environment before reporting it:
+
+```bash
+python -m pip install -e ".[dev]"
+stui selftest --json
+```
 
 ### macOS Editable Install Quirk
 
@@ -675,8 +698,8 @@ stui run examples/charts.py
 ### Kitchen Sink
 
 `examples/kitchen_sink.py` exercises the stable API surface plus the
-experimental terminal-app primitives that remain useful feedback targets before
-v1.
+experimental status/help terminal primitives that remain useful feedback
+targets before v1.
 
 ```bash
 stui run examples/kitchen_sink.py
@@ -726,13 +749,13 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v1.5.0 Stable Status
+## v1.6.0 Stable Status
 
-v1.5.0 is a data-display and layout-refinement release. It keeps the
-package/import/CLI contract from v1.0.0, keeps v1.4.0 behavior compatible,
-improves static table/dataframe normalization and empty-table rendering, and
-makes nested columns stack against their parent width instead of the full
-terminal width.
+v1.6.0 is a status/help UX and release-safety release. It keeps the
+package/import/CLI contract from v1.0.0, keeps v1.4.0 and v1.5.0 behavior
+compatible, improves status/spinner/help example coverage, clarifies that
+collapsed status blocks hide child content unless `expanded=True`, and adds a
+release-version guard so a tag cannot silently build the wrong package version.
 
 The remaining experimental APIs and terminal compatibility unknowns are visible
 instead of hidden. Post-v1 work should be feedback-driven and kept out of the
