@@ -1,6 +1,6 @@
 # API Stability
 
-`stui` v1.0.0 keeps the top-level stable API intentionally small and
+`stui` v1.1.0 keeps the top-level stable API intentionally small and
 Streamlit-inspired, but it is not Streamlit-compatible and does not depend on
 Streamlit at runtime.
 
@@ -20,7 +20,7 @@ to keep the name, call shape, return type, and basic behavior compatible through
 the v1 series unless a correctness bug, terminal limitation, or security issue
 makes a change necessary.
 
-`pre-v1 experimental` means the API is public enough to use, but still needs
+`post-v1 experimental` means the API is public enough to use, but still needs
 feedback before it can graduate into the stable contract. It may change in a
 v1.x release. Changes should be called out in release notes with a migration
 path when practical.
@@ -35,7 +35,7 @@ without updating this page, the API reference, the README API table, the v1
 readiness checklist, and public API tests.
 
 There are no current top-level `stui.__all__` exports marked for removal or
-rename in the v1.0.0 line.
+rename in the v1.x line.
 
 ## Top-Level API Classification
 
@@ -43,40 +43,40 @@ rename in the v1.0.0 line.
 | API | Classification | Notes |
 | --- | --- | --- |
 | `__version__` | v1-stable | Package version string. |
-| `bar_chart` | pre-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
+| `bar_chart` | post-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
 | `button` | v1-stable | Core input widget. |
 | `caption` | v1-stable | Core text output. |
 | `checkbox` | v1-stable | Core input widget. |
 | `code` | v1-stable | Core text output. |
-| `columns` | pre-v1 experimental | Responsive terminal layout behavior may still tighten. |
-| `container` | pre-v1 experimental | Terminal grouping primitive, not a full layout engine. |
-| `dataframe` | pre-v1 experimental | Static terminal display; editing and sorting are out of scope. |
+| `columns` | post-v1 experimental | Responsive terminal layout behavior may still tighten. |
+| `container` | v1-stable | Terminal grouping primitive, not a full layout engine. |
+| `dataframe` | v1-stable | Static terminal display; editing and sorting are out of scope. |
 | `divider` | v1-stable | Core visual separator. |
 | `error` | v1-stable | Core status output. |
 | `exception` | v1-stable | Core status output for exceptions. |
-| `expander` | pre-v1 experimental | Terminal grouping behavior may still tighten. |
-| `form` | pre-v1 experimental | Deferred submit behavior and callback timing need v1 feedback. |
-| `form_submit_button` | pre-v1 experimental | Coupled to experimental form semantics. |
+| `expander` | v1-stable | Keyboard-toggleable terminal grouping primitive. |
+| `form` | v1-stable | Deferred submit behavior is part of the v1.1 contract. |
+| `form_submit_button` | v1-stable | One-shot form submit button. |
 | `header` | v1-stable | Core text output. |
-| `help` | pre-v1 experimental | Help formatting and the public name need v1 feedback. |
+| `help` | post-v1 experimental | Help formatting and the public name need more feedback. |
 | `info` | v1-stable | Core status output. |
-| `json` | pre-v1 experimental | Static terminal display formatting may change. |
-| `line_chart` | pre-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
+| `json` | v1-stable | Static terminal JSON display with string fallback. |
+| `line_chart` | post-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
 | `markdown` | v1-stable | Core text output. |
-| `metric` | pre-v1 experimental | Compact terminal summary formatting may change. |
-| `number_input` | pre-v1 experimental | Newer input widget still gathering feedback. |
-| `progress` | pre-v1 experimental | Terminal rendering and normalization may still tighten. |
-| `radio` | pre-v1 experimental | Newer selection widget still gathering feedback. |
-| `rerun` | pre-v1 experimental | Flow-control semantics need real-app feedback. |
-| `selectbox` | pre-v1 experimental | Newer selection widget still gathering feedback. |
+| `metric` | v1-stable | Compact terminal summary display. |
+| `number_input` | v1-stable | Numeric input widget. |
+| `progress` | v1-stable | Clamped terminal progress display. |
+| `radio` | v1-stable | Selection input widget. |
+| `rerun` | v1-stable | Flow-control helper for explicit reruns. |
+| `selectbox` | v1-stable | Selection input widget. |
 | `session_state` | v1-stable | Core state mapping and attribute proxy. |
 | `slider` | v1-stable | Core numeric input widget. |
-| `spinner` | pre-v1 experimental | Status grouping behavior may still tighten in v1.x. |
-| `stop` | pre-v1 experimental | Flow-control semantics need real-app feedback. |
+| `spinner` | post-v1 experimental | Status grouping behavior may still tighten in v1.x. |
+| `stop` | v1-stable | Flow-control helper that halts the current script pass. |
 | `subheader` | v1-stable | Core text output. |
-| `status` | pre-v1 experimental | Status grouping behavior may still tighten in v1.x. |
+| `status` | post-v1 experimental | Status grouping behavior may still tighten in v1.x. |
 | `success` | v1-stable | Core status output. |
-| `table` | pre-v1 experimental | Static terminal display formatting may change. |
+| `table` | v1-stable | Static terminal table display. |
 | `text` | v1-stable | Core text output. |
 | `text_input` | v1-stable | Core input widget. |
 | `title` | v1-stable | Core text output. |
@@ -102,7 +102,7 @@ the top-level `stui` API documented above.
 
 ## Deferred For v1
 
-These APIs and feature areas are explicitly deferred from the v1.0.0 stable
+These APIs and feature areas are explicitly deferred from the v1 stable
 surface:
 
 <!-- API_DEFERRED_START -->
@@ -122,9 +122,9 @@ surface:
 
 ## Post-v1 Deprecations
 
-After v1.0.0, the top-level `v1-stable` APIs are the compatibility contract for
-the v1 series. Stable public APIs should not be removed or renamed in a v1.x
-release. A normal deprecation should:
+The top-level `v1-stable` APIs are the compatibility contract for the v1 series.
+Stable public APIs should not be removed or renamed in a v1.x release. A normal
+deprecation should:
 
 - document the replacement in `docs/api-reference.md` and release notes;
 - keep the old name working through the rest of the v1 series when practical;
@@ -138,9 +138,8 @@ behavior is incorrect, unsafe, or impossible to support in terminals. When such
 a change is unavoidable, document the reason, migration path, and affected
 versions in the changelog, release notes, API reference, and public API tests.
 
-Experimental APIs that remain experimental after v1 must keep that label in
-the API reference. They may change in a v1.x minor release, but the release
-notes should explain the migration path when practical. Promoting an
-experimental API to stable requires updating this page, the API reference, the
-README API table, the v1 readiness docs, and `tests/test_public_api.py` in the
-same release.
+Post-v1 experimental APIs must keep that label in the API reference. They may
+change in a v1.x minor release, but the release notes should explain the
+migration path when practical. Promoting an experimental API to stable requires
+updating this page, the API reference, the README API table, the v1 readiness
+docs, and `tests/test_public_api.py` in the same release.

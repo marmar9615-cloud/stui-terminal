@@ -96,6 +96,63 @@ st.write("after")
     assert_no_current_runtime()
 
 
+def test_stop_is_not_swallowed_by_user_exception_handler(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.write("before")
+try:
+    st.stop()
+except Exception:
+    st.write("caught")
+st.write("after")
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    write_texts = [
+        element.text
+        for element in elements
+        if isinstance(element, WriteElement)
+    ]
+    assert write_texts == ["before"]
+
+
+def test_rerun_is_not_swallowed_by_user_exception_handler(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+if "count" not in st.session_state:
+    st.session_state.count = 0
+
+try:
+    if st.session_state.count == 0:
+        st.session_state.count = 1
+        st.rerun()
+except Exception:
+    st.write("caught")
+
+st.write("count =", st.session_state.count)
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    write_texts = [
+        element.text
+        for element in elements
+        if isinstance(element, WriteElement)
+    ]
+    assert write_texts == ["count = 1"]
+
+
 def test_script_dir_is_removed_from_sys_path_after_normal_run(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,
@@ -185,6 +242,27 @@ raise RuntimeError("boom")
     assert isinstance(elements[0], ErrorElement)
     assert "RuntimeError: boom" in elements[0].traceback
     assert runtime.session_state.count == 3
+
+
+def test_script_exception_rolls_back_common_mutable_session_state(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.session_state.events.append("bad")
+raise RuntimeError("boom")
+""",
+    )
+    runtime = Runtime(script)
+    runtime.session_state.events = []
+
+    elements = runtime.run_script()
+
+    assert isinstance(elements[0], ErrorElement)
+    assert runtime.session_state.events == []
 
 
 def test_missing_script_renders_readable_error(tmp_path: Path) -> None:

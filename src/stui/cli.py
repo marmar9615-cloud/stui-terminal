@@ -255,6 +255,13 @@ def _package_version(name: str) -> str:
         return "not installed"
 
 
+def _distribution_location(name: str) -> str:
+    try:
+        return str(metadata.distribution(name).locate_file(""))
+    except metadata.PackageNotFoundError:
+        return "not installed"
+
+
 def _doctor_diagnostics() -> dict[str, object]:
     terminal_size = shutil.get_terminal_size(fallback=(0, 0))
     example_infos = _example_infos()
@@ -267,6 +274,7 @@ def _doctor_diagnostics() -> dict[str, object]:
     no_color = os.environ.get("NO_COLOR", "")
     color_capability = _color_capability(term, color_term)
     size_status = _terminal_size_status(terminal_size.columns, terminal_size.lines)
+    package_version = _package_version("stui-terminal")
     warnings = []
     if size_status != "ok":
         warnings.append(
@@ -274,6 +282,10 @@ def _doctor_diagnostics() -> dict[str, object]:
         )
     if term.lower() == "dumb":
         warnings.append("TERM=dumb; interactive rendering and color may be limited")
+    if package_version not in {"not installed", __version__}:
+        warnings.append(
+            "imported stui version and stui-terminal distribution version differ"
+        )
 
     first_source = None
     if example_infos:
@@ -285,7 +297,7 @@ def _doctor_diagnostics() -> dict[str, object]:
 
     return {
         "stui": __version__,
-        "package": _package_version("stui-terminal"),
+        "package": package_version,
         "python": {
             "version": sys.version.split()[0],
             "platform": platform.system(),
@@ -295,6 +307,10 @@ def _doctor_diagnostics() -> dict[str, object]:
             "textual": _package_version("textual"),
             "rich": _package_version("rich"),
             "typer": _package_version("typer"),
+        },
+        "locations": {
+            "stui_import": str(Path(__file__).resolve().parents[1]),
+            "distribution": _distribution_location("stui-terminal"),
         },
         "terminal": {
             "columns": terminal_size.columns,
@@ -365,8 +381,17 @@ def run_demo(name: str) -> None:
     """Run a bundled first-run demo directly from the installed package."""
 
     if name == "list":
+        bundled = _bundled_examples()
+        available = [
+            demo_name
+            for demo_name in DEMO_NAMES
+            if _example_name(demo_name) in bundled
+        ]
         typer.echo("stui demos:")
-        for demo_name in DEMO_NAMES:
+        if not available:
+            typer.echo("  No bundled demos were found in this installation.")
+            return
+        for demo_name in available:
             description = EXAMPLE_DESCRIPTIONS.get(
                 _example_name(demo_name),
                 "Bundled demo app.",
@@ -539,6 +564,8 @@ def init_app(
     """Create a small starter stui app."""
 
     script_path = script.expanduser()
+    if script_path.exists() and script_path.is_dir():
+        raise typer.BadParameter(f"not a file: {script}")
     if script_path.suffix != ".py":
         raise typer.BadParameter(f"script must be a .py file: {script}")
     if template not in INIT_TEMPLATES:

@@ -1,7 +1,6 @@
 include README.md
 include LICENSE
 include CHANGELOG.md
-include RELEASE_NOTES_*.md
 include CONTRIBUTING.md
 include CODE_OF_CONDUCT.md
 include ROADMAP.md

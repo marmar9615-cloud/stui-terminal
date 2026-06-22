@@ -47,7 +47,7 @@ Limitations:
 - No sidebar, browser grid, or arbitrary responsive layout engine.
 - Nested grouping is supported, but deeply nested columns are discouraged
   because narrow terminals will quickly become hard to read.
-- Column layout is pre-v1 experimental and may tighten based on terminal
+- Column layout is post-v1 experimental and may tighten based on terminal
   compatibility feedback.
 
 ### `st.expander(label, expanded=False, key=None)`

@@ -82,6 +82,26 @@ def test_demo_list_prints_supported_demos() -> None:
     assert "counter" not in result.output
 
 
+def test_demo_list_only_prints_available_bundled_demo_resources(monkeypatch) -> None:
+    monkeypatch.setattr(cli, "_bundled_examples", lambda: {"basic.py"})
+
+    result = CliRunner().invoke(cli.app, ["demo", "list"])
+
+    assert result.exit_code == 0
+    assert "basic - Smallest useful app:" in result.output
+    assert "dashboard" not in result.output
+    assert "forms" not in result.output
+
+
+def test_demo_list_reports_when_no_bundled_resources(monkeypatch) -> None:
+    monkeypatch.setattr(cli, "_bundled_examples", lambda: set())
+
+    result = CliRunner().invoke(cli.app, ["demo", "list"])
+
+    assert result.exit_code == 0
+    assert "No bundled demos were found" in result.output
+
+
 def test_demo_launches_valid_bundled_demo(monkeypatch) -> None:
     launched: list[Path] = []
 
@@ -298,6 +318,23 @@ def test_doctor_json_output(monkeypatch) -> None:
     assert any("TERM=dumb" in item for item in diagnostics["warnings"])
 
 
+def test_doctor_json_warns_on_package_import_version_mismatch(monkeypatch) -> None:
+    monkeypatch.setattr(cli, "_package_version", lambda name: "1.0.0")
+
+    result = CliRunner().invoke(cli.app, ["doctor", "--json"])
+
+    assert result.exit_code == 0
+    diagnostics = json.loads(result.output)
+    assert diagnostics["stui"] == stui.__version__
+    assert diagnostics["package"] == "1.0.0"
+    assert any(
+        "imported stui version and stui-terminal distribution version differ"
+        in item
+        for item in diagnostics["warnings"]
+    )
+    assert "locations" in diagnostics
+
+
 def test_color_capability_reports_truecolor_256_and_dumb() -> None:
     assert cli._color_capability("xterm-256color", "") == "256-color"
     assert cli._color_capability("xterm-256color", "truecolor") == "truecolor"
@@ -418,6 +455,50 @@ def test_example_copy_force_overwrites(tmp_path: Path) -> None:
     assert "st.title" in dest.read_text(encoding="utf-8")
 
 
+def test_example_copy_into_existing_directory(tmp_path: Path) -> None:
+    dest = tmp_path / "examples"
+    dest.mkdir()
+
+    result = CliRunner().invoke(cli.app, ["example", "copy", "basic", str(dest)])
+
+    copied = dest / "basic.py"
+    assert result.exit_code == 0
+    assert copied.exists()
+    assert "Copied basic.py" in result.output
+
+
+def test_example_copy_into_directory_rejects_existing_child_without_force(
+    tmp_path: Path,
+) -> None:
+    dest = tmp_path / "examples"
+    dest.mkdir()
+    child = dest / "basic.py"
+    child.write_text("# keep me\n", encoding="utf-8")
+
+    result = CliRunner().invoke(cli.app, ["example", "copy", "basic", str(dest)])
+
+    assert result.exit_code != 0
+    assert "destination exists:" in result.output
+    assert child.read_text(encoding="utf-8") == "# keep me\n"
+
+
+def test_example_copy_into_directory_force_overwrites_existing_child(
+    tmp_path: Path,
+) -> None:
+    dest = tmp_path / "examples"
+    dest.mkdir()
+    child = dest / "basic.py"
+    child.write_text("# replace me\n", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["example", "copy", "basic", str(dest), "--force"],
+    )
+
+    assert result.exit_code == 0
+    assert "st.title" in child.read_text(encoding="utf-8")
+
+
 def test_init_creates_app(tmp_path: Path) -> None:
     script = tmp_path / "app.py"
 
@@ -438,6 +519,16 @@ def test_init_rejects_overwrite_without_force(tmp_path: Path) -> None:
     assert result.exit_code != 0
     assert "file exists:" in result.output
     assert script.read_text(encoding="utf-8") == "# keep me\n"
+
+
+def test_init_rejects_directory_even_with_py_suffix(tmp_path: Path) -> None:
+    script_dir = tmp_path / "app.py"
+    script_dir.mkdir()
+
+    result = CliRunner().invoke(cli.app, ["init", str(script_dir), "--force"])
+
+    assert result.exit_code != 0
+    assert "not a file:" in result.output
 
 
 def test_init_force_overwrites(tmp_path: Path) -> None:

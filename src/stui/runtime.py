@@ -57,11 +57,11 @@ _current_runtime: contextvars.ContextVar[Runtime | None] = contextvars.ContextVa
 _MISSING = object()
 
 
-class RerunException(Exception):
+class RerunException(BaseException):
     """Internal signal used by st.rerun in later API slices."""
 
 
-class StopException(Exception):
+class StopException(BaseException):
     """Internal signal used by st.stop to end the current script pass."""
 
 
@@ -116,6 +116,7 @@ class Runtime:
         self.elements: list[Element] = []
         self._element_stack: list[list[Element]] = [self.elements]
         self.widget_call_counts: dict[tuple[str, str], int] = {}
+        self.widget_keys_seen: set[str] = set()
         self.explicit_widget_keys_seen: set[str] = set()
         self.form_keys_seen: set[str] = set()
         self.active_form_stack: list[str] = []
@@ -190,7 +191,11 @@ class Runtime:
         self._append_element(CodeElement(str(body), language=language))
 
     def json(self, obj: Any) -> None:
-        text = json_lib.dumps(obj, indent=2, sort_keys=True, default=str)
+        text = json_lib.dumps(
+            _json_display_value(obj),
+            indent=2,
+            sort_keys=True,
+        )
         self._append_element(JsonElement(obj=obj, text=text))
 
     def exception(self, exc: BaseException) -> None:
@@ -633,8 +638,15 @@ class Runtime:
                     "Explicit widget keys must be unique within a single run."
                 )
             self.explicit_widget_keys_seen.add(widget_key)
-            return widget_key
-        return f"{widget_type}:{label}:{index}"
+        else:
+            widget_key = f"{widget_type}:{label}:{index}"
+        if widget_key in self.widget_keys_seen:
+            raise DuplicateWidgetKeyError(
+                f'Duplicate widget key "{widget_key}". '
+                "Widget keys must be unique within a single run."
+            )
+        self.widget_keys_seen.add(widget_key)
+        return widget_key
 
     def enter_form(self, key: str) -> None:
         if self.active_form_stack:
@@ -765,11 +777,15 @@ class Runtime:
 
     def _commit_form(self, form_key: str) -> None:
         callbacks = self._form_widget_callbacks.get(form_key, {})
-        for key, value in self.form_pending_values.pop(form_key, {}).items():
-            previous = self.session_state.get(key, _MISSING)
+        pending = self.form_pending_values.pop(form_key, {})
+        changed_keys = []
+        for key, value in pending.items():
+            if self.session_state.get(key, _MISSING) != value:
+                changed_keys.append(key)
             self.session_state[key] = value
             self._committed_widget_values[key] = value
-            if previous != value and key in callbacks:
+        for key in changed_keys:
+            if key in callbacks:
                 callback, args, kwargs = callbacks[key]
                 callback(*args, **kwargs)
 
@@ -781,6 +797,7 @@ class Runtime:
         self.elements = []
         self._element_stack = [self.elements]
         self.widget_call_counts = {}
+        self.widget_keys_seen = set()
         self.explicit_widget_keys_seen = set()
         self.form_keys_seen = set()
         self.active_form_stack = []
@@ -831,9 +848,24 @@ def _format_script_exception(exc: BaseException, script_path: Path) -> str:
     return "".join(rendered_frames).rstrip()
 
 
+def _json_display_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): _json_display_value(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple, set)):
+        return [_json_display_value(item) for item in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
+
+
 def _normalize_progress(value: int | float) -> int:
-    if not isinstance(value, int | float):
-        raise TypeError("progress value must be an int or float.")
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise ApiUsageError("st.progress value must be an int or float.")
+    if not math.isfinite(value):
+        raise ApiUsageError("st.progress value must be finite.")
     if isinstance(value, float) and 0 <= value <= 1:
         percent = round(value * 100)
     else:
@@ -1039,9 +1071,10 @@ def _normalize_table(data: Any) -> tuple[tuple[str, ...], tuple[tuple[str, ...],
         if not data:
             return ("value",), ()
         if all(isinstance(item, dict) for item in data):
-            headers = tuple(dict.fromkeys(str(key) for row in data for key in row))
+            keys = tuple(dict.fromkeys(key for row in data for key in row))
+            headers = tuple(str(key) for key in keys)
             rows = tuple(
-                tuple(str(row.get(header, "")) for header in headers)
+                tuple(str(row.get(key, "")) for key in keys)
                 for row in data
             )
             return headers, rows

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from stui.elements import ButtonElement, ErrorElement, SliderElement
 from stui.runtime import Runtime
 
@@ -81,3 +83,34 @@ st.text_input("Name", key="shared")
     assert len(elements) == 1
     assert isinstance(elements[0], ErrorElement)
     assert 'Duplicate widget key "shared"' in elements[0].traceback
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        """
+import stui as st
+
+st.slider("x")
+st.text_input("Name", key="slider:x:0")
+""",
+        """
+import stui as st
+
+st.text_input("Name", key="slider:x:0")
+st.slider("x")
+""",
+    ],
+)
+def test_generated_and_explicit_key_collisions_render_error(
+    tmp_path: Path,
+    body: str,
+) -> None:
+    script = write_script(tmp_path, body)
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+
+    assert len(elements) == 1
+    assert isinstance(elements[0], ErrorElement)
+    assert 'Duplicate widget key "slider:x:0"' in elements[0].traceback

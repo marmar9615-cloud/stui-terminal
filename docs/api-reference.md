@@ -23,40 +23,40 @@ defined in [API Stability](api-stability.md).
 | API | Classification | Notes |
 | --- | --- | --- |
 | `__version__` | v1-stable | Package version string. |
-| `bar_chart` | pre-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
+| `bar_chart` | post-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
 | `button` | v1-stable | Core input widget. |
 | `caption` | v1-stable | Core text output. |
 | `checkbox` | v1-stable | Core input widget. |
 | `code` | v1-stable | Core text output. |
-| `columns` | pre-v1 experimental | Responsive terminal layout behavior may still tighten. |
-| `container` | pre-v1 experimental | Terminal grouping primitive, not a full layout engine. |
-| `dataframe` | pre-v1 experimental | Static terminal display; editing and sorting are out of scope. |
+| `columns` | post-v1 experimental | Responsive terminal layout behavior may still tighten. |
+| `container` | v1-stable | Terminal grouping primitive, not a full layout engine. |
+| `dataframe` | v1-stable | Static terminal display; editing and sorting are out of scope. |
 | `divider` | v1-stable | Core visual separator. |
 | `error` | v1-stable | Core status output. |
 | `exception` | v1-stable | Core status output for exceptions. |
-| `expander` | pre-v1 experimental | Terminal grouping behavior may still tighten. |
-| `form` | pre-v1 experimental | Deferred submit behavior and callback timing need v1 feedback. |
-| `form_submit_button` | pre-v1 experimental | Coupled to experimental form semantics. |
+| `expander` | v1-stable | Keyboard-toggleable terminal grouping primitive. |
+| `form` | v1-stable | Deferred submit behavior is part of the v1.1 contract. |
+| `form_submit_button` | v1-stable | One-shot form submit button. |
 | `header` | v1-stable | Core text output. |
-| `help` | pre-v1 experimental | Help formatting and the public name need v1 feedback. |
+| `help` | post-v1 experimental | Help formatting and the public name need more feedback. |
 | `info` | v1-stable | Core status output. |
-| `json` | pre-v1 experimental | Static terminal display formatting may change. |
-| `line_chart` | pre-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
+| `json` | v1-stable | Static terminal JSON display with string fallback. |
+| `line_chart` | post-v1 experimental | Terminal chart rendering may still tighten in v1.x. |
 | `markdown` | v1-stable | Core text output. |
-| `metric` | pre-v1 experimental | Compact terminal summary formatting may change. |
-| `number_input` | pre-v1 experimental | Newer input widget still gathering feedback. |
-| `progress` | pre-v1 experimental | Terminal rendering and normalization may still tighten. |
-| `radio` | pre-v1 experimental | Newer selection widget still gathering feedback. |
-| `rerun` | pre-v1 experimental | Flow-control semantics need real-app feedback. |
-| `selectbox` | pre-v1 experimental | Newer selection widget still gathering feedback. |
+| `metric` | v1-stable | Compact terminal summary display. |
+| `number_input` | v1-stable | Numeric input widget. |
+| `progress` | v1-stable | Clamped terminal progress display. |
+| `radio` | v1-stable | Selection input widget. |
+| `rerun` | v1-stable | Flow-control helper for explicit reruns. |
+| `selectbox` | v1-stable | Selection input widget. |
 | `session_state` | v1-stable | Core state mapping and attribute proxy. |
 | `slider` | v1-stable | Core numeric input widget. |
-| `spinner` | pre-v1 experimental | Status grouping behavior may still tighten in v1.x. |
-| `stop` | pre-v1 experimental | Flow-control semantics need real-app feedback. |
+| `spinner` | post-v1 experimental | Status grouping behavior may still tighten in v1.x. |
+| `stop` | v1-stable | Flow-control helper that halts the current script pass. |
 | `subheader` | v1-stable | Core text output. |
-| `status` | pre-v1 experimental | Status grouping behavior may still tighten in v1.x. |
+| `status` | post-v1 experimental | Status grouping behavior may still tighten in v1.x. |
 | `success` | v1-stable | Core status output. |
-| `table` | pre-v1 experimental | Static terminal display formatting may change. |
+| `table` | v1-stable | Static terminal table display. |
 | `text` | v1-stable | Core text output. |
 | `text_input` | v1-stable | Core input widget. |
 | `title` | v1-stable | Core text output. |
@@ -66,7 +66,7 @@ defined in [API Stability](api-stability.md).
 
 ## Text and Status
 
-`st.help` is experimental in v1 while the terminal formatting and public name
+`st.help` is post-v1 experimental while the terminal formatting and public name
 settle. The other text helpers in this group are v1-stable.
 
 ```python
@@ -99,7 +99,7 @@ st.status(label, state="running", expanded=False)
 st.spinner(text="Working...")
 ```
 
-`st.status` and `st.spinner` are pre-v1 experimental while status grouping
+`st.status` and `st.spinner` are post-v1 experimental while status grouping
 behavior is tested in real terminal apps.
 
 ```python
@@ -136,6 +136,14 @@ st.line_chart(data, *, width=None, height=None) -> None
 st.divider() -> None
 ```
 
+In v1.1.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, and
+`st.metric` are v1-stable static display primitives. Tables support scalars,
+lists or tuples of scalars, lists or tuples of dicts, lists or tuples of
+lists/tuples, dicts of scalar values, dicts of lists/tuples, and pandas-like
+objects with `to_dict(orient="records")` and `columns` attributes. `st.dataframe`
+is an alias for static table display; it does not add editing, sorting,
+selection, or pandas as a required dependency.
+
 ```python
 import stui as st
 
@@ -150,8 +158,10 @@ st.bar_chart({"baseline": 42, "quantized": 24})
 
 ## Layout
 
-All layout and grouping helpers in this section are pre-v1 experimental. They
-are terminal grouping primitives, not browser layout compatibility APIs.
+`st.container`, `st.expander`, `st.form`, and `st.form_submit_button` are
+v1-stable in v1.1.0. They are terminal grouping primitives, not browser layout
+compatibility APIs. `st.columns` remains post-v1 experimental while the project
+collects more terminal layout evidence.
 
 ```python
 st.container()
@@ -389,30 +399,29 @@ if "token" not in st.session_state:
     st.stop()
 ```
 
-## v1.0 Stable Status
+## v1.1 Stable Status
 
-The signatures above are intentionally covered by tests in v1.0.0. The
+The signatures above are intentionally covered by tests in v1.1.0. The
 classification table marks each top-level API as either `v1-stable` or
-`pre-v1 experimental`; see [API Stability](api-stability.md) for the full
+`post-v1 experimental`; see [API Stability](api-stability.md) for the full
 compatibility promise and post-v1 deprecation policy.
 
-The v1.0.0 release treats the `v1-stable` rows as the stable v1 surface. Any
-change to those names in v1.x should be treated as a compatibility event unless
-it fixes a correctness, terminal, or security issue and is documented in the
-changelog and release notes.
+v1.1.0 graduates the safest post-v1 APIs: static JSON/progress/table/dataframe
+display, numeric and choice inputs, forms, containers, expanders, metrics, and
+explicit `st.rerun` / `st.stop` flow control. Any change to stable names in v1.x
+should be treated as a compatibility event unless it fixes a correctness,
+terminal, or security issue and is documented in the changelog and release
+notes.
 
-These areas stay experimental in v1.0.0 and need the most feedback before they
-can be called v1-stable:
+These APIs stay post-v1 experimental in v1.1.0 and need more feedback before
+they can be called v1-stable:
 
-- Forms: deferred submit behavior and callback timing.
-- Grouping: `st.container`, `st.columns`, and `st.expander` as terminal
-  grouping primitives, not a full layout engine.
-- Data display: static `st.table` and `st.dataframe` without editing/sorting.
-- Charts: compact terminal summaries from `st.metric`, `st.bar_chart`, and
-  `st.line_chart`, not plotting-library replacements.
+- Layout: `st.columns` as an integer-count terminal primitive, not a full layout
+  engine.
+- Charts: compact terminal summaries from `st.bar_chart` and `st.line_chart`,
+  not plotting-library replacements.
 - Help and status: `st.help`, `st.status`, and `st.spinner` formatting and
   grouping behavior.
-- Flow control: clear expectations for `st.rerun` and `st.stop` in real apps.
 
 APIs and feature areas explicitly deferred from the v1 stable surface are
 listed in [API Stability](api-stability.md#deferred-for-v1). They include

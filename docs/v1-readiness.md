@@ -1,21 +1,21 @@
 # v1 Readiness
 
-`stui` v1.0.0 is the first stable release. The goal for v1 is not to become
-Streamlit-compatible or to grow a large component catalog. The goal is a small,
-stable, terminal-native API that can be installed from PyPI, explained quickly,
-and trusted for local tools.
+`stui` v1.1.0 is the first post-v1 improvement release. The goal for the v1
+series is not to become Streamlit-compatible or to grow a large component
+catalog. The goal is a small, stable, terminal-native API that can be installed
+from PyPI, explained quickly, and trusted for local tools.
 
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## Status After v1.0.0
+## Status After v1.1.0
 
-v1.0.0 turns the final pre-v1 candidate into a stable baseline. It freezes the
-stable API list, keeps experimental APIs labeled, aligns install/demo/init/example
-docs with installed-package behavior, and moves unresolved larger features into
-post-v1 roadmap buckets instead of hiding them.
+v1.1.0 keeps the v1.0.0 baseline intact and graduates the safest experimental
+APIs after additional docs and regression coverage. The release keeps remaining
+layout/chart/status/help APIs labeled as post-v1 experimental instead of
+quietly freezing behavior that still needs terminal evidence.
 
-On the v1.0.0 line, the stable API list is frozen. The freeze covers the
+On the v1.x line, the stable API list is frozen. The freeze covers the
 top-level names in `stui.__all__`, their stability classifications, and the
 documented function signatures. Bug fixes may still tighten behavior, but
 adding, removing, renaming, or changing a stable top-level public API requires
@@ -28,24 +28,26 @@ or untested environments stay labeled test-needed, while supported flows are
 verified through CI, fresh PyPI installs, bundled examples, and local smoke
 checks.
 
-Public launch copy is prepared for v1.0.0, but social posts should still be
-posted manually only after the exact PyPI package, GitHub Release, and fresh
-install checks are verified.
+Normal v1.x release work should include changelog and GitHub Release notes only.
+Do not generate social launch copy for maintenance or minor releases unless a
+separate task explicitly asks for it.
 
-## Complete For v1.0.0
+## Complete For v1.1.0
 
 - The PyPI distribution/import/CLI naming is settled: install
   `stui-terminal`, import `stui`, and run `stui`.
 - The stable API is documented in the README, API reference, API
   stability table, and public API tests.
-- Experimental APIs remain labeled instead of being quietly promoted for launch.
+- v1.1.0 graduates the safest post-v1 APIs: static JSON/progress/table/dataframe
+  display, numeric and choice inputs, forms, containers, expanders, metrics, and
+  explicit `st.rerun` / `st.stop` flow control.
+- Remaining experimental APIs stay labeled instead of being quietly promoted.
 - Deferred Streamlit-style features are listed as out of scope for v1.
 - The README quickstart, first app, API table, terminal compatibility link,
   examples/templates, limitations, and troubleshooting sections all point users
-  at the same v1.0.0 contract.
+  at the same v1.1.0 contract.
 - Bundled demo/example listing/copying and `stui init` are part of the v1
   documentation contract rather than checkout-only conveniences.
-- Public launch copy is drafted for manual posting after release verification.
 
 ## Post-v1 Verification Habits
 
@@ -58,24 +60,18 @@ install checks are verified.
 
 ## API Stability Status
 
-The project should keep the public API small. v1.0.0 treats the table below as
+The project should keep the public API small. v1.1.0 treats the table below as
 the stable v1 reference.
 
 Stable APIs should not change casually. If a signature or return value
 changes after v1.0.0, the changelog should call it out plainly and the README
 examples should be updated in the same release.
 
-Pre-v1 experimental APIs:
+Post-v1 experimental APIs:
 
-- `st.metric`, `st.bar_chart`, and `st.line_chart` are compact terminal
-  summaries, not replacements for plotting libraries.
-- `st.container`, `st.columns`, and `st.expander` are grouping primitives, not a
-  general layout system.
-- `st.table` and `st.dataframe` are static display helpers without editing,
-  sorting, or pandas-specific behavior.
-- `st.form` and `st.form_submit_button` are small terminal form primitives.
-  Pending widget values remain outside `session_state` until submit, but the
-  Textual app can still rerun while a form widget is edited.
+- `st.columns` is a grouping primitive, not a general layout system.
+- `st.bar_chart` and `st.line_chart` are compact terminal summaries, not
+  replacements for plotting libraries.
 - `st.status`, `st.spinner`, and `st.help` are simple terminal display
   primitives. They do not promise Streamlit-compatible mutation, animation, or
   full pager-style help behavior.
@@ -90,7 +86,7 @@ Explicitly deferred APIs and feature areas:
 
 ## API Contract Status
 
-v1.0.0 considers the stable public contract documented and frozen for the v1
+v1.1.0 considers the stable public contract documented and frozen for the v1
 series.
 The current contract lives in [`docs/api-reference.md`](api-reference.md) and
 covers:
@@ -103,9 +99,9 @@ covers:
 - CLI entry points for running apps, listing/copying bundled examples,
   generating starter files, diagnostics, and version checks.
 
-Experimental APIs may continue to tighten in v1.x, but stable public signature,
-return-value, or semantic changes should be treated as compatibility events and
-called out in the changelog and release notes.
+Post-v1 experimental APIs may continue to tighten in v1.x, but stable public
+signature, return-value, or semantic changes should be treated as compatibility
+events and called out in the changelog and release notes.
 
 ## Stable And Experimental Status
 
@@ -115,9 +111,14 @@ Stable in v1:
   `st.text`, `st.markdown`, `st.write`, `st.divider`, and `st.code`.
 - Basic status output: `st.info`, `st.success`, `st.warning`, `st.error`, and
   `st.exception`.
-- Core input widgets: `st.button`, `st.slider`, `st.text_input`, and
-  `st.checkbox`.
+- Static display: `st.json`, `st.progress`, `st.table`, `st.dataframe`, and
+  `st.metric`.
+- Input widgets: `st.button`, `st.slider`, `st.text_input`, `st.checkbox`,
+  `st.number_input`, `st.selectbox`, and `st.radio`.
+- Forms and grouping: `st.form`, `st.form_submit_button`, `st.container`, and
+  `st.expander`.
 - `st.session_state` as the core state mapping and attribute proxy.
+- `st.rerun` and `st.stop` as explicit flow-control helpers.
 - CLI commands for running apps, diagnostics, example listing/copying, starter
   generation, and version output.
 
@@ -125,16 +126,7 @@ Experimental in v1:
 
 - `st.status`, `st.spinner`, and `st.help` as terminal status/help primitives
   while their exact grouping and formatting contract gathers feedback.
-- `st.json`, `st.progress`, `st.table`, and `st.dataframe` as static display
-  helpers whose terminal formatting may still tighten.
-- `st.number_input`, `st.selectbox`, and `st.radio` as newer input widgets
-  still gathering keyboard and terminal feedback.
-- `st.form` and `st.form_submit_button` as small submit-style primitives.
-- `st.container` and `st.expander` as terminal grouping/layout primitives.
-- `st.rerun` and `st.stop` as flow-control helpers that need real-app
-  feedback before being frozen.
-- `st.metric`, `st.bar_chart`, and `st.line_chart` as compact terminal
-  summaries.
+- `st.bar_chart` and `st.line_chart` as compact terminal summaries.
 - `st.columns` as a simple responsive terminal primitive. It accepts only an
   integer count and stacks on narrow terminals.
 - Wider layout concepts such as sidebars, grids, tabs, custom ratios, or
@@ -154,16 +146,18 @@ must match the `v1-stable` rows in `docs/api-stability.md` and
 | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider`, `st.code` |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` |
-| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox` |
-| State | `st.session_state` |
+| Display | `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric` |
+| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` |
+| Forms and grouping | `st.form`, `st.form_submit_button`, `st.container`, `st.expander` |
+| State and flow | `st.session_state`, `st.rerun`, `st.stop` |
 | Package metadata | `st.__version__` |
 | CLI | `stui run`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` |
 
 The experimental API is public and documented, but not part of the stable table
-yet. Current experimental areas include static display
-formatting beyond `st.code`, newer selection and numeric widgets, forms,
-grouping/layout helpers, metrics/charts, status/help helpers, and flow-control
-helpers.
+yet. Current experimental areas are `st.columns`, `st.bar_chart`,
+`st.line_chart`, `st.status`, `st.spinner`, and `st.help`, plus larger deferred
+layout, charting, dataframe-editing, caching, file-upload, and browser/server
+runtime areas.
 
 Every stable API should keep:
 
@@ -315,7 +309,7 @@ The README, release notes, and API docs should keep these limits explicit:
 - Static tables/dataframes do not support editing, sorting, or rich dataframe
   integrations.
 - Charts are terminal summaries and can lose detail at narrow widths.
-- Layout is intentionally modest. `st.columns` is pre-v1 experimental and
+- Layout is intentionally modest. `st.columns` is post-v1 experimental and
   limited to integer-count responsive columns; there are no sidebars, tabs,
   custom layout ratios, arbitrary browser components, or hosted auth features in
   the v1 gate.
@@ -323,19 +317,19 @@ The README, release notes, and API docs should keep these limits explicit:
   and form submit semantics are documented as the current contract, and must
   stay synchronized with implementation changes in v1.x.
 
-## Final v1.0 Checklist
+## v1.x Release Checklist
 
-| Gate | v1.0.0 status | Post-v1 decision |
+| Gate | v1.1.0 status | v1.x decision |
 | --- | --- | --- |
-| Stable API list | Frozen as the v1 stable list. | Do not change unless a correctness, terminal, or safety issue appears. |
-| Experimental APIs | Labeled in README, API reference, API stability docs, v1 readiness docs, and tests. | Keep experimental through v1 unless real feedback justifies promotion. |
+| Stable API list | Expanded with the safest post-v1 graduations. | Do not change unless a correctness, terminal, or safety issue appears. |
+| Experimental APIs | Labeled in README, API reference, API stability docs, v1 readiness docs, and tests. | Keep experimental until tests, docs, and terminal evidence justify promotion. |
 | Deferred Streamlit-style APIs | Explicitly deferred in API stability docs and README. | Do not add to v1. |
 | State/rerun/widget correctness | Covered by regression tests for known issues. | Fix reproducible blockers; document non-blocking limitations. |
 | Installed-package flow | Required for v1 release gates. | Verify from PyPI again for every release. |
 | Terminal compatibility | Evidence-driven matrix remains open. | Document unknowns instead of overclaiming support. |
 | Narrow rendering | Covered by regression tests for known table/chart/layout edges. | Fix reproducible blockers; document non-blocking limitations. |
 | Release process | Checklist and publishing docs are explicit. | Follow the same gates for v1.x releases. |
-| Public announcement | Prepared for v1.0.0. | Post manually only after PyPI and GitHub release verification. |
+| Public announcement | Not part of v1.1.0. | Generate no social or discussion copy for routine v1.x releases unless explicitly requested. |
 
 ## Post-v1 Plan
 
@@ -348,7 +342,7 @@ For every v1.x release:
   wheel and source artifacts.
 - Confirm supported Python versions match CI, README, `pyproject.toml`, and
   release notes.
-- Keep experimental APIs labeled until real feedback justifies graduation.
+- Keep experimental APIs labeled until tests, docs, and feedback justify graduation.
 - Keep larger feature requests out of patch releases unless they directly fix a
   reproducible v1 blocker.
 
@@ -378,11 +372,8 @@ The v1 release process should remain explicit and auditable:
 4. Create a tag only after the release diff is final.
 5. Publish through GitHub Actions Trusted Publishing with manual dispatch.
 6. Verify a clean PyPI install in a temporary virtual environment.
-7. Only publish public announcements after PyPI, docs, examples, and CI are
-   verified.
-
-Public launch-style announcements should wait for v1.0.0. Pre-1.0 releases can
-have release notes, but they should not be framed as the final stable launch.
+7. For routine v1.x releases, write changelog and GitHub Release notes only;
+   do not generate social launch copy unless explicitly requested.
 
 ## Non-Goals For v1
 

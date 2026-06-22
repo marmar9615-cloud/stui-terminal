@@ -7,7 +7,7 @@ timeline or compatibility with Streamlit.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## v1.0 Stable Baseline
+## v1 Stable Baseline
 
 - Keep the v1 stable API list frozen unless a documented correctness,
   terminal, or security issue forces a change.
@@ -16,9 +16,9 @@ Streamlit compatibility layer.
   disabled behavior, form submit behavior, `st.rerun`, and `st.stop`.
 - Ensure every stable API has focused tests and at least one README,
   example, or reference-doc mention.
-- Scope layout primitives honestly: `st.container`, `st.columns`, and
-  `st.expander` are terminal grouping helpers, not sidebars, tabs, browser
-  grids, or a full layout engine. `st.columns` remains pre-v1 experimental.
+- Scope layout primitives honestly: `st.container`, `st.expander`, and
+  `st.columns` are terminal grouping helpers, not sidebars, tabs, browser
+  grids, or a full layout engine. `st.columns` remains post-v1 experimental.
 - Keep charts and richer dataframe behavior experimental or explicitly modest
   until real v1 feedback says they should graduate.
 - Keep release notes, changelog, README, feedback docs, and v1 readiness docs
@@ -52,14 +52,13 @@ Streamlit compatibility layer.
 
 The stable API is the top-level `stui` surface marked `v1-stable` in
 [`docs/api-stability.md`](docs/api-stability.md). These names should keep their
-call shape and core behavior through v1.0.0 unless a correctness
+call shape and core behavior through v1.x unless a correctness
 issue forces a change.
 
 The experimental API is still public enough to try, but the project is asking
-for feedback before freezing it. This includes newer display helpers,
-tables/dataframes, charts, forms, selection widgets, layout/grouping helpers,
-status/help helpers, and flow-control helpers that need more real terminal
-evidence before v1.
+for feedback before freezing it. In v1.1.0 the remaining experimental APIs are
+`st.columns`, `st.bar_chart`, `st.line_chart`, `st.status`, `st.spinner`, and
+`st.help`.
 
 The command surface is expected to remain stable for v1 docs:
 
@@ -81,7 +80,7 @@ The command surface is expected to remain stable for v1 docs:
   nesting, wide rendering, and narrow stacking.
 - Terminal reports should show readable behavior in at least one local macOS
   terminal and one Linux or SSH/headless-style environment before promoting
-  columns beyond pre-v1 experimental.
+  columns beyond post-v1 experimental.
 - Do not add tabs until keyboard navigation, hidden-content state semantics, and
   generated widget keys are predictable enough to document.
 - Do not add sidebars, custom ratios, browser-grid behavior, or horizontal
@@ -100,14 +99,16 @@ The command surface is expected to remain stable for v1 docs:
   changelog.
 - Keep the package install path stable: PyPI distribution `stui-terminal`,
   import package `stui`, and CLI command `stui`.
-- Publish public launch announcements only after v1.0.0 is released, install
-  verified from PyPI, and the docs/examples match the shipped package. The
-  public announcement push is saved for v1.0.0.
+- For routine v1.x releases, write changelog and GitHub Release notes only. Do
+  not generate social launch copy unless it is explicitly requested.
 
-## v1.1 Candidates
+## v1.1 Shipped
 
-- Promote only the experimental APIs that have real v1 user evidence and do not
-  need signature or semantic changes.
+- Graduated the safest post-v1 APIs: static JSON/progress/table/dataframe
+  display, numeric and choice inputs, forms, containers, expanders, metrics, and
+  explicit flow control.
+- Hardened generated-key collision checks, form callback commit timing, progress
+  validation, JSON display fallbacks, and installed-user CLI diagnostics.
 - Improve installed-package examples, `stui init` templates, and terminal
   compatibility docs based on early v1 feedback.
 - Tighten narrow-width rendering and keyboard documentation where reports show

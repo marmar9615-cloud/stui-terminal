@@ -20,7 +20,7 @@ Feedback that is most helpful right now:
   terminal-native app instead of a browser dashboard.
 - Stable versus experimental API labels: places where README,
   `docs/api-stability.md`, `docs/api-reference.md`, or examples disagree about
-  whether an API is `v1-stable` or `pre-v1 experimental`.
+  whether an API is `v1-stable` or `post-v1 experimental`.
 - Terminal reports from real shells, SSH sessions, containers, headless
   environments, narrow terminals, wide terminals, unusual fonts, and different
   color themes. Include whether the app was local, over SSH, in a container, or
@@ -62,7 +62,7 @@ Feedback that is most helpful right now:
 Feedback that can shape near-term design:
 
 - Terminal evidence: which environments should move from unknown/test-needed to
-  supported before v1.
+  supported during the v1 series.
 - Package hardening: whether install, copy, init, and example flows work from
   clean virtual environments and built artifacts.
 - Charts: whether the first bar chart helper is enough, and which chart
@@ -70,7 +70,7 @@ Feedback that can shape near-term design:
 - Richer dataframe support: which table interactions matter first for
   inspection and debugging.
 - Layout primitives: whether containers, integer-count columns, and expanders
-  are enough for v1, and what real workflow would justify ratios, tabs,
+  are enough for real terminal apps, and what real workflow would justify ratios, tabs,
   sidebars, or a larger layout system.
 - Forms: where submit-style flows feel natural or surprising in a top-to-bottom
   rerun model.
@@ -81,8 +81,8 @@ Feedback that can shape near-term design:
   control without becoming required.
 - Screenshot and GIF docs: which workflows would be clearer with recorded
   terminal examples.
-- v1.1 candidates: which experimental APIs already feel stable enough, and
-  which should stay experimental because their terminal behavior is not clear.
+- Remaining experimental APIs: whether `st.columns`, charts, status/spinner, or
+  help should graduate, stay experimental, or be redesigned.
 
 ## v1.2 And Later Feedback
 
@@ -121,7 +121,5 @@ When opening an issue or sending feedback, include:
 - Whether the app was local, over SSH, in a container, or in another constrained
   environment.
 
-Public launch copy is prepared for v1.0.0, but social posts should still be
-posted manually only after the exact PyPI package and GitHub Release are
-verified. Post-v1 feedback should focus on whether the stable surface is clear,
+Post-v1 feedback should focus on whether the stable surface is clear,
 installable, usable in real terminals, and small enough to maintain.

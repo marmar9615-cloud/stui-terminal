@@ -1,8 +1,12 @@
+import json
 from pathlib import Path
 
 from stui.elements import (
     AlertElement,
+    ErrorElement,
+    JsonElement,
     NumberInputElement,
+    ProgressElement,
     RadioElement,
     SelectboxElement,
     TableElement,
@@ -182,3 +186,162 @@ st.dataframe("scalar")
     assert tables[2].rows == (("1", "3"), ("2", ""))
     assert tables[3].headers == ("value",)
     assert tables[3].rows == (("scalar",),)
+
+
+def test_table_list_of_dicts_preserves_non_string_keys(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.table([{1: "one", "two": 2}, {1: "uno"}])
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    table = next(
+        element for element in runtime.elements if isinstance(element, TableElement)
+    )
+
+    assert table.headers == ("1", "two")
+    assert table.rows == (("one", "2"), ("uno", ""))
+
+
+def test_json_progress_and_dataframe_stable_fallbacks(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+class Thing:
+    def __str__(self):
+        return "thing-as-text"
+
+st.json({"item": Thing()})
+st.progress(1.5, text="over")
+st.progress(-10)
+st.dataframe({"name": ["Ada"], "score": [10]})
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    json_element = next(
+        element for element in runtime.elements if isinstance(element, JsonElement)
+    )
+    progress = [
+        element for element in runtime.elements if isinstance(element, ProgressElement)
+    ]
+    table = next(
+        element for element in runtime.elements if isinstance(element, TableElement)
+    )
+
+    assert '"thing-as-text"' in json_element.text
+    assert [element.value for element in progress] == [2, 0]
+    assert progress[0].text == "over"
+    assert table.headers == ("name", "score")
+    assert table.rows == (("Ada", "10"),)
+
+
+def test_json_handles_mixed_and_non_string_mapping_keys(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.json({("x",): 1, 2: "two", "three": {"nested": object()}})
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    json_element = next(
+        element for element in runtime.elements if isinstance(element, JsonElement)
+    )
+
+    rendered = json.loads(json_element.text)
+    assert rendered["('x',)"] == 1
+    assert rendered["2"] == "two"
+    assert "nested" in rendered["three"]
+
+
+def test_progress_rejects_bool_and_non_finite_values(tmp_path: Path) -> None:
+    for expression, message in [
+        ("True", "st.progress value must be an int or float."),
+        ('float("nan")', "st.progress value must be finite."),
+        ('float("inf")', "st.progress value must be finite."),
+    ]:
+        script = write_script(
+            tmp_path,
+            f"""
+import stui as st
+
+st.progress({expression})
+""",
+        )
+        runtime = Runtime(script)
+
+        elements = runtime.run_script()
+
+        assert len(elements) == 1
+        assert isinstance(elements[0], ErrorElement)
+        assert elements[0].traceback == message
+
+
+def test_table_additional_stable_shapes(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.table({"a": 1, "b": 2})
+st.table(["a", 1])
+st.table([])
+st.table({})
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    tables = [
+        element
+        for element in runtime.elements
+        if isinstance(element, TableElement)
+    ]
+
+    assert tables[0].headers == ("key", "value")
+    assert tables[0].rows == (("a", "1"), ("b", "2"))
+    assert tables[1].headers == ("value",)
+    assert tables[1].rows == (("a",), ("1",))
+    assert tables[2].headers == ("value",)
+    assert tables[2].rows == ()
+    assert tables[3].headers == ("key", "value")
+    assert tables[3].rows == ()
+
+
+def test_dataframe_duck_typing_without_pandas_dependency(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+class TinyFrame:
+    columns = ("name", "score")
+
+    def to_dict(self, orient):
+        assert orient == "records"
+        return [{"name": "Ada", "score": 10}]
+
+st.dataframe(TinyFrame())
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    table = next(
+        element for element in runtime.elements if isinstance(element, TableElement)
+    )
+
+    assert table.headers == ("name", "score")
+    assert table.rows == (("Ada", "10"),)

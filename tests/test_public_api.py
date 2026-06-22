@@ -58,40 +58,40 @@ EXPECTED_PUBLIC_EXPORTS = [
 
 EXPECTED_API_CLASSIFICATIONS = {
     "__version__": "v1-stable",
-    "bar_chart": "pre-v1 experimental",
+    "bar_chart": "post-v1 experimental",
     "button": "v1-stable",
     "caption": "v1-stable",
     "checkbox": "v1-stable",
     "code": "v1-stable",
-    "columns": "pre-v1 experimental",
-    "container": "pre-v1 experimental",
-    "dataframe": "pre-v1 experimental",
+    "columns": "post-v1 experimental",
+    "container": "v1-stable",
+    "dataframe": "v1-stable",
     "divider": "v1-stable",
     "error": "v1-stable",
     "exception": "v1-stable",
-    "expander": "pre-v1 experimental",
-    "form": "pre-v1 experimental",
-    "form_submit_button": "pre-v1 experimental",
+    "expander": "v1-stable",
+    "form": "v1-stable",
+    "form_submit_button": "v1-stable",
     "header": "v1-stable",
-    "help": "pre-v1 experimental",
+    "help": "post-v1 experimental",
     "info": "v1-stable",
-    "json": "pre-v1 experimental",
-    "line_chart": "pre-v1 experimental",
+    "json": "v1-stable",
+    "line_chart": "post-v1 experimental",
     "markdown": "v1-stable",
-    "metric": "pre-v1 experimental",
-    "number_input": "pre-v1 experimental",
-    "progress": "pre-v1 experimental",
-    "radio": "pre-v1 experimental",
-    "rerun": "pre-v1 experimental",
-    "selectbox": "pre-v1 experimental",
+    "metric": "v1-stable",
+    "number_input": "v1-stable",
+    "progress": "v1-stable",
+    "radio": "v1-stable",
+    "rerun": "v1-stable",
+    "selectbox": "v1-stable",
     "session_state": "v1-stable",
     "slider": "v1-stable",
-    "spinner": "pre-v1 experimental",
-    "stop": "pre-v1 experimental",
+    "spinner": "post-v1 experimental",
+    "stop": "v1-stable",
     "subheader": "v1-stable",
-    "status": "pre-v1 experimental",
+    "status": "post-v1 experimental",
     "success": "v1-stable",
-    "table": "pre-v1 experimental",
+    "table": "v1-stable",
     "text": "v1-stable",
     "text_input": "v1-stable",
     "title": "v1-stable",
@@ -108,12 +108,14 @@ EXPECTED_STABLE_APIS = {
 EXPECTED_EXPERIMENTAL_APIS = {
     api
     for api, classification in EXPECTED_API_CLASSIFICATIONS.items()
-    if classification == "pre-v1 experimental"
+    if classification == "post-v1 experimental"
 }
 
 EXPECTED_EXPERIMENTAL_FREEZE_DECISIONS = {
+    "bar_chart",
     "columns",
     "help",
+    "line_chart",
     "spinner",
     "status",
 }
@@ -470,7 +472,7 @@ def test_readme_api_table_matches_public_api_stability_labels() -> None:
 
     for apis, status in rows:
         classifications = {EXPECTED_API_CLASSIFICATIONS[api] for api in apis}
-        if "pre-v1 experimental" in classifications:
+        if "post-v1 experimental" in classifications:
             assert "experimental" in status, apis
         if classifications == {"v1-stable"}:
             assert "v1-stable" in status, apis

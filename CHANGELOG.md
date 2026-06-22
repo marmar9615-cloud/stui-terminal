@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.1.0 - 2026-06-21
+
+### Added
+
+- Added v1.1.0 release notes for the first post-v1 API graduation release.
+- Added regression coverage for generated-key collisions between generated and
+  explicit widget keys.
+- Added regression coverage for full-form commit visibility in form widget
+  callbacks.
+- Added regression coverage for robust JSON display, finite progress values,
+  static table/dataframe shapes, CLI demo resource listing, doctor version
+  mismatch warnings, and directory copy/init edge cases.
+
+### Changed
+
+- Promoted the safest post-v1 APIs to `v1-stable`: `st.json`, `st.progress`,
+  `st.table`, `st.dataframe`, `st.metric`, `st.number_input`, `st.selectbox`,
+  `st.radio`, `st.form`, `st.form_submit_button`, `st.container`,
+  `st.expander`, `st.rerun`, and `st.stop`.
+- Kept `st.columns`, `st.bar_chart`, `st.line_chart`, `st.status`,
+  `st.spinner`, and `st.help` labeled as post-v1 experimental.
+- Reframed the API stability docs from launch-era `pre-v1 experimental`
+  language to routine post-v1 stable/experimental labels.
+- Improved `stui doctor --json` diagnostics when the imported `stui` version and
+  installed `stui-terminal` distribution metadata disagree.
+- Made `stui demo list` reflect bundled demo resources that are actually present
+  in the installed package.
+
+### Fixed
+
+- Fixed generated widget keys colliding with explicit user keys in the same run.
+- Fixed form widget callbacks so they run after every pending form value has
+  committed to `st.session_state`.
+- Fixed `st.json` fallback rendering for mixed and non-string mapping keys.
+- Fixed `st.progress` validation for booleans and non-finite numbers before
+  graduating the API to stable.
+- Fixed static table display for list-of-dicts data with non-string keys.
+- Fixed `stui init` to render a clearer error when the destination is a
+  directory, even if the directory name ends in `.py`.
+
 ## 1.0.0 - 2026-05-12
 
 ### Added

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from collections.abc import Iterator, MutableMapping
 from typing import Any
 
@@ -50,7 +51,13 @@ class SessionState(MutableMapping[str, Any]):
         return f"SessionState({self._data!r})"
 
     def snapshot(self) -> dict[str, Any]:
-        return dict(self._data)
+        snapshot: dict[str, Any] = {}
+        for key, value in self._data.items():
+            try:
+                snapshot[key] = copy.deepcopy(value)
+            except Exception:
+                snapshot[key] = value
+        return snapshot
 
     def restore(self, snapshot: dict[str, Any]) -> None:
         self._data.clear()

@@ -2,10 +2,9 @@
 
 [![CI](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml/badge.svg)](https://github.com/marmar9615-cloud/stui-terminal/actions/workflows/ci.yml)
 
-`stui` v1.0.0 is the first stable release of a small
-Streamlit-inspired framework for building terminal-native Python apps. Write a
-short script, run it in your terminal, and get a Textual UI with stateful
-controls, reruns, and a compact public API.
+`stui` is a small Streamlit-inspired framework for building terminal-native
+Python apps. Write a short script, run it in your terminal, and get a Textual UI
+with stateful controls, reruns, and a compact public API.
 
 It is built for local tools, demos, data scripts, model debug panels, SSH
 sessions, and headless environments where opening a browser, binding a port, or
@@ -218,7 +217,7 @@ stui init ./ops_dashboard.py --template dashboard
 python -m stui run ./ops_dashboard.py
 ```
 
-The v1.0.0 release treats these demo/example/init/copy commands as part of the
+The v1.x releases treat these demo/example/init/copy commands as part of the
 stable documentation contract. If an installed-package flow does not work
 without a repository checkout, that is patch-release-worthy docs or packaging
 debt.
@@ -405,17 +404,17 @@ and [docs/v1-readiness.md#stable-api](docs/v1-readiness.md#stable-api).
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v1.0.0 |
+| Area | APIs | Status in v1.1.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
-| Status/help primitives | `st.status`, `st.spinner`, `st.help` | Pre-v1 experimental while terminal grouping/help formatting gathers feedback |
-| Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | Mixed: `st.code` is v1-stable; `st.json`, `st.progress`, `st.table`, and `st.dataframe` are pre-v1 experimental static terminal displays |
-| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | Mixed: core inputs are v1-stable; `st.number_input`, `st.selectbox`, and `st.radio` are pre-v1 experimental |
-| Forms | `st.form`, `st.form_submit_button` | Pre-v1 experimental deferred commit to `session_state` until submit |
-| Layout/grouping | `st.container`, `st.columns`, `st.expander` | Pre-v1 experimental terminal grouping primitives; columns stack on narrow terminals |
-| Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Pre-v1 experimental terminal summaries, not plotting replacements |
-| State and flow | `st.session_state`, `st.rerun`, `st.stop` | Mixed: `st.session_state` is v1-stable; `st.rerun` and `st.stop` are pre-v1 experimental flow control |
+| Status/help primitives | `st.status`, `st.spinner`, `st.help` | Post-v1 experimental while terminal grouping/help formatting gathers feedback |
+| Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | v1-stable static terminal displays |
+| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | v1-stable input widgets |
+| Forms | `st.form`, `st.form_submit_button` | v1-stable deferred commit to `session_state` until submit |
+| Layout/grouping | `st.container`, `st.expander`, `st.columns` | Mixed: `st.container` and `st.expander` are v1-stable; `st.columns` remains post-v1 experimental and stacks on narrow terminals |
+| Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | Mixed: `st.metric` is v1-stable; charts remain post-v1 experimental terminal summaries, not plotting replacements |
+| State and flow | `st.session_state`, `st.rerun`, `st.stop` | v1-stable state and flow-control helpers |
 | Package metadata | `st.__version__` | v1-stable package version string |
 | CLI and examples | `stui run`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | v1-stable command surface |
 
@@ -425,18 +424,19 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v1.0.0 stable surface is intentionally small: text/status output, `st.code`,
-core inputs, `st.session_state`, and the documented CLI/demo/example commands.
-These names should keep their call shape, return type, and basic behavior
-through v1 unless a correctness, terminal, or security issue forces a change.
+The v1.1.0 stable surface keeps the v1 core compact while graduating the safest
+post-v1 APIs: static JSON/progress/table/dataframe display, numeric and choice
+inputs, forms, containers, expanders, metrics, and explicit `st.rerun` /
+`st.stop` flow control. These names should keep their call shape, return type,
+and basic behavior through v1 unless a correctness, terminal, or security issue
+forces a change.
 
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v1 behavior yet. This includes forms, grouping/layout
-helpers, selection/numeric widgets, status/help helpers, static data display
-beyond `st.code`, metrics/charts, and flow control. Release notes should call
-out any change with a migration note when practical.
+promised as frozen v1 behavior yet. In v1.1.0 this includes `st.columns`,
+`st.bar_chart`, `st.line_chart`, `st.status`, `st.spinner`, and `st.help`.
+Release notes should call out any change with a migration note when practical.
 
 APIs not shown in this table should be treated as private implementation
 details. Experimental display/layout helpers may still tighten in v1.x unless they
@@ -463,7 +463,7 @@ Runtime expectations:
   normal interactive `TERM` such as `xterm-256color`.
 
 See [Terminal Compatibility](docs/terminal-compatibility.md) for the current
-evidence matrix and report format. v1.0.0 stays evidence-driven: common modern
+evidence matrix and report format. v1.x stays evidence-driven: common modern
 terminals are expected targets, but environments without project-owned evidence
 remain labeled test-needed instead of claimed as fully supported.
 
@@ -658,9 +658,6 @@ stui run examples/kitchen_sink.py
 - Error handling is still early and meant for development feedback.
 - Experimental APIs remain public, but may still tighten in v1.x releases with
   release-note coverage and migration notes when practical.
-- Public announcement copy is prepared for v1.0.0, but social posts should be
-  published manually only after PyPI install, docs, examples, CI, and terminal
-  compatibility are verified together.
 
 ## Non-Goals
 
@@ -674,11 +671,11 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v1.0.0 Stable Status
+## v1.1.0 Stable Status
 
-v1.0.0 is the first stable release. The stable API contract, PyPI install path,
-bundled demo/example commands, starter templates, docs, CI, and release notes
-are verified together for this line.
+v1.1.0 is the first post-v1 improvement release. It keeps the package/import/CLI
+contract from v1.0.0 and graduates the safest experimental APIs after adding
+regression coverage and documentation updates.
 
 The remaining experimental APIs and terminal compatibility unknowns are visible
 instead of hidden. Post-v1 work should be feedback-driven and kept out of the

@@ -178,6 +178,49 @@ st.write("events =", ",".join(st.session_state.events))
     ]
 
 
+def test_form_widget_callbacks_see_full_committed_form_state(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+if "events" not in st.session_state:
+    st.session_state.events = []
+
+def record():
+    st.session_state.events.append(
+        f"first={st.session_state.get('first', 'missing')} "
+        f"second={st.session_state.get('second', 'missing')}"
+    )
+
+with st.form("profile"):
+    first = st.text_input("First", value="Ada", key="first", on_change=record)
+    second = st.text_input("Second", value="Lovelace", key="second")
+    submitted = st.form_submit_button("Save")
+
+st.write("submitted =", submitted)
+st.write("name =", first, second)
+st.write("events =", "|".join(st.session_state.events))
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    runtime.set_widget_value("first", "Grace")
+    runtime.set_widget_value("second", "Hopper")
+    runtime.run_script()
+    runtime.press_button("form_submit_button:profile:Save:0")
+    runtime.run_script()
+
+    assert rendered_texts(runtime) == [
+        "submitted = True",
+        "name = Grace Hopper",
+        "events = first=Grace second=Hopper",
+    ]
+
+
 def test_disabled_form_submit_button_ignores_pending_press(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,
