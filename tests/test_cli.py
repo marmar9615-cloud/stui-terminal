@@ -45,10 +45,12 @@ def test_run_rejects_missing_file() -> None:
     assert "file does not exist: missing.py" in result.output
 
 
-def test_run_missing_repo_example_guides_installed_users() -> None:
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(cli.app, ["run", "examples/basic.py"])
+def test_run_missing_repo_example_guides_installed_users(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cli.app, ["run", "examples/basic.py"])
 
     assert result.exit_code != 0
     normalized_output = " ".join(result.output.split())
@@ -59,10 +61,12 @@ def test_run_missing_repo_example_guides_installed_users() -> None:
     assert "stui run examples/basic.py" in normalized_output
 
 
-def test_run_missing_unknown_repo_example_stays_plain() -> None:
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(cli.app, ["run", "examples/not_bundled.py"])
+def test_run_missing_unknown_repo_example_stays_plain(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cli.app, ["run", "examples/not_bundled.py"])
 
     assert result.exit_code != 0
     assert "file does not exist: examples/not_bundled.py" in result.output
@@ -137,7 +141,10 @@ def test_demo_rejects_invalid_demo_name() -> None:
     assert "basic, dashboard, forms, charts, kitchen_sink" in normalized_output
 
 
-def test_demo_uses_package_resource_without_repo_checkout(monkeypatch) -> None:
+def test_demo_uses_package_resource_without_repo_checkout(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
     launched: list[Path] = []
 
     class FakeRuntime:
@@ -155,9 +162,8 @@ def test_demo_uses_package_resource_without_repo_checkout(monkeypatch) -> None:
     monkeypatch.setattr(cli, "StuiApp", FakeApp)
     monkeypatch.setattr(cli, "_examples_dir", lambda: Path("/missing/repo/examples"))
 
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(cli.app, ["demo", "forms"])
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cli.app, ["demo", "forms"])
 
     assert result.exit_code == 0
     assert [path.name for path in launched] == ["forms.py"]
