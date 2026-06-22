@@ -48,9 +48,11 @@ For non-interactive validation in CI or before sharing a reproduction, run:
 stui check app.py
 stui check app.py --json
 stui check app.py --strict
+stui check app.py --strict --repeat 2
 stui selftest
 stui selftest --json
 stui selftest --strict
+stui selftest --strict --repeat 2
 ```
 
 The doctor output includes:
@@ -65,10 +67,10 @@ The doctor output includes:
 - Installed example availability.
 - A compatibility report command that can be pasted into issues.
 
-`stui selftest --strict` checks package metadata, bundled demo resources, every
-bundled example, init templates, and non-interactive runtime validation. It is
-useful for install health, but it does not replace a real interactive terminal
-smoke test.
+`stui selftest --strict --repeat 2` checks package metadata, bundled demo
+resources, every bundled example, init templates, and non-interactive runtime
+validation more than once. It is useful for install health and accumulation
+checks, but it does not replace a real interactive terminal smoke test.
 
 `STUI_THEME=high-contrast` enables the high-contrast theme. Any other value
 falls back to the default theme and should be included in reports if the theme
@@ -80,6 +82,20 @@ Current automated coverage checks the doctor output, `stui doctor --json`,
 `stui doctor --compat`, `stui check --strict`, color capability classification
 for `TERM`/`COLORTERM`, `STUI_THEME` resolution, and small-terminal warnings.
 It does not replace manual visual checks in real terminal emulators.
+
+## Long-Run Evidence
+
+For rerun-heavy or long-running terminal sessions, include this evidence when
+opening a compatibility report:
+
+- Terminal app and version.
+- Terminal size from `stui doctor --compat`.
+- Python version and `stui` version.
+- Command run, such as `stui demo dashboard` or `stui run app.py`.
+- Approximate duration or number of interactions.
+- Whether `stui check --strict --repeat 2` or
+  `stui selftest --strict --repeat 2` passed in the same environment.
+- Any visible rendering, focus, color, resize, or recovery failures.
 
 ## Keyboard Notes
 

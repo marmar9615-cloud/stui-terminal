@@ -18,7 +18,7 @@ Streamlit compatibility layer. Existing Streamlit apps usually need edits; new
 
 ## Preview
 
-![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.7.0/assets/stui-model-demo.png)
+![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v1.8.0/assets/stui-model-demo.png)
 
 ```text
 ┌─ stui ───────────────────────────────────────────┐
@@ -139,9 +139,11 @@ stui doctor --compat
 stui selftest
 stui selftest --json
 stui selftest --strict
+stui selftest --strict --repeat 2
 stui check app.py
 stui check app.py --json
 stui check app.py --strict
+stui check app.py --strict --repeat 2
 ```
 
 ## Project Links
@@ -387,6 +389,8 @@ stui --version
 stui doctor
 stui doctor --json
 stui check app.py --json
+stui check app.py --strict --repeat 2
+stui selftest --strict --repeat 2
 
 # Install the project for local development from a checkout.
 python3.11 -m venv .venv
@@ -448,7 +452,7 @@ and [docs/v1-readiness.md#stable-api](docs/v1-readiness.md#stable-api).
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v1.7.0 |
+| Area | APIs | Status in v1.8.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
@@ -468,9 +472,9 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v1.7.0 stable surface keeps the v1 core compact while improving app
-authoring validation, installed-user starter templates, data display, and
-count-only layout behavior. Tables and dataframes are stable for documented
+The v1.8.0 stable surface keeps the v1 core compact while improving repeated
+validation, release evidence, state rollback, data display, and count-only
+layout behavior. Tables and dataframes are stable for documented
 scalar, list, mapping, dataframe-like, dataclass, namedtuple, and simple
 public-object shapes; charts are stable for the documented scalar, list, mapping,
 tuple-pair, list-of-dicts, and dict-of-columns shapes. These names should keep
@@ -480,7 +484,7 @@ correctness, terminal, or security issue forces a change.
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v1 behavior yet. In v1.7.0 this includes `st.status`,
+promised as frozen v1 behavior yet. In v1.8.0 this includes `st.status`,
 `st.spinner`, and `st.help`.
 Release notes should call out any change with a migration note when practical.
 
@@ -744,7 +748,10 @@ stui run examples/kitchen_sink.py
 - Layout remains terminal-first and intentionally modest.
 - The app reruns the script as interactions change state, so examples should
   keep top-level work lightweight.
-- Error handling is still early and meant for development feedback.
+- There is no built-in cache yet. Keep expensive network, model, file, or data
+  loading work behind normal Python guards or user-triggered actions.
+- Error handling is development-oriented, but `stui check --strict` and
+  repeated validation help catch common app-authoring problems before sharing.
 - Experimental APIs remain public, but may still tighten in v1.x releases with
   release-note coverage and migration notes when practical.
 
@@ -760,14 +767,13 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v1.7.0 Stable Status
+## v1.8.0 Stable Status
 
-v1.7.0 is an app-authoring and validation release. It keeps the
-package/import/CLI contract from v1.0.0, keeps v1.4.0 through v1.6.0 behavior
-compatible, adds stricter non-interactive validation through
-`stui check --strict`, strengthens `stui selftest --strict`, and adds `data`
-and `charts` starter templates so installed users can begin from common app
-shapes without cloning the repository.
+v1.8.0 is a performance, reliability, and long-run quality release. It keeps
+the package/import/CLI contract from v1.0.0, keeps v1.4.0 through v1.7.0
+behavior compatible, adds repeated non-interactive validation through
+`stui check --repeat` and `stui selftest --repeat`, and hardens rollback
+behavior for authoring errors, hidden form fields, and rerun storms.
 
 The remaining experimental APIs and terminal compatibility unknowns are visible
 instead of hidden. Post-v1 work should be feedback-driven and kept out of the

@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.8.0 - 2026-06-22
+
+### Added
+
+- Added `stui check --repeat N` for repeated non-interactive runtime
+  validation in one `Runtime` instance.
+- Added `stui selftest --repeat N` so release gates can exercise templates and
+  bundled examples more than once without launching the TUI.
+- Added per-run summaries and total element counts to `stui check --json`.
+- Added `scripts/benchmark_runtime.py` as an advisory, threshold-free runtime
+  timing probe for maintainers.
+- Added regression coverage for repeated check/selftest output, rerun
+  exhaustion recovery, many-widget repeated runs, hidden form pending values,
+  and package audit version/entry-point checks.
+- Added release notes for v1.8.0 under `docs/releases/`.
+
+### Changed
+
+- Tightened `scripts/check.sh` so selftest evidence uses a unique temporary
+  file and release gates run strict selftest with `--repeat 2`.
+- Tightened custom external project validation to run strict repeated checks
+  and, for built wheels, verify the installed `stui` console script.
+- Tightened package contents audit to validate expected artifact versions,
+  archive path safety, `.dist-info` shape, wheel entry points, and sdist
+  `PKG-INFO` when an expected version is supplied.
+- Updated README, API reference, release checklist, publishing docs, terminal
+  compatibility docs, roadmap, and v1 readiness docs for the v1.8.0
+  reliability contract.
+
+### Fixed
+
+- Fixed duplicate-key and API-usage errors so they no longer commit pending
+  widget changes from a failed authoring run.
+- Fixed form submit behavior so pending values for widgets hidden during the
+  submit run are discarded instead of committed later.
+- Fixed rerun-storm exhaustion so the session state rolls back to the state
+  before the runaway run.
+
 ## 1.7.0 - 2026-06-22
 
 ### Added

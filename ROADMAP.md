@@ -57,7 +57,7 @@ call shape and core behavior through v1.x unless a correctness
 issue forces a change.
 
 The experimental API is still public enough to try, but the project is asking
-for feedback before freezing it. In v1.7.0 the remaining experimental APIs are
+for feedback before freezing it. In v1.8.0 the remaining experimental APIs are
 `st.status`, `st.spinner`, and `st.help`.
 
 The command surface is expected to remain stable for v1 docs:
@@ -73,12 +73,14 @@ The command surface is expected to remain stable for v1 docs:
 - `stui check APP.py`
 - `stui check APP.py --json`
 - `stui check APP.py --strict`
+- `stui check APP.py --strict --repeat 2`
 - `stui doctor`
 - `stui doctor --json`
 - `stui doctor --compat`
 - `stui selftest`
 - `stui selftest --json`
 - `stui selftest --strict`
+- `stui selftest --strict --repeat 2`
 - `stui --version`
 
 ## Layout Criteria Before Expansion
@@ -170,6 +172,16 @@ The command surface is expected to remain stable for v1 docs:
 - Updated bundled data/layout examples and docs around installed-user copy/run
   flows, static-table limitations, and modest layout patterns.
 
+## v1.6 Shipped
+
+- Kept `st.status`, `st.spinner`, and `st.help` experimental while improving
+  docs, examples, and tests for their current terminal behavior.
+- Added release-version validation before building artifacts from a tag.
+- Improved doctor diagnostics for unsupported `STUI_THEME` values and
+  `NO_COLOR` reports.
+- Improved high-contrast styling for status, spinner, help, alert, and error
+  panels.
+
 ## v1.7 Shipped
 
 - Added `stui check --strict` for CI-friendly authoring validation that fails
@@ -183,7 +195,19 @@ The command surface is expected to remain stable for v1 docs:
 - Tightened custom external project validation and package audits around
   bundled examples.
 
-## v1.8+ Candidates
+## v1.8 Shipped
+
+- Added repeated non-interactive validation through `stui check --repeat` and
+  `stui selftest --repeat`.
+- Added per-run JSON summaries for repeated `stui check` runs.
+- Fixed rollback behavior for duplicate-key/API authoring errors, hidden form
+  pending values, and rerun-storm exhaustion.
+- Tightened package-content audits with expected version, entry point,
+  metadata, and archive-path checks.
+- Added an advisory `scripts/benchmark_runtime.py` helper for local timing
+  probes without making CI timing-dependent.
+
+## v1.9+ Candidates
 
 - Revisit additional chart variants and richer static data inspection if users
   are building real terminal dashboards that need them.

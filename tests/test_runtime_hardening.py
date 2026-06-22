@@ -3,7 +3,14 @@ from pathlib import Path
 
 import pytest
 
-from stui.elements import ButtonElement, ErrorElement, SliderElement, WriteElement
+from stui.elements import (
+    ButtonElement,
+    ErrorElement,
+    SliderElement,
+    TableElement,
+    TextInputElement,
+    WriteElement,
+)
 from stui.runtime import Runtime, get_current_runtime
 
 
@@ -386,6 +393,52 @@ st.button("Second", key="shared")
     assert "shared" not in runtime.session_state
 
 
+def test_duplicate_key_error_does_not_commit_pending_widget_change(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.text_input("Name", value="Ada", key="shared")
+st.button("Submit", key="shared")
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    runtime.set_widget_value("shared", "Grace")
+    elements = runtime.run_script()
+
+    assert isinstance(elements[0], ErrorElement)
+    assert "Duplicate widget key" in elements[0].traceback
+    assert "shared" not in runtime.session_state
+
+
+def test_api_usage_error_does_not_commit_pending_widget_change(
+    tmp_path: Path,
+) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.text_input("Name", value="Ada", key="name")
+st.columns(0)
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    runtime.set_widget_value("name", "Grace")
+    elements = runtime.run_script()
+
+    assert isinstance(elements[0], ErrorElement)
+    assert "st.columns(count)" in elements[0].traceback
+    assert "name" not in runtime.session_state
+
+
 def test_generated_keys_may_repeat_labels_without_duplicate_error(
     tmp_path: Path,
 ) -> None:
@@ -411,6 +464,38 @@ st.button("Go")
     assert keys == ["slider:x:0", "slider:x:1", "button:Go:0"]
 
 
+def test_hidden_form_pending_value_is_discarded_on_submit(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+show_extra = st.session_state.get("show_extra", True)
+
+with st.form("profile"):
+    st.text_input("Name", value="Ada", key="name")
+    if show_extra:
+        st.text_input("Extra", value="", key="extra")
+    submitted = st.form_submit_button("Save")
+
+st.write("submitted =", submitted)
+st.write("name =", st.session_state.get("name", "missing"))
+st.write("extra =", st.session_state.get("extra", "missing"))
+""",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    runtime.set_widget_value("extra", "Grace")
+    runtime.run_script()
+    runtime.session_state.show_extra = False
+    runtime.press_button("form_submit_button:profile:Save:0")
+    runtime.run_script()
+
+    assert "extra" not in runtime.session_state
+    assert "name" not in runtime.session_state
+
+
 def test_button_one_shot_unchanged(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,
@@ -434,3 +519,68 @@ st.write("count =", st.session_state.count)
     runtime.run_script()
 
     assert runtime.session_state.count == 1
+
+
+def test_rerun_exhaustion_restores_pre_run_session_state(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+st.session_state.count = st.session_state.get("count", 0) + 1
+st.rerun()
+""",
+    )
+    runtime = Runtime(script)
+    runtime.session_state.count = 3
+
+    elements = runtime.run_script()
+
+    assert isinstance(elements[0], ErrorElement)
+    assert "10 consecutive rerun" in elements[0].traceback
+    assert runtime.session_state.count == 3
+
+
+def test_many_widgets_remain_stable_across_repeated_runs(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+for index in range(150):
+    st.text_input(f"Item {index}", value=str(index), key=f"item_{index}")
+st.write("done")
+""",
+    )
+    runtime = Runtime(script)
+
+    for _ in range(25):
+        elements = runtime.run_script()
+        assert not any(isinstance(element, ErrorElement) for element in elements)
+        assert sum(isinstance(element, TextInputElement) for element in elements) == 150
+        assert runtime.session_state["item_0"] == "0"
+        assert runtime.session_state["item_149"] == "149"
+        assert_no_current_runtime()
+
+
+def test_large_table_output_stays_bounded_with_limits(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+rows = [
+    {f"col_{col}": f"{row}:{col}" for col in range(40)}
+    for row in range(500)
+]
+st.table(rows, max_rows=4, max_cols=3)
+""",
+    )
+    runtime = Runtime(script)
+
+    elements = runtime.run_script()
+    table = next(element for element in elements if isinstance(element, TableElement))
+
+    assert table.headers == ("col_0", "col_1", "col_2", "...")
+    assert len(table.rows) == 5
+    assert table.rows[-1] == ("+496 rows", "", "", "")

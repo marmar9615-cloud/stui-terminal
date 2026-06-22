@@ -132,17 +132,21 @@ Use this flow for v1.1.0 and later v1.x maintenance/minor releases:
 5. Smoke the built wheel in a temporary virtual environment: import `stui`, run
    version/doctor commands, list/copy examples, list demos, create each
    documented template including `data` and `charts`, run
-   `stui check --strict` on copied or initialized apps, run
-   `stui selftest --strict`, and run at least one copied example with
+   `stui check --strict --repeat 2` on copied or initialized apps, run
+   `stui selftest --strict --repeat 2`, and run at least one copied example with
    `python -m stui run` when practical.
-6. Tag only after the release diff is final and no helper has unreviewed edits.
-7. Wait for `main` and tag CI, then publish from the tag through Trusted
+6. Run at least one repeated-run/recovery gate before tagging: `stui check` with
+   `--repeat`, a strict selftest with `--repeat`, and the runtime regression
+   tests that cover rerun exhaustion, form pending state, and authoring-error
+   rollback.
+7. Tag only after the release diff is final and no helper has unreviewed edits.
+8. Wait for `main` and tag CI, then publish from the tag through Trusted
    Publishing with only the real PyPI flag enabled.
-8. Verify PyPI JSON, the Simple API, and a clean exact-version install from
+9. Verify PyPI JSON, the Simple API, and a clean exact-version install from
    PyPI.
-9. Create the GitHub Release from the matching release notes in
+10. Create the GitHub Release from the matching release notes in
    `docs/releases/`.
-10. Do not generate X, LinkedIn, X thread, or GitHub Discussion copy unless a
+11. Do not generate X, LinkedIn, X thread, or GitHub Discussion copy unless a
    separate task explicitly asks for it.
 
 ## v1 Release Gates
@@ -163,13 +167,14 @@ Before tagging v1.x releases, confirm:
   code, or `textual-slider` dependency has been introduced.
 - Installed-package flows work without a repository checkout: `stui examples`,
   `stui demo list`, `stui demo NAME`, `stui example list`,
-  `stui example copy`, `stui init`, `stui check --strict`, and
-  `stui selftest --strict`.
+  `stui example copy`, `stui init`, `stui check --strict --repeat 2`, and
+  `stui selftest --strict --repeat 2`.
 - v1.2.0 and later minor releases run `scripts/verify_custom_project.sh` from
   outside the repository or through `./scripts/check.sh` to prove a multi-file
   external project can import helpers and validate with `stui check`.
-- v1.3.0 and later minor releases run `scripts/audit_package_contents.py dist`
-  after building to prove wheel/sdist contents are intentional.
+- v1.3.0 and later minor releases run
+  `scripts/audit_package_contents.py dist --version X.Y.Z` after building to
+  prove wheel/sdist contents are intentional and version-matched.
 - Terminal compatibility evidence or explicit test-needed labels are current in
   `docs/terminal-compatibility.md`.
 - Public launch-style announcement copy is not generated for routine v1.x

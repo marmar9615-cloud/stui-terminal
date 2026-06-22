@@ -1,6 +1,6 @@
 # v1 Readiness
 
-`stui` v1.7.0 is an app-authoring and validation release. The goal
+`stui` v1.8.0 is a performance, reliability, and long-run quality release. The goal
 for the v1 series is not to become Streamlit-compatible or to grow a large
 component catalog. The goal is a small, stable, terminal-native API that can be
 installed from PyPI, explained quickly, and trusted for local tools.
@@ -8,16 +8,17 @@ installed from PyPI, explained quickly, and trusted for local tools.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## Status After v1.7.0
+## Status After v1.8.0
 
-v1.7.0 keeps the v1.0.0 baseline intact and preserves v1.4.0 through v1.6.0
-behavior while hardening the installed-user authoring flow. It adds
-`stui check --strict`, warning details in `stui check --json`,
-`stui selftest --strict`, and new `data` and `charts` starter templates.
+v1.8.0 keeps the v1.0.0 baseline intact and preserves v1.4.0 through v1.7.0
+behavior while hardening long-run validation and runtime recovery. It adds
+`stui check --repeat`, per-run details in `stui check --json`,
+`stui selftest --repeat`, stricter package audit version checks, and an
+advisory runtime benchmark script.
 
-The release also tightens custom external project validation, package audits,
-and authoring warning UX while keeping the remaining `st.status`, `st.spinner`,
-and `st.help` APIs post-v1 experimental.
+The release also fixes rollback behavior for authoring errors, hidden form
+pending values, and rerun exhaustion while keeping the remaining `st.status`,
+`st.spinner`, and `st.help` APIs post-v1 experimental.
 
 On the v1.x line, the stable API list is frozen. The freeze covers the
 top-level names in `stui.__all__`, their stability classifications, and the
@@ -36,7 +37,7 @@ Normal v1.x release work should include changelog and GitHub Release notes only.
 Do not generate social launch copy for maintenance or minor releases unless a
 separate task explicitly asks for it.
 
-## Complete Through v1.7.0
+## Complete Through v1.8.0
 
 - The PyPI distribution/import/CLI naming is settled: install
   `stui-terminal`, import `stui`, and run `stui`.
@@ -50,9 +51,11 @@ separate task explicitly asks for it.
   render no visible elements.
 - `stui selftest` provides a lightweight installed-package health check for
   bundled examples, templates, package metadata, and non-interactive runtime
-  validation; `--strict` checks every bundled example and init template.
+  validation; `--strict` checks every bundled example and init template, and
+  `--repeat` reruns those checks to catch accumulation issues.
 - `scripts/audit_package_contents.py` verifies wheel/sdist contents and keeps
-  stale package files out of release artifacts.
+  stale package files out of release artifacts; `--version` verifies artifact
+  filenames and metadata against the intended release.
 - `st.bar_chart` and `st.line_chart` are stable compact terminal summaries for
   documented numeric shapes, including tuple pairs and dict-of-columns inputs.
 - `st.table` and `st.dataframe` cover common static data shapes, including
@@ -69,11 +72,15 @@ separate task explicitly asks for it.
   agree before publishing.
 - `stui init` now includes `basic`, `dashboard`, `data`, `charts`, and `forms`
   templates for installed users.
+- `stui check --repeat` validates repeated script passes in one runtime and
+  reports per-run element/error/warning summaries in JSON.
+- Authoring errors, hidden form fields, and rerun storms have focused rollback
+  regression tests.
 - Remaining experimental APIs stay labeled instead of being quietly promoted.
 - Deferred Streamlit-style features are listed as out of scope for v1.
 - The README quickstart, first app, API table, terminal compatibility link,
   examples/templates, limitations, and troubleshooting sections all point users
-  at the same v1.7.0 contract.
+  at the same v1.8.0 contract.
 - Bundled demo/example listing/copying and `stui init` are part of the v1
   documentation contract rather than checkout-only conveniences.
 
@@ -88,7 +95,7 @@ separate task explicitly asks for it.
 
 ## API Stability Status
 
-The project should keep the public API small. v1.7.0 treats the table below as
+The project should keep the public API small. v1.8.0 treats the table below as
 the stable v1 reference.
 
 Stable APIs should not change casually. If a signature or return value
@@ -112,7 +119,7 @@ Explicitly deferred APIs and feature areas:
 
 ## API Contract Status
 
-v1.7.0 considers the stable public contract documented and frozen for the v1
+v1.8.0 considers the stable public contract documented and frozen for the v1
 series.
 The current contract lives in [`docs/api-reference.md`](api-reference.md) and
 covers:
@@ -350,17 +357,17 @@ The README, release notes, and API docs should keep these limits explicit:
 
 ## v1.x Release Checklist
 
-| Gate | v1.7.0 status | v1.x decision |
+| Gate | v1.8.0 status | v1.x decision |
 | --- | --- | --- |
 | Stable API list | Includes bounded tables/dataframes, count-only columns, and compact terminal charts. | Do not change unless a correctness, terminal, or safety issue appears. |
 | Experimental APIs | Labeled in README, API reference, API stability docs, v1 readiness docs, and tests. | Keep experimental until tests, docs, and terminal evidence justify promotion. |
 | Deferred Streamlit-style APIs | Explicitly deferred in API stability docs and README. | Do not add to v1. |
-| State/rerun/widget correctness | Covered by regression tests for known issues. | Fix reproducible blockers; document non-blocking limitations. |
-| Installed-package flow | Required for v1 release gates, now including `stui selftest --strict` and `stui check --strict`. | Verify from PyPI again for every release. |
+| State/rerun/widget correctness | Covered by regression tests for known issues, including authoring-error rollback, hidden form pending values, and rerun exhaustion. | Fix reproducible blockers; document non-blocking limitations. |
+| Installed-package flow | Required for v1 release gates, now including repeated `stui selftest --strict --repeat 2` and `stui check --strict --repeat 2`. | Verify from PyPI again for every release. |
 | Terminal compatibility | Evidence-driven matrix remains open. | Document unknowns instead of overclaiming support. |
 | Narrow rendering | Covered by regression tests for known table/chart/layout edges. | Fix reproducible blockers; document non-blocking limitations. |
 | Release process | Checklist and publishing docs are explicit. | Follow the same gates for v1.x releases. |
-| Public announcement | Not part of v1.7.0. | Generate no social or discussion copy for routine v1.x releases unless explicitly requested. |
+| Public announcement | Not part of v1.8.0. | Generate no social or discussion copy for routine v1.x releases unless explicitly requested. |
 
 ## Post-v1 Plan
 

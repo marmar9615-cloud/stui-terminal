@@ -51,6 +51,9 @@ def test_verify_custom_project_script_runs_from_external_directory(
     )
     assert selftest_payload["ok"] is True
     assert selftest_payload["strict"] is True
+    assert selftest_payload["repeat"] == 2
     assert check_payload["ok"] is True
     assert check_payload["strict"] is True
+    assert check_payload["summary"]["runs_requested"] == 2
+    assert check_payload["summary"]["runs_completed"] == 2
     assert check_payload["summary"]["warning_count"] == 0

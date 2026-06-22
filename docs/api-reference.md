@@ -139,7 +139,7 @@ st.line_chart(data, *, width=None, height=None) -> None
 st.divider() -> None
 ```
 
-In v1.7.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`,
+In v1.8.0, `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`,
 `st.bar_chart`, and `st.line_chart` are v1-stable static display primitives.
 Tables support scalars, lists or tuples of scalars, lists or tuples of dicts,
 lists or tuples of lists/tuples, dicts of scalar values, dicts of lists/tuples,
@@ -421,37 +421,43 @@ if "token" not in st.session_state:
 stui check APP.py
 stui check APP.py --json
 stui check APP.py --strict
+stui check APP.py --strict --repeat 2
 stui selftest
 stui selftest --json
 stui selftest --strict
+stui selftest --strict --repeat 2
 ```
 
 `stui check` runs a script through the `stui` runtime without launching the
 interactive TUI. It exits `0` when the app renders without runtime errors,
 `1` for script/runtime/API errors, and `2` for invalid script paths. The
-`--json` payload includes `strict`, `warnings`, and
-`summary.warning_count`. In `--strict` mode, authoring warnings such as a script
-that renders no visible elements fail the check while keeping `error: null` and
-`status: "ok"` for warning-only failures.
+`--json` payload includes `strict`, `warnings`, `summary.warning_count`,
+`summary.runs_requested`, `summary.runs_completed`, `summary.total_element_count`,
+and a `runs` list with per-pass element, warning, and error counts. In
+`--strict` mode, authoring warnings such as a script that renders no visible
+elements fail the check while keeping `error: null` and `status: "ok"` for
+warning-only failures. Use `--repeat N` to run the script multiple times in one
+runtime and catch repeat-run state or recovery issues.
 
 `stui selftest --strict` is an installed-package/release gate. It validates
 package metadata, bundled demo resources, all init templates, all bundled
-examples, and doctor diagnostics without launching a full TUI.
+examples, and doctor diagnostics without launching a full TUI. Use
+`--repeat N` to repeat generated-template and bundled-example checks.
 
-## v1.7 Stable Status
+## v1.8 Stable Status
 
-The signatures above are intentionally covered by tests in v1.7.0. The
+The signatures above are intentionally covered by tests in v1.8.0. The
 classification table marks each top-level API as either `v1-stable` or
 `post-v1 experimental`; see [API Stability](api-stability.md) for the full
 compatibility promise and post-v1 deprecation policy.
 
-v1.7.0 keeps the v1.4 through v1.6 stable APIs intact while improving
-app-authoring validation, strict installed-package selftests, and starter
-templates. Any change to stable names in v1.x should be treated as a
+v1.8.0 keeps the v1.4 through v1.7 stable APIs intact while improving
+repeat-run validation, release-script hygiene, package audit strictness, and
+runtime rollback behavior. Any change to stable names in v1.x should be treated as a
 compatibility event unless it fixes a correctness, terminal, or security issue
 and is documented in the changelog and release notes.
 
-These APIs stay post-v1 experimental in v1.7.0 and need more feedback before
+These APIs stay post-v1 experimental in v1.8.0 and need more feedback before
 they can be called v1-stable:
 
 - Help and status: `st.help`, `st.status`, and `st.spinner` formatting and

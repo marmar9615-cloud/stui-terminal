@@ -501,14 +501,31 @@ def check_app(
             help="Fail on authoring warnings such as scripts that render no elements.",
         ),
     ] = False,
+    repeat: Annotated[
+        int,
+        typer.Option(
+            "--repeat",
+            min=1,
+            help=(
+                "Run the script this many times in one runtime to catch "
+                "repeat-run issues."
+            ),
+        ),
+    ] = 1,
 ) -> None:
     """Validate a stui script without launching the interactive TUI."""
 
     script_path = script.expanduser()
-    payload = _validate_script(script, strict=strict)
+    payload = _validate_script(script, strict=strict, repeat=repeat)
     error = payload["error"]
     exit_code = int(payload["exit_code"])
     warnings = [str(item) for item in payload["warnings"]]
+    summary = payload["summary"]
+    completed_runs = int(summary["runs_completed"])
+    requested_runs = int(summary["runs_requested"])
+    repeat_suffix = (
+        "" if requested_runs == 1 else f" across {completed_runs}/{requested_runs} runs"
+    )
 
     if json_output:
         typer.echo(json_module.dumps(payload, indent=2, sort_keys=True))
@@ -521,17 +538,19 @@ def check_app(
         typer.echo(f"stui check failed: {script_path}")
         typer.echo(error["traceback"])
     elif strict and warnings:
-        element_count = int(payload["summary"]["element_count"])
+        element_count = int(summary["element_count"])
         typer.echo(
             f"stui check strict failed: {script_path} "
-            f"({element_count} rendered element{'s' if element_count != 1 else ''})"
+            f"({element_count} rendered element{'s' if element_count != 1 else ''}"
+            f"{repeat_suffix})"
         )
     else:
-        element_count = int(payload["summary"]["element_count"])
+        element_count = int(summary["element_count"])
         status_label = "passed with warnings" if warnings else "passed"
         typer.echo(
             f"stui check {status_label}: {script_path} "
-            f"({element_count} rendered element{'s' if element_count != 1 else ''})"
+            f"({element_count} rendered element{'s' if element_count != 1 else ''}"
+            f"{repeat_suffix})"
         )
     if warnings:
         typer.echo("warnings:")
@@ -552,7 +571,12 @@ def _script_error_kind(script: Path, message: str) -> str:
     return "invalid_script"
 
 
-def _validate_script(script: Path, *, strict: bool = False) -> dict[str, object]:
+def _validate_script(
+    script: Path,
+    *,
+    strict: bool = False,
+    repeat: int = 1,
+) -> dict[str, object]:
     script_path = script.expanduser()
     if error := _script_path_error(script_path):
         return _check_payload(
@@ -565,24 +589,64 @@ def _validate_script(script: Path, *, strict: bool = False) -> dict[str, object]
             error_kind=_script_error_kind(script_path, error),
             element_types={},
             element_count=0,
+            total_element_count=0,
             strict=strict,
+            repeat=repeat,
+            completed_runs=0,
+            per_run=[],
         )
 
     runtime = Runtime(script_path.resolve())
-    elements = runtime.run_script()
-    all_elements = list(_iter_rendered_elements(elements))
-    errors = [
-        element.traceback
-        for element in all_elements
-        if isinstance(element, ErrorElement)
-    ]
-    element_types = Counter(type(element).__name__ for element in all_elements)
+    errors = []
     warnings = []
-    if not all_elements:
-        warnings.append(
-            "script rendered no elements; add st.write(), st.title(), or another "
-            "visible primitive"
+    element_types: Counter[str] = Counter()
+    per_run: list[dict[str, object]] = []
+    element_count = 0
+    total_element_count = 0
+    completed_runs = 0
+
+    for run_number in range(1, repeat + 1):
+        elements = runtime.run_script()
+        all_elements = list(_iter_rendered_elements(elements))
+        run_errors = [
+            element.traceback
+            for element in all_elements
+            if isinstance(element, ErrorElement)
+        ]
+        run_warnings = []
+        if not all_elements:
+            run_warnings.append(
+                "script rendered no elements; add st.write(), st.title(), or another "
+                "visible primitive"
+            )
+
+        run_element_types = Counter(type(element).__name__ for element in all_elements)
+        element_types.update(run_element_types)
+        element_count = len(all_elements)
+        total_element_count += element_count
+        completed_runs = run_number
+        per_run.append(
+            {
+                "run": run_number,
+                "element_count": element_count,
+                "error_count": len(run_errors),
+                "warning_count": len(run_warnings),
+                "element_types": dict(sorted(run_element_types.items())),
+            }
         )
+
+        if repeat == 1:
+            errors.extend(run_errors)
+            warnings.extend(run_warnings)
+        else:
+            errors.extend(f"run {run_number}:\n{error}" for error in run_errors)
+            warnings.extend(
+                f"run {run_number}: {warning}" for warning in run_warnings
+            )
+
+        if run_errors:
+            break
+
     exit_code = 1 if errors or (strict and warnings) else 0
     return _check_payload(
         script,
@@ -593,8 +657,12 @@ def _validate_script(script: Path, *, strict: bool = False) -> dict[str, object]
         exit_code=exit_code,
         error_kind="script_error" if errors else None,
         element_types=dict(sorted(element_types.items())),
-        element_count=len(all_elements),
+        element_count=element_count,
+        total_element_count=total_element_count,
         strict=strict,
+        repeat=repeat,
+        completed_runs=completed_runs,
+        per_run=per_run,
     )
 
 
@@ -623,7 +691,11 @@ def _check_payload(
     error_kind: str | None,
     element_types: dict[str, int],
     element_count: int,
+    total_element_count: int,
     strict: bool,
+    repeat: int,
+    completed_runs: int,
+    per_run: list[dict[str, object]],
 ) -> dict[str, object]:
     error = None
     if errors:
@@ -645,10 +717,14 @@ def _check_payload(
         },
         "summary": {
             "element_count": element_count,
+            "total_element_count": total_element_count,
             "error_count": len(errors),
             "warning_count": len(warnings),
             "element_types": element_types,
+            "runs_requested": repeat,
+            "runs_completed": completed_runs,
         },
+        "runs": per_run,
         "warnings": warnings,
         "error": error,
     }
@@ -801,7 +877,7 @@ def _selftest_check(
     return check
 
 
-def _run_selftest(*, strict: bool = False) -> dict[str, object]:
+def _run_selftest(*, strict: bool = False, repeat: int = 1) -> dict[str, object]:
     checks: list[dict[str, object]] = []
     package_version = _package_version("stui-terminal")
     package_ok = package_version == __version__
@@ -852,7 +928,11 @@ def _run_selftest(*, strict: bool = False) -> dict[str, object]:
                 INIT_TEMPLATES[template_name].format(filename=init_script.name),
                 encoding="utf-8",
             )
-            init_payload = _validate_script(init_script, strict=strict)
+            init_payload = _validate_script(
+                init_script,
+                strict=strict,
+                repeat=repeat,
+            )
             if not init_payload["ok"]:
                 template_errors.append(template_name)
         checks.append(
@@ -874,7 +954,11 @@ def _run_selftest(*, strict: bool = False) -> dict[str, object]:
                 _read_bundled_example("basic"),
                 encoding="utf-8",
             )
-            example_payload = _validate_script(example_script, strict=strict)
+            example_payload = _validate_script(
+                example_script,
+                strict=strict,
+                repeat=repeat,
+            )
             checks.append(
                 _selftest_check(
                     "bundled example check",
@@ -900,7 +984,11 @@ def _run_selftest(*, strict: bool = False) -> dict[str, object]:
                     _read_bundled_example(example_name),
                     encoding="utf-8",
                 )
-                example_payload = _validate_script(example_script, strict=True)
+                example_payload = _validate_script(
+                    example_script,
+                    strict=True,
+                    repeat=repeat,
+                )
                 if not example_payload["ok"]:
                     bundled_errors.append(example_name)
             checks.append(
@@ -931,6 +1019,7 @@ def _run_selftest(*, strict: bool = False) -> dict[str, object]:
         "schema_version": "stui.selftest.v1",
         "stui_version": __version__,
         "strict": strict,
+        "repeat": repeat,
         "ok": passed == len(checks),
         "summary": {
             "passed": passed,
@@ -953,18 +1042,27 @@ def selftest(
             help="Run all bundled example checks and stricter diagnostics.",
         ),
     ] = False,
+    repeat: Annotated[
+        int,
+        typer.Option(
+            "--repeat",
+            min=1,
+            help="Repeat generated-template and bundled-example checks.",
+        ),
+    ] = 1,
 ) -> None:
     """Run lightweight installed-package checks without launching a TUI."""
 
-    result = _run_selftest(strict=strict)
+    result = _run_selftest(strict=strict, repeat=repeat)
     if json_output:
         typer.echo(json_module.dumps(result, indent=2, sort_keys=True))
     else:
         summary = result["summary"]
         status = "passed" if result["ok"] else "failed"
+        repeat_suffix = "" if repeat == 1 else f" with repeat={repeat}"
         typer.echo(
             f"stui selftest {status}: "
-            f"{summary['passed']}/{summary['total']} checks passed"
+            f"{summary['passed']}/{summary['total']} checks passed{repeat_suffix}"
         )
         for check in result["checks"]:
             prefix = "ok" if check["ok"] else "fail"

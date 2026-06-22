@@ -240,12 +240,83 @@ def test_check_json_reports_ok_and_errors(tmp_path: Path) -> None:
     assert payload["summary"]["error_count"] == 0
     assert payload["summary"]["warning_count"] == 0
     assert payload["summary"]["element_count"] == 1
+    assert payload["summary"]["total_element_count"] == 1
+    assert payload["summary"]["runs_requested"] == 1
+    assert payload["summary"]["runs_completed"] == 1
     assert payload["summary"]["element_types"] == {"WriteElement": 1}
+    assert payload["runs"] == [
+        {
+            "run": 1,
+            "element_count": 1,
+            "error_count": 0,
+            "warning_count": 0,
+            "element_types": {"WriteElement": 1},
+        }
+    ]
     assert payload["warnings"] == []
     assert payload["script"] == {
         "input": str(script),
         "path": str(script.resolve()),
     }
+
+
+def test_check_repeat_json_reports_per_run_summaries(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(
+        """
+import stui as st
+
+st.session_state.count = st.session_state.get("count", 0) + 1
+st.write("count =", st.session_state.count)
+""",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["check", str(script), "--repeat", "3", "--json"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "stui.check.v1"
+    assert payload["ok"] is True
+    assert payload["summary"]["runs_requested"] == 3
+    assert payload["summary"]["runs_completed"] == 3
+    assert payload["summary"]["element_count"] == 1
+    assert payload["summary"]["total_element_count"] == 3
+    assert [run["run"] for run in payload["runs"]] == [1, 2, 3]
+    assert all(run["element_types"] == {"WriteElement": 1} for run in payload["runs"])
+
+
+def test_check_repeat_stops_on_first_script_error(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(
+        """
+import stui as st
+
+st.session_state.count = st.session_state.get("count", 0) + 1
+if st.session_state.count == 2:
+    raise RuntimeError("boom")
+st.write("count =", st.session_state.count)
+""",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["check", str(script), "--repeat", "3", "--json"],
+    )
+
+    assert result.exit_code == 1
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["status"] == "script_error"
+    assert payload["summary"]["runs_requested"] == 3
+    assert payload["summary"]["runs_completed"] == 2
+    assert len(payload["runs"]) == 2
+    assert "run 2:" in payload["error"]["traceback"]
+    assert "RuntimeError: boom" in payload["error"]["traceback"]
 
 
 def test_check_json_accepts_odd_chart_compat_shapes(tmp_path: Path) -> None:
@@ -380,8 +451,12 @@ def test_check_json_reports_missing_script() -> None:
     assert payload["exit_code"] == 2
     assert payload["script"] == {"input": "missing.py", "path": None}
     assert payload["summary"]["element_count"] == 0
+    assert payload["summary"]["total_element_count"] == 0
+    assert payload["summary"]["runs_requested"] == 1
+    assert payload["summary"]["runs_completed"] == 0
     assert payload["summary"]["error_count"] == 1
     assert payload["summary"]["element_types"] == {}
+    assert payload["runs"] == []
     assert payload["error"]["kind"] == "missing"
     assert payload["error"]["message"] == "file does not exist: missing.py"
 
@@ -643,6 +718,7 @@ def test_selftest_json_output() -> None:
     assert payload["schema_version"] == "stui.selftest.v1"
     assert payload["stui_version"] == stui.__version__
     assert payload["strict"] is False
+    assert payload["repeat"] == 1
     assert payload["ok"] is True
     assert payload["summary"]["passed"] == payload["summary"]["total"]
     assert {check["name"] for check in payload["checks"]} == {
@@ -662,6 +738,7 @@ def test_selftest_strict_json_output() -> None:
     assert payload["schema_version"] == "stui.selftest.v1"
     assert payload["stui_version"] == stui.__version__
     assert payload["strict"] is True
+    assert payload["repeat"] == 1
     assert payload["ok"] is True
     assert payload["summary"]["passed"] == payload["summary"]["total"]
     assert {check["name"] for check in payload["checks"]} == {
@@ -673,6 +750,25 @@ def test_selftest_strict_json_output() -> None:
         "strict bundled example checks",
         "strict doctor diagnostics",
     }
+
+
+def test_selftest_repeat_json_output() -> None:
+    result = CliRunner().invoke(
+        cli.app,
+        ["selftest", "--strict", "--repeat", "2", "--json"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["schema_version"] == "stui.selftest.v1"
+    assert payload["strict"] is True
+    assert payload["repeat"] == 2
+    assert payload["ok"] is True
+    bundled_check = next(
+        check for check in payload["checks"] if check["name"] == "bundled example check"
+    )
+    assert bundled_check["payload"]["summary"]["runs_requested"] == 2
+    assert bundled_check["payload"]["summary"]["runs_completed"] == 2
 
 
 def test_selftest_reports_missing_bundled_demo(monkeypatch) -> None:

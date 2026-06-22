@@ -67,6 +67,10 @@ Feedback that can shape near-term design:
   work from clean virtual environments and built artifacts.
 - `stui check --strict`: whether non-interactive validation catches useful
   script errors and authoring warnings in local or CI workflows.
+- Repeated validation: whether `stui check --strict --repeat 2` or
+  `stui selftest --strict --repeat 2` catches issues in rerun-heavy apps.
+- Long sessions: whether state, focus, rendering, and recovery stay reliable
+  after many interactions in the same terminal.
 - Charts: whether the stable bar and line summaries cover real terminal
   dashboard needs, and which future chart types are useful without heavy
   plotting dependencies.

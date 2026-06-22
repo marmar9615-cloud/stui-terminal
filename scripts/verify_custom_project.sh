@@ -2,16 +2,30 @@
 set -eu
 
 PYTHON_CMD="${PYTHON:-python3.11}"
-WORKDIR="${STUI_CUSTOM_PROJECT_DIR:-$(mktemp -d /tmp/stui-custom-project.XXXXXX)}"
+CREATED_WORKDIR=0
+if [ -n "${STUI_CUSTOM_PROJECT_DIR:-}" ]; then
+  WORKDIR="$STUI_CUSTOM_PROJECT_DIR"
+else
+  WORKDIR="$(mktemp -d /tmp/stui-custom-project.XXXXXX)"
+  CREATED_WORKDIR=1
+fi
 mkdir -p "$WORKDIR"
+cleanup() {
+  if [ "$CREATED_WORKDIR" -eq 1 ]; then
+    rm -rf "$WORKDIR"
+  fi
+}
+trap cleanup EXIT
 
 if [ -n "${STUI_WHEEL:-}" ]; then
   "$PYTHON_CMD" -m venv "$WORKDIR/.venv"
   PY="$WORKDIR/.venv/bin/python"
+  STUI_BIN="$WORKDIR/.venv/bin/stui"
   "$PY" -m pip install --upgrade pip >/dev/null
   "$PY" -m pip install "$STUI_WHEEL" >/dev/null
 else
   PY="$PYTHON_CMD"
+  STUI_BIN="$PYTHON_CMD -m stui"
 fi
 
 mkdir -p "$WORKDIR/my_project"
@@ -75,8 +89,17 @@ PY
 
 (
   cd "$WORKDIR"
-  env -u PYTHONPATH "$PY" -m stui selftest --strict --json > selftest-result.json
-  env -u PYTHONPATH "$PY" -m stui check app.py --strict --json > check-result.json
+  if [ -n "${STUI_WHEEL:-}" ]; then
+    env -u PYTHONPATH "$STUI_BIN" --version >/dev/null
+    env -u PYTHONPATH "$STUI_BIN" doctor --json >/dev/null
+    env -u PYTHONPATH "$STUI_BIN" selftest --strict --repeat 2 --json > selftest-result.json
+    env -u PYTHONPATH "$STUI_BIN" check app.py --strict --repeat 2 --json > check-result.json
+  else
+    env -u PYTHONPATH "$PY" -m stui --version >/dev/null
+    env -u PYTHONPATH "$PY" -m stui doctor --json >/dev/null
+    env -u PYTHONPATH "$PY" -m stui selftest --strict --repeat 2 --json > selftest-result.json
+    env -u PYTHONPATH "$PY" -m stui check app.py --strict --repeat 2 --json > check-result.json
+  fi
 )
 
 "$PY" - "$WORKDIR/selftest-result.json" <<'PY'
@@ -90,6 +113,7 @@ payload = json.loads(result_path.read_text(encoding="utf-8"))
 assert payload["schema_version"] == "stui.selftest.v1", payload
 assert payload["ok"] is True, payload
 assert payload["strict"] is True, payload
+assert payload["repeat"] == 2, payload
 assert payload["summary"]["passed"] == payload["summary"]["total"], payload
 PY
 
@@ -104,6 +128,8 @@ payload = json.loads(result_path.read_text(encoding="utf-8"))
 assert payload["schema_version"] == "stui.check.v1", payload
 assert payload["ok"] is True, payload
 assert payload["strict"] is True, payload
+assert payload["summary"]["runs_requested"] == 2, payload
+assert payload["summary"]["runs_completed"] == 2, payload
 assert payload["status"] == "ok", payload
 assert payload["exit_code"] == 0, payload
 assert payload["summary"]["warning_count"] == 0, payload

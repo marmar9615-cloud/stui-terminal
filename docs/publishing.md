@@ -54,16 +54,16 @@ Run these from the repository root:
 . .venv/bin/activate
 python -m pip install -e ".[dev]"
 ruff check .
-python -m pytest
+python3.11 -m pytest
 python -m build
 python -m twine check dist/*
 python scripts/check_release_version.py --tag vX.Y.Z
-python scripts/audit_package_contents.py dist
+python scripts/audit_package_contents.py dist --version X.Y.Z
 stui --version
 python -m stui --version
-stui selftest --strict
+stui selftest --strict --repeat 2
 stui init /tmp/stui-app.py
-stui check /tmp/stui-app.py --strict
+stui check /tmp/stui-app.py --strict --repeat 2
 ./scripts/check.sh
 ```
 

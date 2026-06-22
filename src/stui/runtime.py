@@ -133,8 +133,10 @@ class Runtime:
         self._form_widget_callbacks: dict[
             str, dict[str, tuple[Callable[..., Any], tuple[Any, ...], dict[str, Any]]]
         ] = {}
+        self._form_rendered_widget_keys: dict[str, set[str]] = {}
 
     def run_script(self) -> list[Element]:
+        initial_session_snapshot = self.session_state.snapshot()
         for _ in range(10):
             self._prepare_run()
             token = _current_runtime.set(self)
@@ -148,11 +150,9 @@ class Runtime:
                 pass
             except DuplicateWidgetKeyError as exc:
                 self.session_state.restore(session_snapshot)
-                self._restore_committed_widget_values()
                 self.elements = [ErrorElement(str(exc))]
             except ApiUsageError as exc:
                 self.session_state.restore(session_snapshot)
-                self._restore_committed_widget_values()
                 self.elements = [ErrorElement(str(exc))]
             except Exception as exc:
                 self.session_state.restore(session_snapshot)
@@ -165,6 +165,7 @@ class Runtime:
                 _current_runtime.reset(token)
             return self.elements
 
+        self.session_state.restore(initial_session_snapshot)
         self.elements = [
             ErrorElement("stui stopped after 10 consecutive rerun requests.")
         ]
@@ -750,6 +751,7 @@ class Runtime:
             if changed:
                 self._committed_widget_values[key] = value
             return changed
+        self._form_rendered_widget_keys.setdefault(form_key, set()).add(key)
         if changed:
             self.form_pending_values.setdefault(form_key, {})[key] = value
         return changed
@@ -792,7 +794,12 @@ class Runtime:
 
     def _commit_form(self, form_key: str) -> None:
         callbacks = self._form_widget_callbacks.get(form_key, {})
-        pending = self.form_pending_values.pop(form_key, {})
+        rendered_keys = self._form_rendered_widget_keys.get(form_key, set())
+        pending = {
+            key: value
+            for key, value in self.form_pending_values.pop(form_key, {}).items()
+            if key in rendered_keys
+        }
         changed_keys = []
         for key, value in pending.items():
             if self.session_state.get(key, _MISSING) != value:
@@ -821,6 +828,7 @@ class Runtime:
         self._active_widget_values = dict(self.pending_widget_values)
         self._committed_widget_values = {}
         self._form_widget_callbacks = {}
+        self._form_rendered_widget_keys = {}
         self.pending_button_presses.clear()
         self.pending_changed_widgets.clear()
         self.pending_widget_values.clear()
