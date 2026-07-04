@@ -106,6 +106,15 @@ def metric(label: Any, value: Any, delta: Any | None = None) -> None:
     get_current_runtime().metric(label, value, delta=delta)
 
 
+def toast(body: Any) -> None:
+    """Queue a short transient notification for the current script run.
+
+    Toasts appear as terminal notifications after the run renders. They are
+    not part of the rendered element tree.
+    """
+    get_current_runtime().toast(body)
+
+
 def bar_chart(
     data: Any,
     *,
@@ -351,6 +360,56 @@ def selectbox(
         label,
         options,
         index=index,
+        key=key,
+        disabled=disabled,
+        on_change=on_change,
+        args=args,
+        kwargs=kwargs,
+    )
+
+
+def multiselect(
+    label: str,
+    options,
+    default: Any = None,
+    *,
+    key: str | None = None,
+    disabled: bool = False,
+    on_change=None,
+    args: tuple[Any, ...] | None = None,
+    kwargs: dict[str, Any] | None = None,
+) -> tuple[Any, ...]:
+    """Select zero or more options from a checkbox-style list.
+
+    Returns the selected options as a tuple, kept in options order. Stored
+    selections that are no longer present in options are dropped.
+    """
+    return get_current_runtime().multiselect(
+        label,
+        options,
+        default=default,
+        key=key,
+        disabled=disabled,
+        on_change=on_change,
+        args=args,
+        kwargs=kwargs,
+    )
+
+
+def toggle(
+    label: str,
+    value: bool = False,
+    *,
+    key: str | None = None,
+    disabled: bool = False,
+    on_change=None,
+    args: tuple[Any, ...] | None = None,
+    kwargs: dict[str, Any] | None = None,
+) -> bool:
+    """Render an on/off switch with checkbox semantics."""
+    return get_current_runtime().toggle(
+        label,
+        value,
         key=key,
         disabled=disabled,
         on_change=on_change,

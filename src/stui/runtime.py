@@ -35,6 +35,7 @@ from .elements import (
     LineChartSeries,
     MarkdownElement,
     MetricElement,
+    MultiselectElement,
     NumberInputElement,
     ProgressElement,
     RadioElement,
@@ -47,6 +48,7 @@ from .elements import (
     TextElement,
     TextInputElement,
     TitleElement,
+    ToggleElement,
     WriteElement,
 )
 from .session_state import SessionState
@@ -115,6 +117,7 @@ class Runtime:
         self.script_path = Path(script_path).resolve()
         self.session_state = SessionState()
         self.elements: list[Element] = []
+        self.toasts: list[str] = []
         self._element_stack: list[list[Element]] = [self.elements]
         self.widget_call_counts: dict[tuple[str, str], int] = {}
         self.widget_keys_seen: set[str] = set()
@@ -151,15 +154,18 @@ class Runtime:
             except DuplicateWidgetKeyError as exc:
                 self.session_state.restore(session_snapshot)
                 self.elements = [ErrorElement(str(exc))]
+                self.toasts = []
             except ApiUsageError as exc:
                 self.session_state.restore(session_snapshot)
                 self.elements = [ErrorElement(str(exc))]
+                self.toasts = []
             except Exception as exc:
                 self.session_state.restore(session_snapshot)
                 self._restore_committed_widget_values()
                 self.elements = [
                     ErrorElement(_format_script_exception(exc, self.script_path))
                 ]
+                self.toasts = []
             finally:
                 self._restore_sys_path(sys_path_snapshot)
                 _current_runtime.reset(token)
@@ -236,6 +242,9 @@ class Runtime:
 
     def help(self, obj_or_text: Any) -> None:
         self._append_element(HelpElement(_format_help(obj_or_text)))
+
+    def toast(self, body: Any) -> None:
+        self.toasts.append(str(body))
 
     def metric(self, label: Any, value: Any, delta: Any | None = None) -> None:
         delta_text = None if delta is None else str(delta)
@@ -500,6 +509,73 @@ class Runtime:
                 label=label,
                 key=widget_key,
                 value=current,
+                disabled=disabled,
+            )
+        )
+        self._handle_widget_callback(widget_key, changed, on_change, args, kwargs)
+        return current
+
+    def toggle(
+        self,
+        label: str,
+        value: bool = False,
+        *,
+        key: str | None = None,
+        disabled: bool = False,
+        on_change: Callable[..., Any] | None = None,
+        args: tuple[Any, ...] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> bool:
+        widget_key = self.next_widget_key("toggle", label, key)
+        current = bool(
+            self._widget_value(
+                widget_key,
+                self.session_state.get(widget_key, value),
+                disabled=disabled,
+            )
+        )
+        changed = self._finalize_widget_value(widget_key, current, disabled=disabled)
+        self._append_element(
+            ToggleElement(
+                label=label,
+                key=widget_key,
+                value=current,
+                disabled=disabled,
+            )
+        )
+        self._handle_widget_callback(widget_key, changed, on_change, args, kwargs)
+        return current
+
+    def multiselect(
+        self,
+        label: str,
+        options: Any,
+        default: Any = None,
+        *,
+        key: str | None = None,
+        disabled: bool = False,
+        on_change: Callable[..., Any] | None = None,
+        args: tuple[Any, ...] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> tuple[Any, ...]:
+        widget_key = self.next_widget_key("multiselect", label, key)
+        options_tuple = tuple(options)
+        default_selection = _normalize_multiselect_selection(default, options_tuple)
+        current = _normalize_multiselect_selection(
+            self._widget_value(
+                widget_key,
+                self.session_state.get(widget_key, default_selection),
+                disabled=disabled,
+            ),
+            options_tuple,
+        )
+        changed = self._finalize_widget_value(widget_key, current, disabled=disabled)
+        self._append_element(
+            MultiselectElement(
+                label=label,
+                key=widget_key,
+                options=options_tuple,
+                selected=current,
                 disabled=disabled,
             )
         )
@@ -830,6 +906,7 @@ class Runtime:
 
     def _prepare_run(self) -> None:
         self.elements = []
+        self.toasts = []
         self._element_stack = [self.elements]
         self.widget_call_counts = {}
         self.widget_keys_seen = set()
@@ -942,6 +1019,19 @@ def _format_help(obj_or_text: Any) -> str:
     if lines:
         return "\n\n".join(lines)
     return str(obj_or_text)
+
+
+def _normalize_multiselect_selection(
+    value: Any,
+    options: tuple[Any, ...],
+) -> tuple[Any, ...]:
+    if value is None:
+        items: tuple[Any, ...] = ()
+    elif isinstance(value, (list, tuple, set, frozenset)):
+        items = tuple(value)
+    else:
+        items = (value,)
+    return tuple(option for option in options if option in items)
 
 
 def _coerce_number(

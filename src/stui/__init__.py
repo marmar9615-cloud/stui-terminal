@@ -20,6 +20,7 @@ from .api import (
     line_chart,
     markdown,
     metric,
+    multiselect,
     number_input,
     progress,
     radio,
@@ -36,11 +37,13 @@ from .api import (
     text,
     text_input,
     title,
+    toast,
+    toggle,
     warning,
     write,
 )
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 __all__ = [
     "__version__",
@@ -65,6 +68,7 @@ __all__ = [
     "line_chart",
     "markdown",
     "metric",
+    "multiselect",
     "number_input",
     "progress",
     "radio",
@@ -81,6 +85,8 @@ __all__ = [
     "text",
     "text_input",
     "title",
+    "toast",
+    "toggle",
     "warning",
     "write",
 ]

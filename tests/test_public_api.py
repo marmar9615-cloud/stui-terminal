@@ -37,6 +37,7 @@ EXPECTED_PUBLIC_EXPORTS = [
     "line_chart",
     "markdown",
     "metric",
+    "multiselect",
     "number_input",
     "progress",
     "radio",
@@ -53,6 +54,8 @@ EXPECTED_PUBLIC_EXPORTS = [
     "text",
     "text_input",
     "title",
+    "toast",
+    "toggle",
     "warning",
     "write",
 ]
@@ -80,6 +83,7 @@ EXPECTED_API_CLASSIFICATIONS = {
     "line_chart": "v1-stable",
     "markdown": "v1-stable",
     "metric": "v1-stable",
+    "multiselect": "post-v2 experimental",
     "number_input": "v1-stable",
     "progress": "v1-stable",
     "radio": "v1-stable",
@@ -96,6 +100,8 @@ EXPECTED_API_CLASSIFICATIONS = {
     "text": "v1-stable",
     "text_input": "v1-stable",
     "title": "v1-stable",
+    "toast": "post-v2 experimental",
+    "toggle": "post-v2 experimental",
     "warning": "v1-stable",
     "write": "v1-stable",
 }
@@ -196,6 +202,12 @@ EXPECTED_PUBLIC_SIGNATURES = {
     ),
     "markdown": "(body: 'Any') -> 'None'",
     "metric": "(label: 'Any', value: 'Any', delta: 'Any | None' = None) -> 'None'",
+    "multiselect": _sig(
+        "(label: 'str', options, default: 'Any' = None, *, ",
+        "key: 'str | None' = None, disabled: 'bool' = False, ",
+        "on_change=None, args: 'tuple[Any, ...] | None' = None, ",
+        "kwargs: 'dict[str, Any] | None' = None) -> 'tuple[Any, ...]'",
+    ),
     "number_input": _sig(
         "(label: 'str', min_value: 'int | float | None' = None, ",
         "max_value: 'int | float | None' = None, ",
@@ -248,6 +260,13 @@ EXPECTED_PUBLIC_SIGNATURES = {
         "kwargs: 'dict[str, Any] | None' = None) -> 'str'",
     ),
     "title": "(body: 'Any', *, key: 'str | None' = None) -> 'None'",
+    "toast": "(body: 'Any') -> 'None'",
+    "toggle": _sig(
+        "(label: 'str', value: 'bool' = False, *, ",
+        "key: 'str | None' = None, disabled: 'bool' = False, ",
+        "on_change=None, args: 'tuple[Any, ...] | None' = None, ",
+        "kwargs: 'dict[str, Any] | None' = None) -> 'bool'",
+    ),
     "warning": "(body: 'Any') -> 'None'",
     "write": "(*args: 'Any') -> 'None'",
 }
@@ -285,6 +304,11 @@ EXPECTED_REFERENCE_SIGNATURES = {
     "line_chart": "st.line_chart(data, *, width=None, height=None) -> None",
     "markdown": "st.markdown(body) -> None",
     "metric": "st.metric(label, value, delta=None) -> None",
+    "multiselect": _sig(
+        "st.multiselect(\n    label,\n    options,\n    default=None,\n    *,\n",
+        "    key=None,\n    disabled=False,\n    on_change=None,\n",
+        "    args=None,\n    kwargs=None,\n) -> tuple",
+    ),
     "number_input": _sig(
         "st.number_input(\n    label,\n    min_value=None,\n    max_value=None,\n",
         "    value=0,\n    step=1,\n    *,\n    key=None,\n",
@@ -322,6 +346,12 @@ EXPECTED_REFERENCE_SIGNATURES = {
         "    on_change=None,\n    args=None,\n    kwargs=None,\n) -> str",
     ),
     "title": "st.title(body, *, key=None) -> None",
+    "toast": "st.toast(body) -> None",
+    "toggle": _sig(
+        "st.toggle(\n    label,\n    value=False,\n    *,\n    key=None,\n",
+        "    disabled=False,\n    on_change=None,\n    args=None,\n",
+        "    kwargs=None,\n) -> bool",
+    ),
     "warning": "st.warning(body) -> None",
     "write": "st.write(*args) -> None",
 }
@@ -570,11 +600,13 @@ def test_widget_callback_and_disabled_parameter_names_are_consistent() -> None:
         "button": "on_click",
         "form_submit_button": "on_click",
         "checkbox": "on_change",
+        "multiselect": "on_change",
         "number_input": "on_change",
         "radio": "on_change",
         "selectbox": "on_change",
         "slider": "on_change",
         "text_input": "on_change",
+        "toggle": "on_change",
     }
 
     for name, callback_name in callback_params.items():

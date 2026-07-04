@@ -226,6 +226,16 @@ The command surface is expected to remain stable for v1 docs:
   external project validation, GitHub CI, PyPI publish, GitHub Release, and
   fresh exact-version PyPI install before calling v2 shipped.
 
+## v2.1 Shipped
+
+- Added `st.multiselect`, `st.toggle`, and `st.toast` as post-v2 experimental
+  APIs so multi-option selection, switch-style booleans, and transient
+  notifications can gather real terminal feedback before any stable promotion.
+- Added `stui run --watch` for a save-and-rerun development loop that keeps
+  `st.session_state` intact across reloads.
+- Added the running script filename to the app header.
+- Kept the v2.0.0 stable API contract unchanged.
+
 ## Post-v2 Candidates
 
 - Revisit additional chart variants and richer static data inspection if users

@@ -18,7 +18,7 @@ Streamlit compatibility layer. Existing Streamlit apps usually need edits; new
 
 ## Preview
 
-![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v2.0.0/assets/stui-model-demo.png)
+![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v2.1.0/assets/stui-model-demo.png)
 
 ```text
 ┌─ stui ───────────────────────────────────────────┐
@@ -187,6 +187,13 @@ Run it with:
 
 ```bash
 stui run app.py
+```
+
+While iterating on a script, add `--watch` and `stui` reruns the app every
+time you save the file, keeping `st.session_state` intact:
+
+```bash
+stui run app.py --watch
 ```
 
 Start from the repository examples when you want a larger reference. These
@@ -452,13 +459,15 @@ stability checklist are tracked in
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v2.0.0 |
+| Area | APIs | Status in v2.1.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
 | Status/help primitives | `st.status`, `st.spinner`, `st.help` | Post-v1 experimental while terminal grouping/help formatting gathers feedback |
 | Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | v1-stable static terminal displays |
 | Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | v1-stable input widgets |
+| New input widgets | `st.multiselect`, `st.toggle` | Post-v2 experimental input widgets, new in v2.1.0 |
+| Notifications | `st.toast` | Post-v2 experimental transient terminal notification, new in v2.1.0 |
 | Forms | `st.form`, `st.form_submit_button` | v1-stable deferred commit to `session_state` until submit |
 | Layout/grouping | `st.container`, `st.expander`, `st.columns` | v1-stable terminal grouping primitives; `st.columns` is count-only and stacks on narrow terminals |
 | Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | v1-stable compact terminal summaries, not plotting replacements |
@@ -472,10 +481,10 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v2.0.0 stable surface is the tested API frozen in v1.9.0 and verified for
-the v2 major release. It keeps the v1.9.0 API intact while making the v2
-contract, migration expectations, release-proof gates, and deferred roadmap
-explicit. Tables and dataframes are stable for documented
+The v2.1.0 stable surface is unchanged from v2.0.0: the tested API frozen in
+v1.9.0 and verified for the v2 major release. It keeps the v1.9.0 API intact
+while making the v2 contract, migration expectations, release-proof gates, and
+deferred roadmap explicit. Tables and dataframes are stable for documented
 scalar, list, mapping, dataframe-like, dataclass, namedtuple, and simple
 public-object shapes; charts are stable for the documented scalar, list, mapping,
 tuple-pair, list-of-dicts, and dict-of-columns shapes. These names should keep
@@ -485,8 +494,9 @@ correctness, terminal, or security issue forces a change.
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v2 behavior yet. In v2.0.0 this includes `st.status`,
-`st.spinner`, and `st.help`.
+promised as frozen v2 behavior yet. In v2.1.0 this includes the post-v1
+experimental `st.status`, `st.spinner`, and `st.help`, plus the post-v2
+experimental `st.multiselect`, `st.toggle`, and `st.toast` added in v2.1.0.
 Release notes should call out any change with a migration note when practical.
 
 APIs not shown in this table should be treated as private implementation
@@ -769,12 +779,13 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v2.0 Stable Status
+## v2.1 Stable Status
 
-v2.0.0 is the first v2 stable release. It keeps the package/import/CLI contract
-from v1.0.0, keeps v1.4.0 through v1.9.0 behavior compatible, finalizes the v2
-stable API list, and points release work at
-[docs/v2-readiness.md](docs/v2-readiness.md).
+v2.1.0 is the first post-v2 feature release. It keeps the package/import/CLI
+contract from v1.0.0 and the full v2.0.0 stable API intact, adds the
+experimental `st.multiselect`, `st.toggle`, and `st.toast` widgets, and adds
+`stui run --watch` for a save-and-rerun development loop. Release work still
+points at [docs/v2-readiness.md](docs/v2-readiness.md).
 
 The remaining experimental APIs and terminal compatibility unknowns are visible
 instead of hidden. Post-v2 work should be feedback-driven and kept out of the

@@ -215,6 +215,23 @@ class SelectboxElement:
 
 
 @dataclass(frozen=True)
+class MultiselectElement:
+    label: str
+    key: str
+    options: tuple[Any, ...]
+    selected: tuple[Any, ...]
+    disabled: bool = False
+
+
+@dataclass(frozen=True)
+class ToggleElement:
+    label: str
+    key: str
+    value: bool
+    disabled: bool = False
+
+
+@dataclass(frozen=True)
 class RadioElement:
     label: str
     key: str
@@ -243,6 +260,7 @@ Element: TypeAlias = (
     | SpinnerElement
     | HelpElement
     | MetricElement
+    | MultiselectElement
     | BarChartElement
     | LineChartElement
     | TableElement
@@ -259,5 +277,6 @@ Element: TypeAlias = (
     | NumberInputElement
     | SelectboxElement
     | RadioElement
+    | ToggleElement
     | ErrorElement
 )

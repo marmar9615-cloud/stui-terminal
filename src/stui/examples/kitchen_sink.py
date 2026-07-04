@@ -48,9 +48,17 @@ threshold = st.slider(
 )
 model = st.selectbox("Model", ["tiny", "base", "large"], index=1, key="model")
 mode = st.radio("Mode", ["fast", "balanced", "careful"], index=1, key="mode")
+datasets = st.multiselect(
+    "Datasets",
+    ["train", "val", "test"],
+    default=["train"],
+    key="datasets",
+)
+verbose = st.toggle("Verbose logs", key="verbose")
 
 if st.button("Record run", key="record"):
     st.session_state.runs += 1
+    st.toast(f"Recorded run {st.session_state.runs}")
     st.success(f"Recorded run {st.session_state.runs}")
 
 if st.button("Refresh", key="refresh"):
@@ -60,6 +68,8 @@ st.divider()
 st.subheader("Current Values")
 st.write("project =", project)
 st.text(f"preview = {enabled}")
+st.write("datasets =", datasets)
+st.text(f"verbose = {verbose}")
 st.markdown(f"**model**: {model} / **mode**: {mode}")
 st.progress(threshold, text="confidence")
 

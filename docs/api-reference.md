@@ -44,6 +44,7 @@ defined in [API Stability](api-stability.md).
 | `line_chart` | v1-stable | Compact terminal sparkline summary, not plotting-library parity. |
 | `markdown` | v1-stable | Core text output. |
 | `metric` | v1-stable | Compact terminal summary display. |
+| `multiselect` | post-v2 experimental | Checkbox-style multi-option selection, new in v2.1.0. |
 | `number_input` | v1-stable | Numeric input widget. |
 | `progress` | v1-stable | Clamped terminal progress display. |
 | `radio` | v1-stable | Selection input widget. |
@@ -60,6 +61,8 @@ defined in [API Stability](api-stability.md).
 | `text` | v1-stable | Core text output. |
 | `text_input` | v1-stable | Core input widget. |
 | `title` | v1-stable | Core text output. |
+| `toast` | post-v2 experimental | Transient terminal notification, new in v2.1.0. |
+| `toggle` | post-v2 experimental | On/off switch with checkbox semantics, new in v2.1.0. |
 | `warning` | v1-stable | Core status output. |
 | `write` | v1-stable | Core text/value output. |
 <!-- API_CLASSIFICATION_END -->
@@ -371,6 +374,67 @@ st.radio(
 mode = st.radio("Mode", ["fast", "balanced", "careful"], index=1)
 ```
 
+`st.multiselect` is post-v2 experimental. It renders a checkbox-style option
+list: arrow keys move the highlight, Space or Enter toggles the highlighted
+option. It returns the selected options as a tuple kept in options order, and
+stored selections that are no longer present in `options` are dropped on the
+next run. `default` accepts a single option or a list of options.
+
+```python
+st.multiselect(
+    label,
+    options,
+    default=None,
+    *,
+    key=None,
+    disabled=False,
+    on_change=None,
+    args=None,
+    kwargs=None,
+) -> tuple
+```
+
+```python
+datasets = st.multiselect("Datasets", ["train", "val", "test"], default=["train"])
+```
+
+`st.toggle` is post-v2 experimental. It behaves exactly like `st.checkbox` but
+renders as an on/off switch.
+
+```python
+st.toggle(
+    label,
+    value=False,
+    *,
+    key=None,
+    disabled=False,
+    on_change=None,
+    args=None,
+    kwargs=None,
+) -> bool
+```
+
+```python
+verbose = st.toggle("Verbose logs", value=False, key="verbose")
+```
+
+## Notifications
+
+`st.toast` is post-v2 experimental. It queues a short transient notification
+that appears in the terminal after the current script run renders, then
+disappears on its own. Toasts are not part of the rendered element tree, so
+`stui check` does not count them as visible elements, and a run that fails with
+an error drops its queued toasts.
+
+```python
+st.toast(body) -> None
+```
+
+```python
+if st.button("Save"):
+    st.toast("Settings saved")
+```
+
 ## Session State
 
 ```python
@@ -444,23 +508,27 @@ package metadata, bundled demo resources, all init templates, all bundled
 examples, and doctor diagnostics without launching a full TUI. Use
 `--repeat N` to repeat generated-template and bundled-example checks.
 
-## v2.0 Stable Status
+## v2.1 Stable Status
 
-The signatures above are intentionally covered by tests in v2.0.0. The
-classification table marks each top-level API as either `v1-stable` or
-`post-v1 experimental`; see [API Stability](api-stability.md) for the full
-compatibility promise and post-v1 deprecation policy.
+The signatures above are intentionally covered by tests in v2.1.0. The
+classification table marks each top-level API as `v1-stable`,
+`post-v1 experimental`, or `post-v2 experimental`; see
+[API Stability](api-stability.md) for the full compatibility promise and
+post-v1 deprecation policy.
 
-v2.0.0 keeps the v1.4 through v1.9 stable APIs intact while publishing the v2
-stable contract in [v2 readiness](v2-readiness.md). Any change to stable names should be treated as a
-compatibility event unless it fixes a correctness, terminal, or security issue
-and is documented in the changelog and release notes.
+v2.1.0 keeps the v1.4 through v2.0 stable APIs intact while adding new
+experimental widgets on top of the v2 stable contract in
+[v2 readiness](v2-readiness.md). Any change to stable names should be treated
+as a compatibility event unless it fixes a correctness, terminal, or security
+issue and is documented in the changelog and release notes.
 
-These APIs stay post-v1 experimental in v2.0.0 and remain outside the v2 stable
+These APIs stay experimental in v2.1.0 and remain outside the v2 stable
 contract:
 
 - Help and status: `st.help`, `st.status`, and `st.spinner` formatting and
-  grouping behavior.
+  grouping behavior (post-v1 experimental).
+- New in v2.1.0: `st.multiselect`, `st.toggle`, and `st.toast`
+  (post-v2 experimental).
 
 APIs and feature areas explicitly deferred from the v1 stable surface are
 listed in [API Stability](api-stability.md#deferred-for-v1). They include

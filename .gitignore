@@ -9,3 +9,5 @@ venv/
 build/
 dist/
 .DS_Store
+.venv.nosync/
+.venv

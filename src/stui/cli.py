@@ -476,7 +476,17 @@ def main(
 
 
 @app.command()
-def run(script: Path) -> None:
+def run(
+    script: Path,
+    watch: Annotated[
+        bool,
+        typer.Option(
+            "--watch",
+            "-w",
+            help="Rerun the app whenever the script file changes on disk.",
+        ),
+    ] = False,
+) -> None:
     """Run a Python stui script in the terminal."""
 
     script_path = script.expanduser()
@@ -484,7 +494,7 @@ def run(script: Path) -> None:
         raise typer.BadParameter(error)
 
     runtime = Runtime(script_path.resolve())
-    StuiApp(runtime).run()
+    StuiApp(runtime, watch=watch).run()
 
 
 @app.command("check")

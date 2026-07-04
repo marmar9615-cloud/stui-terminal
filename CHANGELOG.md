@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.1.0 - 2026-07-04
+
+### Added
+
+- Added `st.multiselect` as a post-v2 experimental input widget: a
+  checkbox-style option list where arrow keys move the highlight and Space or
+  Enter toggles the highlighted option. It returns the selected options as a
+  tuple kept in options order, drops stored selections that disappear from
+  `options`, and supports `default`, explicit `key`, `disabled`, forms, and
+  `on_change` callbacks like the other selection widgets.
+- Added `st.toggle` as a post-v2 experimental input widget with `st.checkbox`
+  semantics rendered as an on/off switch.
+- Added `st.toast` as a post-v2 experimental transient notification helper.
+  Toasts queued during a run appear as short-lived terminal notifications after
+  the run renders, are not part of the rendered element tree, and are dropped
+  when a run fails with an error.
+- Added `stui run --watch` (short flag `-w`). Watch mode reruns the app
+  whenever the script file changes on disk, keeps `st.session_state` intact
+  across reloads, marks the header with `· watching`, and shows a short
+  `Reloaded ...` notification after each reload.
+- Added the running script filename to the app header for both normal and
+  watch runs.
+- Added multiselect cursor persistence across reruns so toggling an option
+  does not jump the highlight back to the first option.
+- Added runtime, form, callback, and Textual keyboard tests for the new
+  widgets, watch mode, and toast lifecycle.
+
+### Changed
+
+- Updated the bundled `inputs` and `kitchen_sink` examples to cover
+  `st.multiselect`, `st.toggle`, and `st.toast`.
+- Updated README, API reference, and API stability docs with the new
+  `post-v2 experimental` classification for APIs added after the v2.0.0
+  stable freeze.
+
 ## 2.0.0 - 2026-06-22
 
 ### Added

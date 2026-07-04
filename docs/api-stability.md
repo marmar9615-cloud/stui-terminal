@@ -1,6 +1,6 @@
 # API Stability
 
-`stui` v2.0.0 keeps the top-level stable API intentionally small and
+`stui` v2.1.0 keeps the top-level stable API intentionally small and
 Streamlit-inspired, but it is not Streamlit-compatible and does not depend on
 Streamlit at runtime.
 
@@ -24,6 +24,11 @@ makes a change necessary.
 feedback before it can graduate into the stable contract. It may change in a
 v1.x release. Changes should be called out in release notes with a migration
 path when practical.
+
+`post-v2 experimental` means the API was added after the v2.0.0 stable freeze
+and is gathering feedback before it can graduate into the stable contract. It
+may change in a v2.x release. Changes should be called out in release notes
+with a migration path when practical.
 
 `internal/private` means the API is not supported for user code. It may move,
 rename, or disappear without deprecation, even when it is importable for tests or
@@ -64,6 +69,7 @@ rename in the v1.x line.
 | `line_chart` | v1-stable | Compact terminal sparkline summary, not plotting-library parity. |
 | `markdown` | v1-stable | Core text output. |
 | `metric` | v1-stable | Compact terminal summary display. |
+| `multiselect` | post-v2 experimental | Checkbox-style multi-option selection, new in v2.1.0. |
 | `number_input` | v1-stable | Numeric input widget. |
 | `progress` | v1-stable | Clamped terminal progress display. |
 | `radio` | v1-stable | Selection input widget. |
@@ -80,6 +86,8 @@ rename in the v1.x line.
 | `text` | v1-stable | Core text output. |
 | `text_input` | v1-stable | Core input widget. |
 | `title` | v1-stable | Core text output. |
+| `toast` | post-v2 experimental | Transient terminal notification, new in v2.1.0. |
+| `toggle` | post-v2 experimental | On/off switch with checkbox semantics, new in v2.1.0. |
 | `warning` | v1-stable | Core status output. |
 | `write` | v1-stable | Core text/value output. |
 <!-- API_CLASSIFICATION_END -->
@@ -151,3 +159,8 @@ release.
 v2.0.0 does not remove or rename any top-level public APIs. The v2 stable
 contract is the current `v1-stable` set. `st.status`, `st.spinner`, and
 `st.help` remain `post-v1 experimental` and outside the v2 stable contract.
+
+v2.1.0 adds `st.multiselect`, `st.toggle`, and `st.toast` as
+`post-v2 experimental` APIs. They are public enough to use, but stay outside
+the v2 stable contract until real terminal usage confirms their call shapes
+and keyboard behavior.

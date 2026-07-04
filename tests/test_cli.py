@@ -18,14 +18,16 @@ def test_run_launches_existing_script(monkeypatch, tmp_path: Path) -> None:
     script = tmp_path / "app.py"
     script.write_text("import stui as st\nst.write('hello')\n", encoding="utf-8")
     launched: list[Path] = []
+    watch_flags: list[bool] = []
 
     class FakeRuntime:
         def __init__(self, script_path: Path) -> None:
             self.script_path = script_path
 
     class FakeApp:
-        def __init__(self, runtime: FakeRuntime) -> None:
+        def __init__(self, runtime: FakeRuntime, *, watch: bool = False) -> None:
             self.runtime = runtime
+            watch_flags.append(watch)
 
         def run(self) -> None:
             launched.append(self.runtime.script_path)
@@ -37,6 +39,33 @@ def test_run_launches_existing_script(monkeypatch, tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert launched == [script.resolve()]
+    assert watch_flags == [False]
+
+
+def test_run_watch_flag_enables_watch_mode(monkeypatch, tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text("import stui as st\nst.write('hello')\n", encoding="utf-8")
+    watch_flags: list[bool] = []
+
+    class FakeRuntime:
+        def __init__(self, script_path: Path) -> None:
+            self.script_path = script_path
+
+    class FakeApp:
+        def __init__(self, runtime: FakeRuntime, *, watch: bool = False) -> None:
+            self.runtime = runtime
+            watch_flags.append(watch)
+
+        def run(self) -> None:
+            pass
+
+    monkeypatch.setattr(cli, "Runtime", FakeRuntime)
+    monkeypatch.setattr(cli, "StuiApp", FakeApp)
+
+    result = CliRunner().invoke(cli.app, ["run", str(script), "--watch"])
+
+    assert result.exit_code == 0
+    assert watch_flags == [True]
 
 
 def test_run_rejects_missing_file() -> None:

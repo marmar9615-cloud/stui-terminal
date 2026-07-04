@@ -1,9 +1,9 @@
 # v1 Readiness
 
-`stui` v2.0.0 is the first v2 stable release. The goal
-for the v1 series is not to become Streamlit-compatible or to grow a large
-component catalog. The goal is a small, stable, terminal-native API that can be
-installed from PyPI, explained quickly, and trusted for local tools.
+`stui` v2.1.0 is the current release; v2.0.0 was the first v2 stable release.
+The goal for the v1 series is not to become Streamlit-compatible or to grow a
+large component catalog. The goal is a small, stable, terminal-native API that
+can be installed from PyPI, explained quickly, and trusted for local tools.
 
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.

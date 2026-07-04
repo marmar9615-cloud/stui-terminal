@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import math
 import os
+from pathlib import Path
 
 from rich.json import JSON as RichJSON
 from rich.markdown import Markdown
@@ -23,6 +24,7 @@ from textual.widgets import (
     Input,
     ProgressBar,
     Static,
+    Switch,
 )
 
 from .elements import (
@@ -44,6 +46,7 @@ from .elements import (
     LineChartElement,
     MarkdownElement,
     MetricElement,
+    MultiselectElement,
     NumberInputElement,
     ProgressElement,
     RadioElement,
@@ -56,6 +59,7 @@ from .elements import (
     TextElement,
     TextInputElement,
     TitleElement,
+    ToggleElement,
     WriteElement,
 )
 from .runtime import Runtime
@@ -102,7 +106,8 @@ HIGH_CONTRAST_CSS = """
         text-style: bold;
     }
 
-    Input:focus, .stui-selectbox:focus, .stui-radio:focus {
+    Input:focus, .stui-selectbox:focus, .stui-radio:focus,
+    .stui-multiselect:focus, Switch:focus {
         border: tall #ffff00;
         background: #000000;
         color: #ffffff;
@@ -113,6 +118,10 @@ HIGH_CONTRAST_CSS = """
         background: #000000;
         color: #ffffff;
         text-style: bold;
+    }
+
+    .stui-toggle-label {
+        color: #ffffff;
     }
 
     .stui-slider {
@@ -154,6 +163,15 @@ def css_for_theme(base_css: str, theme: str | None = None) -> str:
 def dom_id_for_key(key: str) -> str:
     digest = hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
     return f"stui-{digest}"
+
+
+def script_signature(path: Path) -> tuple[int, int] | None:
+    """Cheap change signature for watch mode; None while the file is missing."""
+    try:
+        stat_result = os.stat(path)
+    except OSError:
+        return None
+    return (stat_result.st_mtime_ns, stat_result.st_size)
 
 
 def _clip_text(value: object, width: int) -> str:
@@ -314,6 +332,93 @@ class StuiRadioSet(Static, can_focus=True):
         return "\n".join(lines)
 
 
+class StuiToggle(Switch):
+    def __init__(self, element: ToggleElement) -> None:
+        self.stui_key = element.key
+        super().__init__(
+            value=element.value,
+            id=dom_id_for_key(element.key),
+            disabled=element.disabled,
+        )
+
+
+class StuiMultiselect(Static, can_focus=True):
+    BINDINGS = [
+        Binding("down", "cursor_next", "Next option"),
+        Binding("right", "cursor_next", "Next option", show=False),
+        Binding("up", "cursor_previous", "Previous option"),
+        Binding("left", "cursor_previous", "Previous option", show=False),
+        Binding("space", "toggle_option", "Toggle option"),
+        Binding("enter", "toggle_option", "Toggle option", show=False),
+    ]
+
+    class Changed(Message):
+        def __init__(
+            self,
+            multiselect: StuiMultiselect,
+            value: tuple[object, ...],
+        ) -> None:
+            super().__init__()
+            self.multiselect = multiselect
+            self.value = value
+
+    def __init__(self, element: MultiselectElement, cursor: int = 0) -> None:
+        self.stui_key = element.key
+        self.stui_options = element.options
+        self.stui_selected_indexes = {
+            index
+            for index, option in enumerate(element.options)
+            if option in element.selected
+        }
+        max_cursor = max(0, len(element.options) - 1)
+        self.stui_cursor = min(max(0, cursor), max_cursor)
+        super().__init__(
+            self._render_value(),
+            id=dom_id_for_key(element.key),
+            classes="stui-multiselect",
+        )
+        self.disabled = element.disabled
+
+    def action_cursor_next(self) -> None:
+        self._move_cursor(1)
+
+    def action_cursor_previous(self) -> None:
+        self._move_cursor(-1)
+
+    def action_toggle_option(self) -> None:
+        if self.disabled or not self.stui_options:
+            return
+        if self.stui_cursor in self.stui_selected_indexes:
+            self.stui_selected_indexes.remove(self.stui_cursor)
+        else:
+            self.stui_selected_indexes.add(self.stui_cursor)
+        self.update(self._render_value())
+        value = tuple(
+            option
+            for index, option in enumerate(self.stui_options)
+            if index in self.stui_selected_indexes
+        )
+        self.post_message(self.Changed(self, value))
+
+    def _move_cursor(self, delta: int) -> None:
+        if self.disabled or len(self.stui_options) < 2:
+            return
+        self.stui_cursor = (self.stui_cursor + delta) % len(self.stui_options)
+        self.update(self._render_value())
+
+    def _render_value(self) -> str:
+        if not self.stui_options:
+            return "(no options)"
+        lines = []
+        for index, option in enumerate(self.stui_options):
+            cursor = ">" if index == self.stui_cursor else " "
+            marker = "x" if index in self.stui_selected_indexes else " "
+            lines.append(
+                f"{cursor} [{marker}] {_clip_text(option, MAX_WIDGET_LABEL_WIDTH)}"
+            )
+        return "\n".join(lines)
+
+
 class StuiExpander(Vertical, can_focus=True):
     BINDINGS = [
         Binding("enter", "toggle", "Toggle"),
@@ -448,7 +553,7 @@ class StuiApp(App[None]):
         margin: 0 0 1 0;
     }
 
-    .stui-selectbox, .stui-radio {
+    .stui-selectbox, .stui-radio, .stui-multiselect {
         margin: 0 0 1 0;
     }
 
@@ -463,7 +568,23 @@ class StuiApp(App[None]):
         text-style: bold;
     }
 
-    .stui-selectbox:focus, .stui-radio:focus {
+    .stui-selectbox:focus, .stui-radio:focus, .stui-multiselect:focus {
+        border: tall #8ab4ff;
+        background: #202033;
+    }
+
+    .stui-toggle {
+        height: auto;
+        margin: 1 0;
+    }
+
+    .stui-toggle-label {
+        width: auto;
+        padding: 1 0 0 1;
+        color: #cfd3df;
+    }
+
+    Switch:focus {
         border: tall #8ab4ff;
         background: #202033;
     }
@@ -564,9 +685,12 @@ class StuiApp(App[None]):
         Binding("shift+tab", "focus_previous", "Previous widget"),
     ]
 
-    def __init__(self, runtime: Runtime) -> None:
+    def __init__(self, runtime: Runtime, *, watch: bool = False) -> None:
         super().__init__()
         self.runtime = runtime
+        self.watch = watch
+        self._watch_signature = script_signature(runtime.script_path)
+        self._multiselect_cursors: dict[str, int] = {}
         self.stui_theme = resolve_theme()
         self.CSS = css_for_theme(type(self).CSS, self.stui_theme)
 
@@ -576,8 +700,24 @@ class StuiApp(App[None]):
         yield Footer()
 
     async def on_mount(self) -> None:
+        script_name = self.runtime.script_path.name
+        self.sub_title = f"{script_name} · watching" if self.watch else script_name
+        if self.watch:
+            self.set_interval(0.5, self._poll_script_change)
         self.runtime.run_script()
         await self.render_runtime()
+
+    async def _poll_script_change(self) -> None:
+        signature = script_signature(self.runtime.script_path)
+        if signature is None or signature == self._watch_signature:
+            return
+        self._watch_signature = signature
+        await self.action_rerun_script()
+        self.notify(
+            f"Reloaded {self.runtime.script_path.name}",
+            severity="information",
+            timeout=2,
+        )
 
     async def action_rerun_script(self) -> None:
         focused_key = self._focused_stui_key()
@@ -640,6 +780,8 @@ class StuiApp(App[None]):
 
     async def render_runtime(self) -> None:
         body = self.query_one("#body", VerticalScroll)
+        for multiselect in self.query(StuiMultiselect):
+            self._multiselect_cursors[multiselect.stui_key] = multiselect.stui_cursor
         await body.remove_children()
         widgets = [
             self._build_widget(element, self.size.width)
@@ -648,6 +790,13 @@ class StuiApp(App[None]):
         if widgets:
             await body.mount(*widgets)
         await self._restore_focus()
+        self._show_toasts()
+
+    def _show_toasts(self) -> None:
+        toasts = self.runtime.toasts
+        self.runtime.toasts = []
+        for toast in toasts:
+            self.notify(toast, timeout=4)
 
     def _build_widget(self, element, available_width: int | None = None):
         render_width = available_width or self.size.width or 80
@@ -844,6 +993,36 @@ class StuiApp(App[None]):
                 "Space toggles. Tab and Shift+Tab move focus."
             )
             return checkbox
+        if isinstance(element, ToggleElement):
+            toggle = StuiToggle(element)
+            toggle.tooltip = (
+                "Space or Enter toggles. Tab and Shift+Tab move focus."
+            )
+            return Horizontal(
+                toggle,
+                Static(
+                    _clip_text(element.label, MAX_WIDGET_LABEL_WIDTH),
+                    classes="stui-toggle-label",
+                ),
+                classes="stui-toggle",
+            )
+        if isinstance(element, MultiselectElement):
+            multiselect = StuiMultiselect(
+                element,
+                cursor=self._multiselect_cursors.get(element.key, 0),
+            )
+            multiselect.tooltip = (
+                "Arrow keys move. Space or Enter toggles the highlighted "
+                "option. Tab and Shift+Tab move focus."
+            )
+            return Vertical(
+                Static(
+                    _clip_text(element.label, MAX_STATIC_LABEL_WIDTH),
+                    classes="stui-field-label",
+                ),
+                multiselect,
+                classes="stui-field",
+            )
         if isinstance(element, SelectboxElement):
             selectbox = StuiSelectbox(element)
             selectbox.tooltip = (
@@ -908,6 +1087,26 @@ class StuiApp(App[None]):
         self, event: StuiSelectbox.Changed
     ) -> None:
         key = getattr(event.selectbox, "stui_key", None)
+        if key is None:
+            return
+        event.stop()
+        self.runtime.set_widget_value(key, event.value)
+        self.runtime.run_script()
+        await self.render_runtime()
+
+    async def on_stui_multiselect_changed(
+        self, event: StuiMultiselect.Changed
+    ) -> None:
+        key = getattr(event.multiselect, "stui_key", None)
+        if key is None:
+            return
+        event.stop()
+        self.runtime.set_widget_value(key, event.value)
+        self.runtime.run_script()
+        await self.render_runtime()
+
+    async def on_switch_changed(self, event: Switch.Changed) -> None:
+        key = getattr(event.switch, "stui_key", None)
         if key is None:
             return
         event.stop()
