@@ -1,6 +1,6 @@
 # API Stability
 
-`stui` v2.1.0 keeps the top-level stable API intentionally small and
+`stui` v2.2.0 keeps the top-level stable API intentionally small and
 Streamlit-inspired, but it is not Streamlit-compatible and does not depend on
 Streamlit at runtime.
 
@@ -50,6 +50,8 @@ rename in the v1.x line.
 | `__version__` | v1-stable | Package version string. |
 | `bar_chart` | v1-stable | Compact terminal bar summary, not plotting-library parity. |
 | `button` | v1-stable | Core input widget. |
+| `cache_data` | post-v2 experimental | Process-local mutation-isolated data cache, new in v2.2.0. |
+| `cache_resource` | post-v2 experimental | Process-local shared-resource cache, new in v2.2.0. |
 | `caption` | v1-stable | Core text output. |
 | `checkbox` | v1-stable | Core input widget. |
 | `code` | v1-stable | Core text output. |
@@ -84,6 +86,7 @@ rename in the v1.x line.
 | `success` | v1-stable | Core status output. |
 | `table` | v1-stable | Static terminal table display. |
 | `text` | v1-stable | Core text output. |
+| `text_area` | post-v2 experimental | Multiline text editor with Ctrl+Enter apply, new in v2.2.0. |
 | `text_input` | v1-stable | Core input widget. |
 | `title` | v1-stable | Core text output. |
 | `toast` | post-v2 experimental | Transient terminal notification, new in v2.1.0. |
@@ -119,8 +122,6 @@ surface:
 | `st.sidebar` | deferred for v1 | No sidebar layout primitive in the terminal-first v1 surface. |
 | `st.tabs` | deferred for v1 | No tabbed layout primitive in the v1 surface. |
 | `st.file_uploader` | deferred for v1 | File upload is out of scope for the local terminal MVP. |
-| `st.cache_data` | deferred for v1 | Caching decorators are out of scope for the v1 API freeze. |
-| `st.cache_resource` | deferred for v1 | Caching decorators are out of scope for the v1 API freeze. |
 | `st.components` | deferred for v1 | Browser component embedding is intentionally unsupported. |
 | `st.empty` | deferred for v1 | Placeholder mutation semantics are not frozen for the terminal rerun model. |
 | custom column ratios/gaps | deferred for v1 | `st.columns` remains a count-only terminal primitive. |
@@ -164,3 +165,15 @@ v2.1.0 adds `st.multiselect`, `st.toggle`, and `st.toast` as
 `post-v2 experimental` APIs. They are public enough to use, but stay outside
 the v2 stable contract until real terminal usage confirms their call shapes
 and keyboard behavior.
+
+v2.2.0 adds `st.cache_data`, `st.cache_resource`, and `st.text_area` as
+`post-v2 experimental` APIs. The cache decorators are intentionally
+process-local and dependency-light; `st.text_area` uses Enter for newlines and
+Ctrl+Enter to apply. These APIs remain outside the stable v2 contract while
+their invalidation, serialization, multiline editing, form, and terminal
+behavior gather real usage evidence.
+
+`st.multiselect`, `st.toggle`, and `st.toast` remain post-v2 experimental in
+v2.2.0. `st.tabs` remains deferred because inactive-content execution, widget
+key, focus, nesting, form, and narrow-terminal semantics are not yet strong
+enough to freeze.

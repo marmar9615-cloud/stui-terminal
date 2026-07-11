@@ -3,7 +3,9 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Any
 
-from .runtime import RerunException, StopException, get_current_runtime
+from ._terminal_text import visible_terminal_text
+from .elements import TextAreaElement
+from .runtime import ApiUsageError, RerunException, StopException, get_current_runtime
 
 
 class SessionStateProxy:
@@ -295,6 +297,75 @@ def text_input(
         args=args,
         kwargs=kwargs,
     )
+
+
+def text_area(
+    label: str,
+    value: str = "",
+    *,
+    height: int = 6,
+    key: str | None = None,
+    placeholder: str | None = None,
+    disabled: bool = False,
+    max_chars: int | None = None,
+    on_change=None,
+    args: tuple[Any, ...] | None = None,
+    kwargs: dict[str, Any] | None = None,
+) -> str:
+    """Render a multiline text editor.
+
+    Enter inserts a newline. Ctrl+Enter applies the current text and reruns the
+    app. Inside a form, the applied value remains pending until form submit.
+    """
+    if isinstance(height, bool) or not isinstance(height, int) or height < 3:
+        raise ApiUsageError("st.text_area height must be an integer of at least 3.")
+    if max_chars is not None and (
+        isinstance(max_chars, bool)
+        or not isinstance(max_chars, int)
+        or max_chars < 1
+    ):
+        raise ApiUsageError("st.text_area max_chars must be a positive integer.")
+
+    runtime = get_current_runtime()
+    label_text = visible_terminal_text(label)
+    widget_key = runtime.next_widget_key("text_area", label_text, key)
+    current = str(
+        runtime._widget_value(
+            widget_key,
+            runtime.session_state.get(widget_key, value),
+            disabled=disabled,
+        )
+    )
+    current = visible_terminal_text(current)
+    if max_chars is not None:
+        current = current[:max_chars]
+    safe_placeholder = (
+        visible_terminal_text(placeholder) if placeholder is not None else None
+    )
+    changed = runtime._finalize_widget_value(
+        widget_key,
+        current,
+        disabled=disabled,
+    )
+    runtime._append_element(
+        TextAreaElement(
+            label=label_text,
+            key=widget_key,
+            value=current,
+            height=height,
+            placeholder=safe_placeholder,
+            disabled=disabled,
+            max_chars=max_chars,
+        )
+    )
+    runtime._handle_widget_callback(
+        widget_key,
+        changed,
+        on_change,
+        args,
+        kwargs,
+    )
+    return current
 
 
 def checkbox(

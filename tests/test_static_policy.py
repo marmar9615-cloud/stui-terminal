@@ -10,6 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src" / "stui"
 PYPROJECT = ROOT / "pyproject.toml"
 PUBLISH_WORKFLOW = ROOT / ".github" / "workflows" / "publish.yml"
+PUBLISHING_DOC = ROOT / "docs" / "publishing.md"
+RELEASE_CHECKLIST = ROOT / "docs" / "release-checklist.md"
+VERIFY_CUSTOM_PROJECT = ROOT / "scripts" / "verify_custom_project.sh"
+VERIFY_V220_PROJECT = ROOT / "scripts" / "verify_v220_project.py"
 
 FORBIDDEN_DISTRIBUTIONS = {"streamlit", "textual-slider"}
 FORBIDDEN_TRACKED_NAMES = {
@@ -81,6 +85,13 @@ def test_runtime_dependencies_do_not_include_streamlit_or_slider_package() -> No
     }
 
     assert normalized.isdisjoint(FORBIDDEN_DISTRIBUTIONS)
+
+
+def test_textual_floor_supports_the_multiline_widget_contract() -> None:
+    metadata = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
+    dependencies = metadata["project"].get("dependencies", [])
+
+    assert "textual>=8.2.5" in dependencies
 
 
 def test_source_does_not_import_forbidden_runtime_modules() -> None:
@@ -179,3 +190,33 @@ def test_publish_workflow_uses_trusted_publishing_without_passwords() -> None:
     assert "password:" not in workflow
     assert "__token__" not in workflow
     assert "username:" not in workflow
+
+
+def test_release_verification_avoids_mixed_indexes_and_fixed_tmp_paths() -> None:
+    publishing = PUBLISHING_DOC.read_text(encoding="utf-8")
+    release_checklist = RELEASE_CHECKLIST.read_text(encoding="utf-8")
+    custom_script = VERIFY_CUSTOM_PROJECT.read_text(encoding="utf-8")
+    v220_script = VERIFY_V220_PROJECT.read_text(encoding="utf-8")
+
+    assert "--extra-index-url" not in publishing
+    assert "pip download" in publishing
+    assert "--no-deps" in publishing
+    assert "--only-binary=:all:" in publishing
+
+    fixed_paths = {
+        "/tmp/caching-v220.py",
+        "/tmp/prompt-workbench-v220.py",
+        "/tmp/stui-app.py",
+        "/tmp/stui-charts-app.py",
+        "/tmp/stui-current",
+        "/tmp/stui-data-app.py",
+        "/tmp/stui-terminal-pypi",
+        "/tmp/stui-terminal-testpypi",
+        "/tmp/stui-v220-workbench",
+        "/tmp/stui-X.Y.Z-custom-project",
+    }
+    combined = "\n".join(
+        [publishing, release_checklist, custom_script, v220_script]
+    )
+    assert [path for path in sorted(fixed_paths) if path in combined] == []
+    assert "shutil.rmtree" not in v220_script

@@ -2,14 +2,19 @@ from __future__ import annotations
 
 import contextvars
 import dataclasses as dataclasses_lib
+import hashlib
+import importlib
+import importlib.util
 import inspect
 import json as json_lib
 import math
 import runpy
 import sys
 import textwrap
+import threading
 import traceback
-from collections.abc import Callable
+import weakref
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Any
 
@@ -57,7 +62,31 @@ from .widgets.slider import snap_value
 _current_runtime: contextvars.ContextVar[Runtime | None] = contextvars.ContextVar(
     "stui_current_runtime", default=None
 )
+_SCRIPT_EXECUTION_LOCK = threading.RLock()
+_PROCESS_ACTIVE_RUNTIME_LOCK = threading.RLock()
+_process_active_runtime: Runtime | None = None
+_PROCESS_MODULE_OWNERS: weakref.WeakKeyDictionary[
+    object, weakref.ReferenceType[Any]
+] = weakref.WeakKeyDictionary()
 _MISSING = object()
+_IGNORED_WATCH_PARTS = {
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+}
+
+SourceSignature = tuple[int, int, int, bytes] | None
+SourceChangeCallback = Callable[[frozenset[Path], int], None]
 
 
 class RerunException(BaseException):
@@ -115,6 +144,7 @@ class SpinnerBlock(ElementBlock):
 class Runtime:
     def __init__(self, script_path: str | Path) -> None:
         self.script_path = Path(script_path).resolve()
+        self.project_root = _resolve_project_root(self.script_path)
         self.session_state = SessionState()
         self.elements: list[Element] = []
         self.toasts: list[str] = []
@@ -137,13 +167,35 @@ class Runtime:
             str, dict[str, tuple[Callable[..., Any], tuple[Any, ...], dict[str, Any]]]
         ] = {}
         self._form_rendered_widget_keys: dict[str, set[str]] = {}
+        self._local_module_paths: dict[str, Path] = {}
+        self._watched_source_signatures: dict[Path, SourceSignature] = {
+            self.script_path: _source_signature(self.script_path)
+        }
+        self._source_change_callbacks: list[SourceChangeCallback] = []
+        self._cache_registries: dict[object, dict[Any, Any]] = {}
+        self.source_revision = 0
 
     def run_script(self) -> list[Element]:
+        global _process_active_runtime
+
+        with _SCRIPT_EXECUTION_LOCK:
+            with _PROCESS_ACTIVE_RUNTIME_LOCK:
+                previous_runtime = _process_active_runtime
+                _process_active_runtime = self
+            try:
+                return self._run_script_locked()
+            finally:
+                with _PROCESS_ACTIVE_RUNTIME_LOCK:
+                    _process_active_runtime = previous_runtime
+
+    def _run_script_locked(self) -> list[Element]:
         initial_session_snapshot = self.session_state.snapshot()
         for _ in range(10):
             self._prepare_run()
             token = _current_runtime.set(self)
             sys_path_snapshot = self._push_script_dir()
+            displaced_host_modules = self._evict_conflicting_local_modules()
+            module_ownership_snapshot = self._snapshot_local_modules()
             session_snapshot = self.session_state.snapshot()
             try:
                 runpy.run_path(str(self.script_path), run_name="__main__")
@@ -163,10 +215,18 @@ class Runtime:
                 self.session_state.restore(session_snapshot)
                 self._restore_committed_widget_values()
                 self.elements = [
-                    ErrorElement(_format_script_exception(exc, self.script_path))
+                    ErrorElement(
+                        _format_script_exception(
+                            exc,
+                            self.script_path,
+                            self.project_root,
+                        )
+                    )
                 ]
                 self.toasts = []
             finally:
+                self._discover_local_modules(module_ownership_snapshot)
+                self._restore_displaced_host_modules(displaced_host_modules)
                 self._restore_sys_path(sys_path_snapshot)
                 _current_runtime.reset(token)
             return self.elements
@@ -176,6 +236,127 @@ class Runtime:
             ErrorElement("stui stopped after 10 consecutive rerun requests.")
         ]
         return self.elements
+
+    @property
+    def watched_source_paths(self) -> tuple[Path, ...]:
+        """Python source files currently tracked by watch mode."""
+        return tuple(sorted(self._watched_source_signatures))
+
+    def is_watchable_source(self, path: str | Path) -> bool:
+        """Return whether *path* is local Python source suitable for watch mode."""
+        candidate = Path(path).resolve()
+        if candidate.suffix != ".py":
+            return False
+        try:
+            relative = candidate.relative_to(self.project_root)
+        except ValueError:
+            return False
+        return not any(_is_ignored_watch_part(part) for part in relative.parts)
+
+    def poll_source_changes(self) -> tuple[Path, ...]:
+        """Return coalesced local source changes since the previous poll."""
+        changed: list[Path] = []
+        for path, previous in tuple(self._watched_source_signatures.items()):
+            current = _source_signature(path)
+            if current == previous:
+                continue
+            self._watched_source_signatures[path] = current
+            changed.append(path)
+        return tuple(sorted(changed))
+
+    def add_source_change_callback(self, callback: SourceChangeCallback) -> None:
+        """Register an internal cache/runtime invalidation hook for source reloads."""
+        self._source_change_callbacks.append(callback)
+
+    def _get_cache_registry(
+        self,
+        namespace: object,
+        *,
+        create: bool = True,
+    ) -> dict[Any, Any] | None:
+        registry = self._cache_registries.get(namespace)
+        if registry is None and create:
+            registry = {}
+            self._cache_registries[namespace] = registry
+        return registry
+
+    def _clear_cache_registry(self, namespace: object) -> None:
+        registry = self._cache_registries.pop(namespace, None)
+        if registry is not None:
+            registry.clear()
+
+    def prepare_source_reload(
+        self,
+        changed_paths: Iterable[str | Path],
+    ) -> tuple[str, ...]:
+        """Evict this app's imported modules before rerunning changed source."""
+        with _SCRIPT_EXECUTION_LOCK:
+            return self._prepare_source_reload_locked(changed_paths)
+
+    def _prepare_source_reload_locked(
+        self,
+        changed_paths: Iterable[str | Path],
+    ) -> tuple[str, ...]:
+        changed = frozenset(Path(path).resolve() for path in changed_paths)
+        if not changed:
+            return ()
+
+        evicted: list[str] = []
+        for module_name in sorted(
+            self._local_module_paths,
+            key=lambda name: (name.count("."), name),
+            reverse=True,
+        ):
+            module = sys.modules.get(module_name)
+            if module is None:
+                continue
+            module_path = _module_source_path(module)
+            if module_path is None or not self.is_watchable_source(module_path):
+                continue
+            sys.modules.pop(module_name, None)
+            evicted.append(module_name)
+
+        for source_path in self._local_module_paths.values():
+            _remove_cached_bytecode(source_path)
+        importlib.invalidate_caches()
+
+        self.source_revision += 1
+        for callback in tuple(self._source_change_callbacks):
+            callback(changed, self.source_revision)
+        return tuple(sorted(evicted))
+
+    def _snapshot_local_modules(self) -> dict[str, object]:
+        snapshot: dict[str, object] = {}
+        for module_name, module in tuple(sys.modules.items()):
+            if module_name == "stui" or module_name.startswith("stui."):
+                continue
+            module_path = _module_source_path(module)
+            if module_path is None or not self.is_watchable_source(module_path):
+                continue
+            snapshot[module_name] = module
+        return snapshot
+
+    def _discover_local_modules(self, before_run: dict[str, object]) -> None:
+        for module_name, module in tuple(sys.modules.items()):
+            if module_name == "stui" or module_name.startswith("stui."):
+                continue
+            module_path = _module_source_path(module)
+            if module_path is None or not self.is_watchable_source(module_path):
+                continue
+            if (
+                module_name not in self._local_module_paths
+                and before_run.get(module_name) is module
+            ):
+                continue
+            self._local_module_paths[module_name] = module_path
+            try:
+                _PROCESS_MODULE_OWNERS[module] = weakref.ref(self)
+            except TypeError:
+                pass
+            self._watched_source_signatures.setdefault(
+                module_path,
+                _source_signature(module_path),
+            )
 
     def title(self, body: Any, *, key: str | None = None) -> None:
         self._append_element(TitleElement(str(body), key=key))
@@ -931,8 +1112,165 @@ class Runtime:
         sys.path.insert(0, script_dir)
         return sys_path_snapshot
 
+    def _evict_conflicting_local_modules(self) -> dict[str, object]:
+        """Prefer modules beside this app over same-named modules from another app."""
+        import_roots = _local_import_roots(
+            self.script_path.parent,
+            self.project_root,
+        )
+        if not import_roots:
+            return {}
+
+        displaced_host_modules: dict[str, object] = {}
+        for module_name, module in tuple(sys.modules.items()):
+            root_name = module_name.partition(".")[0]
+            local_locations = import_roots.get(root_name)
+            if local_locations is None or root_name == "stui":
+                continue
+            module_path = _module_source_path(module)
+            module_locations = _module_search_paths(module)
+            if module_path is None and not module_locations:
+                continue
+            paths = (module_path,) if module_path is not None else module_locations
+            if not any(
+                _is_relative_to(path, local_location)
+                for path in paths
+                for local_location in local_locations
+            ):
+                owner_ref = _PROCESS_MODULE_OWNERS.get(module)
+                if owner_ref is None or owner_ref() is None:
+                    displaced_host_modules[module_name] = module
+                sys.modules.pop(module_name, None)
+        return displaced_host_modules
+
+    def _restore_displaced_host_modules(
+        self,
+        displaced_host_modules: dict[str, object],
+    ) -> None:
+        """Restore pre-existing host modules after a local collision finishes."""
+        if not displaced_host_modules:
+            return
+
+        displaced_roots = {
+            module_name.partition(".")[0] for module_name in displaced_host_modules
+        }
+        for module_name, module in tuple(sys.modules.items()):
+            if module_name.partition(".")[0] not in displaced_roots:
+                continue
+            owner_ref = _PROCESS_MODULE_OWNERS.get(module)
+            if owner_ref is not None and owner_ref() is self:
+                sys.modules.pop(module_name, None)
+        sys.modules.update(displaced_host_modules)
+
     def _restore_sys_path(self, sys_path_snapshot: list[str]) -> None:
         sys.path[:] = sys_path_snapshot
+
+
+def _is_ignored_watch_part(part: str) -> bool:
+    return (
+        part in _IGNORED_WATCH_PARTS
+        or part.startswith(".venv")
+        or part.endswith(".egg-info")
+    )
+
+
+def _resolve_project_root(script_path: Path) -> Path:
+    for candidate in (script_path.parent, *script_path.parents):
+        if (candidate / "pyproject.toml").is_file() or (candidate / ".git").exists():
+            return candidate.resolve()
+    return script_path.parent
+
+
+def _local_import_roots(*search_paths: Path) -> dict[str, tuple[Path, ...]]:
+    roots: dict[str, list[Path]] = {}
+    for search_path in dict.fromkeys(path.resolve() for path in search_paths):
+        try:
+            children = tuple(search_path.iterdir())
+        except OSError:
+            continue
+
+        for child in children:
+            if child.is_file() and child.suffix == ".py":
+                roots.setdefault(child.stem, []).append(child.resolve())
+            elif child.is_dir() and _contains_local_python_source(child):
+                roots.setdefault(child.name, []).append(child.resolve())
+    return {name: tuple(locations) for name, locations in roots.items()}
+
+
+def _contains_local_python_source(root: Path) -> bool:
+    if _is_ignored_watch_part(root.name):
+        return False
+    try:
+        candidates = root.rglob("*.py")
+        return any(
+            not any(
+                _is_ignored_watch_part(part)
+                for part in path.relative_to(root).parts
+            )
+            for path in candidates
+        )
+    except OSError:
+        return False
+
+
+def _module_search_paths(module: object) -> tuple[Path, ...]:
+    raw_paths = getattr(module, "__path__", None)
+    if raw_paths is None:
+        return ()
+    paths: list[Path] = []
+    for raw_path in raw_paths:
+        try:
+            paths.append(Path(raw_path).resolve())
+        except (OSError, TypeError):
+            continue
+    return tuple(paths)
+
+
+def _is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return False
+    return True
+
+
+def _module_source_path(module: object) -> Path | None:
+    raw_path = getattr(module, "__file__", None)
+    if not raw_path:
+        return None
+    path = Path(raw_path)
+    if path.suffix in {".pyc", ".pyo"}:
+        try:
+            path = Path(importlib.util.source_from_cache(str(path)))
+        except ValueError:
+            return None
+    if path.suffix != ".py":
+        return None
+    return path.resolve()
+
+
+def _source_signature(path: Path) -> SourceSignature:
+    try:
+        stat_result = path.stat()
+        digest = hashlib.blake2b(path.read_bytes(), digest_size=16).digest()
+    except OSError:
+        return None
+    return (
+        stat_result.st_mtime_ns,
+        stat_result.st_size,
+        stat_result.st_ino,
+        digest,
+    )
+
+
+def _remove_cached_bytecode(source_path: Path) -> None:
+    if source_path.suffix != ".py":
+        return
+    try:
+        cache_path = Path(importlib.util.cache_from_source(str(source_path)))
+        cache_path.unlink(missing_ok=True)
+    except (OSError, ValueError):
+        pass
 
 
 def get_current_runtime() -> Runtime:
@@ -942,19 +1280,32 @@ def get_current_runtime() -> Runtime:
     return runtime
 
 
-def _format_script_exception(exc: BaseException, script_path: Path) -> str:
+def _get_process_active_runtime() -> Runtime | None:
+    """Return the runtime that owns the currently serialized script run."""
+    with _PROCESS_ACTIVE_RUNTIME_LOCK:
+        return _process_active_runtime
+
+
+def _format_script_exception(
+    exc: BaseException,
+    script_path: Path,
+    project_root: Path | None = None,
+) -> str:
     if isinstance(exc, FileNotFoundError):
         return f"FileNotFoundError: {exc}"
     if isinstance(exc, SyntaxError):
         return "".join(traceback.format_exception_only(type(exc), exc)).rstrip()
 
     extracted = traceback.extract_tb(exc.__traceback__)
-    script_frames = [
-        frame
-        for frame in extracted
-        if Path(frame.filename).resolve() == script_path
-    ]
-    frames = script_frames or list(extracted[-1:])
+    local_root = (project_root or script_path.parent).resolve()
+    local_frames = []
+    for frame in extracted:
+        try:
+            Path(frame.filename).resolve().relative_to(local_root)
+        except (OSError, ValueError):
+            continue
+        local_frames.append(frame)
+    frames = local_frames or list(extracted[-1:])
     rendered_frames = ["Traceback (most recent call last):\n"]
     rendered_frames.extend(traceback.format_list(frames))
     rendered_frames.extend(traceback.format_exception_only(type(exc), exc))

@@ -35,6 +35,7 @@ from .api import (
     success,
     table,
     text,
+    text_area,
     text_input,
     title,
     toast,
@@ -42,13 +43,16 @@ from .api import (
     warning,
     write,
 )
+from .cache import cache_data, cache_resource
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
 __all__ = [
     "__version__",
     "button",
     "bar_chart",
+    "cache_data",
+    "cache_resource",
     "caption",
     "checkbox",
     "code",
@@ -83,6 +87,7 @@ __all__ = [
     "table",
     "success",
     "text",
+    "text_area",
     "text_input",
     "title",
     "toast",

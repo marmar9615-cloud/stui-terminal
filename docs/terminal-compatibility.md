@@ -72,6 +72,16 @@ resources, every bundled example, init templates, and non-interactive runtime
 validation more than once. It is useful for install health and accumulation
 checks, but it does not replace a real interactive terminal smoke test.
 
+For v2.2 multiline-input reports, verify both keys explicitly:
+
+- Enter inserts a newline without rerunning the app.
+- Ctrl+Enter applies the value and reruns; inside a form, the value remains
+  pending until submit.
+
+For watch-mode reports, include the editor and save behavior (in-place write or
+atomic replacement), the local module path that changed, whether state
+survived, and whether a temporary syntax error recovered after the next save.
+
 `STUI_THEME=high-contrast` enables the high-contrast theme. Any other value
 falls back to the default theme and should be included in reports if the theme
 does not look right. `NO_COLOR` is reported by `stui doctor` so users can spot
@@ -100,7 +110,8 @@ opening a compatibility report:
 ## Keyboard Notes
 
 Automated Textual harness coverage verifies button activation, text and number
-input submission, checkbox toggles, selectbox arrow movement, slider
+input submission, multiline Enter/Ctrl+Enter behavior, checkbox toggles,
+multiselect cursor/toggle behavior, selectbox arrow movement, slider
 arrow/Home/End movement, expander toggles, `r` rerun, `q` quit, and focus moving
 through widgets inside columns. Radio focus is covered in the harness, but
 radio arrow movement remains terminal/Textual-sensitive enough that this guide

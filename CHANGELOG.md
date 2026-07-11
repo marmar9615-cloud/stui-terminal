@@ -2,6 +2,99 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.2.0 - 2026-07-11
+
+### Added
+
+- Added post-v2 experimental `st.cache_data` and `st.cache_resource`
+  decorators for dependency-light, process-local caching. Both support bare and
+  configured decorator forms, positive `ttl`, positive `max_entries`,
+  per-function `.clear()`, and namespace-level clearing.
+- Added post-v2 experimental `st.text_area` for multiline terminal authoring.
+  Enter inserts a newline and Ctrl+Enter applies the value and reruns; the
+  widget supports forms, callbacks, disabled state, `max_chars`, explicit or
+  generated keys, and best-effort cursor/scroll restoration.
+- Added `examples/caching.py` and `examples/prompt_workbench.py` as offline
+  examples, with synchronized bundled copies for installed users.
+- Added a repo-only `examples/watch_project/` project showing a local helper
+  import, cached data loading, session state, and multi-file watch mode.
+- Added dedicated caching and watch-mode documentation plus v2.2.0 release
+  notes under `docs/releases/`.
+
+### Changed
+
+- Raised the Textual runtime floor to 8.2.5, the oldest version covered by the
+  multiline `TextArea` constructor and interaction tests used in this release.
+- Hardened `stui run --watch` so it tracks imported local Python modules under
+  the app directory, evicts local modules before reload, detects atomic file
+  replacement, preserves `st.session_state`, and recovers after temporary
+  syntax/import/runtime errors.
+- Changed watch notifications so successful reloads and failed-but-still-
+  watching runs are described accurately.
+- Updated README, API reference/stability docs, terminal notes, feedback docs,
+  release gates, roadmap, and examples for caching, multiline input, and the
+  multi-file development loop.
+- Kept `st.multiselect`, `st.toggle`, and `st.toast` post-v2 experimental while
+  their keyboard, state, and transient-notification behavior continues to
+  gather terminal evidence.
+
+### Fixed
+
+- Preserved app-scoped cache isolation when script-defined cached functions run
+  in ordinary worker threads. The decorator retains a weak reference to its
+  owning runtime, while ambiguous contextless worker calls fail clearly instead
+  of being assigned to whichever app happens to be active.
+- Moved runtime cache registries onto their owning `Runtime`, allowing resource
+  values that refer back to the runtime to be garbage-collected normally.
+- Fixed cross-project module reuse for nested apps by checking both the script
+  directory and the marked project root before execution.
+- Neutralized terminal controls at the remaining mutable render boundaries,
+  including toast messages, multiselect labels/options, toggle labels, and
+  duplicate widget/form diagnostics.
+- Applied terminal-control neutralization to the complete public display/widget
+  render matrix and watch filenames, and made `text_area(max_chars=...)`
+  normalize before truncation so committed values remain stable across reruns.
+- Replaced predictable release-proof work directories with exclusive private
+  temporary directories, made explicit destinations fail closed when they
+  already exist or are symlinks, and removed mixed TestPyPI/PyPI dependency
+  resolution from the publishing guide.
+- Strengthened the package-content audit so missing cache, terminal-text, and
+  v2.2 bundled example files fail the release gate.
+- Neutralized unsafe C0/C1 terminal controls in `st.text_area` initial values,
+  labels, placeholders, and live inserted or pasted text by rendering them as
+  visible escapes before every frame while preserving newlines, tabs, and
+  printable Unicode.
+- Fixed PEP 420 namespace-package modules leaking between sequential app
+  runtimes, and serialized process-global import changes for concurrent
+  embedded runtimes.
+- Fixed watch discovery claiming and later evicting project-local modules that
+  were preloaded by an embedding host but never introduced by the app.
+- Serialized source-reload module eviction with active script execution so one
+  run cannot observe two identities of the same helper module.
+- Fixed same-thread recursive cache fills hanging on their own in-flight event;
+  they now fail immediately with a readable error while cross-thread callers
+  retain single-fill coordination.
+- Isolated fallback cache entries for separately decorated same-source function
+  instances outside an active runtime.
+- Fixed cache collisions between factory-created functions whose closures
+  contain unpickleable values.
+- Fixed a cache deadlock when one cached function waits for cached work in
+  another thread while preserving single-fill behavior for duplicate keys.
+- Fixed same-named helper modules leaking between sibling apps under one
+  project root.
+- Fixed watch mode ignoring changes in imported local helper modules and
+  continuing to reuse stale helper objects from `sys.modules`.
+- Fixed stale local bytecode reuse after helper-module edits.
+- Fixed multiline editing so ordinary Enter remains a newline instead of
+  triggering an app rerun.
+
+### Deferred
+
+- Kept `st.tabs` deferred. Hiding inactive element groups safely requires a
+  clearer contract for script execution, widget keys, nested containers/forms,
+  focus restoration, and narrow-terminal navigation than this release could
+  prove without destabilizing the element model.
+
 ## 2.1.0 - 2026-07-04
 
 ### Added

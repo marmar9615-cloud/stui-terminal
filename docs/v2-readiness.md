@@ -1,8 +1,9 @@
 # v2 Readiness
 
-`stui` v2.0.0 is the first v2 stable release. It is a stable contract,
-documentation, packaging, and release-proof milestone rather than a large
-feature wave.
+`stui` v2.0.0 established the stable v2 contract. v2.2.0 is the
+fast-reruns-and-richer-authoring release: it preserves that stable surface while
+adding experimental process-local caching, multiline input, and a dependable
+multi-file watch loop.
 
 `stui` remains terminal-native, Streamlit-inspired, and deliberately not
 Streamlit-compatible. The PyPI distribution remains `stui-terminal`; the import
@@ -43,15 +44,21 @@ terminal, or security issue requires tightening.
 
 ## Experimental APIs
 
-These APIs remain public but experimental in v2.0.0:
+These APIs remain public but experimental in v2.2.0:
 
 - `st.status`
 - `st.spinner`
 - `st.help`
+- `st.multiselect`
+- `st.toggle`
+- `st.toast`
+- `st.cache_data`
+- `st.cache_resource`
+- `st.text_area`
 
-They are tested and documented, but their exact terminal formatting,
-grouping/context-manager behavior, and help rendering contract still need more
-real use before being called stable.
+They are tested and documented, but their exact terminal formatting, keyboard,
+serialization/invalidation, notification lifecycle, or grouping behavior still
+needs more real use before being called stable.
 
 ## Deferred Roadmap
 
@@ -61,8 +68,6 @@ contract:
 - `st.sidebar`
 - `st.tabs`
 - `st.file_uploader`
-- `st.cache_data`
-- `st.cache_resource`
 - `st.components`
 - `st.empty`
 - custom column ratios/gaps
@@ -78,6 +83,38 @@ The v2.0.0 release preserves the `stui-terminal` distribution name,
 
 Apps using `st.status`, `st.spinner`, or `st.help` should treat those APIs as
 experimental until they are promoted in release notes.
+
+Apps using the v2.1 or v2.2 additions should also track the experimental API
+notes. The new cache APIs are process-local and do not promise Streamlit cache
+compatibility; `st.text_area` uses Ctrl+Enter to apply and Enter to insert a
+newline.
+
+## v2.2.0 Release Decision
+
+v2.2.0 is ready only when evidence proves all of the following:
+
+- cache keys are app-scoped, argument-normalized, code-sensitive, and isolated
+  between unrelated scripts;
+- `st.cache_data` protects cached values from mutation, while
+  `st.cache_resource` preserves object identity;
+- TTL, LRU entry limits, per-function clearing, namespace clearing,
+  unsupported-value errors, and no-exception-caching behavior are covered by
+  deterministic tests;
+- watch mode detects imported local-module changes, evicts stale modules,
+  preserves `st.session_state`, invalidates changed decorated functions, and
+  recovers after temporary syntax/import/runtime errors;
+- `st.text_area` covers multiline input, Ctrl+Enter apply, callbacks, forms,
+  disabled state, length limits, Unicode, and narrow-terminal rendering;
+- the repo examples and bundled copies are synchronized;
+- a clean wheel install and an external multi-file project prove the cache,
+  watch, input, CLI, and package-resource behavior outside the checkout;
+- local gates, security/static policy, main/tag CI, Trusted Publishing, PyPI,
+  GitHub Release, and fresh exact-version PyPI install all pass.
+
+`st.tabs` is not part of v2.2.0. The current top-to-bottom element model does
+not yet have a sufficiently small, tested answer for inactive-content
+execution, state/key behavior, nested forms/containers, focus restoration, and
+narrow-terminal navigation.
 
 ## Final v2 Checklist
 

@@ -151,6 +151,8 @@ stui check app.py --strict --repeat 2
 - [Docs index](docs/README.md)
 - [API reference](docs/api-reference.md)
 - [API stability](docs/api-stability.md)
+- [Caching](docs/caching.md)
+- [Watch mode](docs/watch-mode.md)
 - [Terminal compatibility](docs/terminal-compatibility.md)
 - [Changelog](CHANGELOG.md)
 - [Roadmap](ROADMAP.md)
@@ -189,12 +191,17 @@ Run it with:
 stui run app.py
 ```
 
-While iterating on a script, add `--watch` and `stui` reruns the app every
-time you save the file, keeping `st.session_state` intact:
+While iterating on a script, add `--watch`. `stui` watches the entry script and
+imported local Python modules, reloads changed local helpers, and keeps
+`st.session_state` intact:
 
 ```bash
 stui run app.py --watch
 ```
+
+Temporary syntax or import errors render in the app while the watcher stays
+alive; fix and save the file to recover. See [Watch Mode](docs/watch-mode.md)
+for the reload, cache-invalidation, and project-boundary rules.
 
 Start from the repository examples when you want a larger reference. These
 paths exist only after you clone the repository:
@@ -207,6 +214,8 @@ stui run examples/dashboard.py
 stui run examples/forms.py
 stui run examples/layouts.py
 stui run examples/charts.py
+stui run examples/caching.py
+stui run examples/prompt_workbench.py
 stui run examples/kitchen_sink.py
 ```
 
@@ -220,6 +229,8 @@ stui demo model_demo
 stui demo dashboard
 stui demo forms
 stui demo charts
+stui example copy caching ./caching.py
+stui example copy prompt_workbench ./prompt_workbench.py
 stui demo kitchen_sink
 stui examples
 stui example list
@@ -309,17 +320,57 @@ import stui as st
 st.title("Inputs")
 
 name = st.text_input("Name", "MarMar")
+notes = st.text_area(
+    "Notes",
+    "Compare the candidate\nwith the baseline.",
+    height=5,
+    max_chars=500,
+)
 batch = st.number_input("Batch size", min_value=1, max_value=128, value=16)
 model = st.selectbox("Model", ["tiny", "base", "large"], index=1)
 mode = st.radio("Mode", ["fast", "balanced", "careful"], index=1)
 dry_run = st.checkbox("Dry run", value=True)
 
 st.write("name =", name)
+st.write("notes =", notes)
 st.write("batch =", batch)
 st.write("model =", model)
 st.write("mode =", mode)
 st.write("dry run =", dry_run)
 ```
+
+`Enter` inserts a newline in `st.text_area`; `Ctrl+Enter` commits the value and
+reruns the app. Inside a form, committed text remains pending until submit.
+Unsafe terminal control characters are shown as visible `\\xNN` escapes;
+newlines, tabs, and printable Unicode are preserved. The same policy applies
+while text is typed or pasted, before the live editor frame is rendered.
+
+### Caching
+
+```python
+import stui as st
+
+
+@st.cache_data(ttl=60, max_entries=64)
+def load_rows(dataset: str):
+    return [{"dataset": dataset, "score": 0.91}]
+
+
+@st.cache_resource
+def load_model():
+    return {"name": "local-demo"}
+
+
+st.table(load_rows("validation"))
+st.json(load_model())
+```
+
+`st.cache_data` returns isolated copies of pickle-compatible values;
+`st.cache_resource` reuses one process-local object. Both caches end when the
+app process exits. See [Caching](docs/caching.md) for keys, TTL, eviction,
+clearing, mutation, worker ownership, and watch-mode behavior. Cached functions
+defined in the app retain their owning runtime for ordinary workers; ambiguous
+contextless shared wrappers fail clearly instead of crossing app scopes.
 
 ### Table and Dataframe
 
@@ -380,10 +431,13 @@ stui demo dashboard
 stui init app.py
 stui check app.py
 stui run app.py
+stui run app.py --watch
 python -m stui run app.py
 
 # List, copy, or create starter examples.
 stui demo list
+stui example copy caching ./caching.py
+stui example copy prompt_workbench ./prompt_workbench.py
 stui examples
 stui example list
 stui example copy counter ./counter.py
@@ -426,6 +480,8 @@ python3.11 -m pytest
 - `enter` or `space`: press the focused button
 - `space`: toggle the focused checkbox
 - `enter` in text and number inputs: submit the edited value
+- `enter` in a text area: insert a newline
+- `ctrl+enter` in a text area: commit the value and rerun
 - `enter`, `right`, or `down`: move a selectbox to the next choice
 - `left` or `up`: move a selectbox to the previous choice
 - arrow keys in radio groups: choose another option
@@ -459,15 +515,16 @@ stability checklist are tracked in
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v2.1.0 |
+| Area | APIs | Status in v2.2.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
 | Status/help primitives | `st.status`, `st.spinner`, `st.help` | Post-v1 experimental while terminal grouping/help formatting gathers feedback |
 | Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | v1-stable static terminal displays |
 | Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | v1-stable input widgets |
-| New input widgets | `st.multiselect`, `st.toggle` | Post-v2 experimental input widgets, new in v2.1.0 |
+| Richer input widgets | `st.text_area`, `st.multiselect`, `st.toggle` | Post-v2 experimental authoring widgets |
 | Notifications | `st.toast` | Post-v2 experimental transient terminal notification, new in v2.1.0 |
+| Caching | `st.cache_data`, `st.cache_resource` | Post-v2 experimental process-local caches, new in v2.2.0 |
 | Forms | `st.form`, `st.form_submit_button` | v1-stable deferred commit to `session_state` until submit |
 | Layout/grouping | `st.container`, `st.expander`, `st.columns` | v1-stable terminal grouping primitives; `st.columns` is count-only and stacks on narrow terminals |
 | Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | v1-stable compact terminal summaries, not plotting replacements |
@@ -481,7 +538,7 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v2.1.0 stable surface is unchanged from v2.0.0: the tested API frozen in
+The v2.2.0 stable surface is unchanged from v2.0.0: the tested API frozen in
 v1.9.0 and verified for the v2 major release. It keeps the v1.9.0 API intact
 while making the v2 contract, migration expectations, release-proof gates, and
 deferred roadmap explicit. Tables and dataframes are stable for documented
@@ -494,9 +551,10 @@ correctness, terminal, or security issue forces a change.
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v2 behavior yet. In v2.1.0 this includes the post-v1
+promised as frozen v2 behavior yet. In v2.2.0 this includes the post-v1
 experimental `st.status`, `st.spinner`, and `st.help`, plus the post-v2
-experimental `st.multiselect`, `st.toggle`, and `st.toast` added in v2.1.0.
+experimental `st.multiselect`, `st.toggle`, and `st.toast` added in v2.1.0 and
+`st.cache_data`, `st.cache_resource`, and `st.text_area` added in v2.2.0.
 Release notes should call out any change with a migration note when practical.
 
 APIs not shown in this table should be treated as private implementation
@@ -504,7 +562,7 @@ details. Experimental display/status helpers may still tighten in future minor
 releases unless they
 are promoted in the API stability docs and covered by release notes.
 Deferred APIs include `st.sidebar`, `st.tabs`, `st.file_uploader`,
-`st.cache_data`, `st.cache_resource`, `st.components`, editable dataframes,
+`st.components`, editable dataframes,
 custom column ratios/gaps, `st.empty`, plotting-library parity, and
 browser/server runtime features.
 
@@ -536,13 +594,18 @@ remain labeled test-needed instead of claimed as fully supported.
 - Running `stui run` from a different Python environment than the one where the
   package was installed. Try `python -m stui run app.py`.
 - Expecting a browser dashboard. `stui` renders inside your terminal.
-- Reusing Streamlit-only APIs such as sidebars, file upload, caching decorators,
-  or arbitrary components. They are not part of this small API.
+- Expecting Streamlit cache compatibility. `st.cache_data` and
+  `st.cache_resource` are small process-local `stui` APIs with their own
+  documented serialization and invalidation rules.
+- Reusing Streamlit-only APIs such as sidebars, file upload, or arbitrary
+  components. They are not part of this small API.
 - Assuming newer APIs are present in an older install. Check
   `python -c "import stui; print(stui.__version__)"` before using forms,
   grouping primitives, metrics, charts, or packaged examples.
 - Doing slow network or model work at top level. Scripts rerun after
-  interactions, so keep top-level work light and cache expensive work yourself.
+  interactions, so keep side effects explicit and use the process-local cache
+  decorators only when their documented serialization/invalidation contract
+  fits the work.
 - Forgetting stable `key` values when creating similar widgets in loops.
 
 ## Troubleshooting
@@ -652,12 +715,40 @@ stui run examples/model_demo.py
 
 ### Inputs
 
-`examples/inputs.py` shows text, numeric, selectbox, radio, checkbox, and button
-controls together.
+`examples/inputs.py` shows single-line and multiline text, numeric, selectbox,
+radio, checkbox, and button controls together.
 
 ```bash
 stui run examples/inputs.py
 ```
+
+### Caching
+
+`examples/caching.py` shows mutation-isolated data caching, reusable resources,
+TTL/entry limits, and per-function clearing without disk or network storage.
+
+```bash
+stui run examples/caching.py
+```
+
+### Prompt Workbench
+
+`examples/prompt_workbench.py` combines multiline authoring, cached local prompt
+assembly, multi-select input, a toggle, and a toast in one deterministic offline
+app.
+
+```bash
+stui run examples/prompt_workbench.py
+```
+
+For a project-shaped watch example, run:
+
+```bash
+stui run examples/watch_project/app.py --watch
+```
+
+Then edit `examples/watch_project/helpers.py` and save it. This example is
+repo-only because its multi-file shape is the behavior being demonstrated.
 
 ### Data Display
 
@@ -752,16 +843,19 @@ stui run examples/kitchen_sink.py
   animation, background task, or pager systems.
 - `st.rerun` and `st.stop` are small flow-control helpers, not a full job
   scheduler or async runtime.
-- No sidebars, file upload, browser components, or caching decorators yet.
+- No sidebars, file upload, browser components, disk cache, distributed cache,
+  background refresh, or persistent cache.
 - Tables are static display only; there is no full dataframe editing or sorting.
   Object-row support is for display only and uses dataclasses, namedtuples, or
   simple public attributes.
 - Slider input supports numeric values only.
 - Layout remains terminal-first and intentionally modest.
-- The app reruns the script as interactions change state, so examples should
-  keep top-level work lightweight.
-- There is no built-in cache yet. Keep expensive network, model, file, or data
-  loading work behind normal Python guards or user-triggered actions.
+- The app reruns the script as interactions change state. Use process-local
+  caching for suitable work, but keep uncached side effects explicit.
+- `st.cache_data` requires pickle-compatible arguments and return values.
+  `st.cache_resource` shares object identity and therefore shares mutation.
+- Watch mode tracks imported local Python modules under the app project. It is
+  not a deployment supervisor and does not infer arbitrary data-file changes.
 - Error handling is development-oriented, but `stui check --strict` and
   repeated validation help catch common app-authoring problems before sharing.
 - Experimental APIs remain public, but may still tighten in future minor releases with
@@ -779,12 +873,12 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v2.1 Stable Status
+## v2.2 Stable Status
 
-v2.1.0 is the first post-v2 feature release. It keeps the package/import/CLI
-contract from v1.0.0 and the full v2.0.0 stable API intact, adds the
-experimental `st.multiselect`, `st.toggle`, and `st.toast` widgets, and adds
-`stui run --watch` for a save-and-rerun development loop. Release work still
+v2.2.0 keeps the package/import/CLI contract and full v2.0.0 stable API intact.
+It adds post-v2 experimental process-local caching and multiline authoring,
+hardens `stui run --watch` for imported local modules and error recovery, and
+keeps the v2.1 widgets available for continued feedback. Release work still
 points at [docs/v2-readiness.md](docs/v2-readiness.md).
 
 The remaining experimental APIs and terminal compatibility unknowns are visible

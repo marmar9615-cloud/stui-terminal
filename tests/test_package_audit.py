@@ -15,6 +15,23 @@ assert SPEC.loader is not None
 SPEC.loader.exec_module(audit_package_contents)
 
 
+def test_v220_package_files_are_required() -> None:
+    assert {
+        "stui/_terminal_text.py",
+        "stui/cache.py",
+        "stui/examples/caching.py",
+        "stui/examples/prompt_workbench.py",
+    }.issubset(audit_package_contents.WHEEL_REQUIRED_SUFFIXES)
+    assert {
+        "examples/caching.py",
+        "examples/prompt_workbench.py",
+        "src/stui/_terminal_text.py",
+        "src/stui/cache.py",
+        "src/stui/examples/caching.py",
+        "src/stui/examples/prompt_workbench.py",
+    }.issubset(audit_package_contents.SDIST_REQUIRED_SUFFIXES)
+
+
 def _write_wheel(path: Path, names: set[str]) -> None:
     with zipfile.ZipFile(path, "w") as archive:
         for name in names:
@@ -121,5 +138,21 @@ def test_package_audit_rejects_missing_console_entry_point(tmp_path: Path) -> No
             else:
                 archive.writestr(name, "")
     _write_sdist(sdist, _sdist_names())
+
+    assert audit_package_contents.main([str(tmp_path), "--version", "1.3.0"]) == 1
+
+
+def test_package_audit_rejects_misplaced_required_path_decoys(tmp_path: Path) -> None:
+    wheel = tmp_path / "stui_terminal-1.3.0-py3-none-any.whl"
+    sdist = tmp_path / "stui_terminal-1.3.0.tar.gz"
+    wheel_names = _wheel_names()
+    wheel_names.remove("stui/cache.py")
+    wheel_names.add("decoy/stui/cache.py")
+    sdist_names = _sdist_names()
+    sdist_names.remove("stui_terminal-1.3.0/src/stui/cache.py")
+    sdist_names.add("stui_terminal-1.3.0/decoy/src/stui/cache.py")
+
+    _write_wheel(wheel, wheel_names)
+    _write_sdist(sdist, sdist_names)
 
     assert audit_package_contents.main([str(tmp_path), "--version", "1.3.0"]) == 1

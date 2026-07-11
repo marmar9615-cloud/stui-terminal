@@ -22,6 +22,15 @@ project = st.text_input(
     on_change=mark_changed,
     args=("project",),
 )
+notes = st.text_area(
+    "Run notes",
+    value="Compare the candidate\nwith the baseline.",
+    height=5,
+    key="run-notes",
+    max_chars=1000,
+    on_change=mark_changed,
+    args=("run notes",),
+)
 enabled = st.checkbox(
     "Enable preview",
     value=True,
@@ -67,6 +76,7 @@ if st.button("Refresh", key="refresh"):
 st.divider()
 st.subheader("Current Values")
 st.write("project =", project)
+st.write("notes =", notes)
 st.text(f"preview = {enabled}")
 st.write("datasets =", datasets)
 st.text(f"verbose = {verbose}")
@@ -117,7 +127,7 @@ st.divider()
 st.subheader("Terminal primitives")
 
 with st.form("kitchen-form"):
-    st.text_input("Form note", "batched update")
+    st.text_area("Form note", "batched\nupdate", height=4)
     form_submitted = st.form_submit_button("Submit form")
 if form_submitted:
     st.success("Form submitted")

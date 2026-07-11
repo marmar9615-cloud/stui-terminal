@@ -113,6 +113,11 @@ def test_demo_list_prints_supported_demos() -> None:
     assert "dashboard - Dashboard-style layout" in result.output
     assert "forms - Form-style user input flow." in result.output
     assert "charts - Simple chart and data visualization patterns." in result.output
+    assert (
+        "caching - Process-local data and resource caching patterns."
+        in result.output
+    )
+    assert "prompt_workbench - Multiline prompt authoring" in result.output
     assert "kitchen_sink - Broad API tour" in result.output
     assert "counter" not in result.output
 
@@ -169,10 +174,17 @@ def test_demo_rejects_invalid_demo_name() -> None:
     assert result.exit_code != 0
     assert "unknown demo 'counter'" in normalized_output
     assert "stui demo list" in result.output
-    assert (
-        "basic, model_demo, dashboard, forms, charts, kitchen_sink"
-        in normalized_output
-    )
+    for name in (
+        "basic",
+        "model_demo",
+        "dashboard",
+        "forms",
+        "charts",
+        "caching",
+        "prompt_workbench",
+        "kitchen_sink",
+    ):
+        assert name in normalized_output
 
 
 def test_demo_uses_package_resource_without_repo_checkout(

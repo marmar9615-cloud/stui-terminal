@@ -28,13 +28,17 @@ FORBIDDEN_SUFFIXES = {
 
 WHEEL_REQUIRED_SUFFIXES = {
     "stui/__init__.py",
+    "stui/_terminal_text.py",
     "stui/api.py",
     "stui/app.py",
+    "stui/cache.py",
     "stui/cli.py",
     "stui/runtime.py",
     "stui/examples/basic.py",
+    "stui/examples/caching.py",
     "stui/examples/counter.py",
     "stui/examples/model_demo.py",
+    "stui/examples/prompt_workbench.py",
     "stui/examples/inputs.py",
     "stui/examples/data_display.py",
     "stui/examples/dashboard.py",
@@ -58,12 +62,18 @@ SDIST_REQUIRED_SUFFIXES = {
     "docs/terminal-compatibility.md",
     "assets/stui-model-demo.png",
     "examples/basic.py",
+    "examples/caching.py",
+    "examples/prompt_workbench.py",
     "scripts/check.sh",
     "scripts/verify_custom_project.sh",
     "scripts/audit_package_contents.py",
     "scripts/benchmark_runtime.py",
     "src/stui/cli.py",
+    "src/stui/_terminal_text.py",
+    "src/stui/cache.py",
     "src/stui/examples/basic.py",
+    "src/stui/examples/caching.py",
+    "src/stui/examples/prompt_workbench.py",
 }
 
 ENTRY_POINT = "stui = stui.cli:app"
@@ -79,8 +89,19 @@ def _names_from_sdist(path: Path) -> list[str]:
         return archive.getnames()
 
 
-def _has_suffix(names: list[str], suffix: str) -> bool:
-    return any(name.endswith(suffix) for name in names)
+def _has_required_path(names: list[str], required: str, *, sdist: bool) -> bool:
+    required_parts = Path(required).parts
+    if sdist:
+        return any(Path(name).parts[1:] == required_parts for name in names)
+    if required_parts[0] == "dist-info":
+        expected_tail = required_parts[1:]
+        return any(
+            len(parts := Path(name).parts) == len(expected_tail) + 1
+            and parts[0].endswith(".dist-info")
+            and parts[1:] == expected_tail
+            for name in names
+        )
+    return required in names
 
 
 def _unsafe_names(names: list[str]) -> list[str]:
@@ -222,10 +243,11 @@ def _check_archive(
     else:
         return [f"unsupported distribution file: {path}"]
 
+    is_sdist = path.name.endswith(".tar.gz")
     errors = [
-        f"{path.name}: missing required path ending in {suffix}"
-        for suffix in sorted(required_suffixes)
-        if not _has_suffix(names, suffix)
+        f"{path.name}: missing required path {required}"
+        for required in sorted(required_suffixes)
+        if not _has_required_path(names, required, sdist=is_sdist)
     ]
     errors.extend(
         f"{path.name}: unsafe archive path {name}"

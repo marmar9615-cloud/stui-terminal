@@ -18,6 +18,8 @@ EXPECTED_PUBLIC_EXPORTS = [
     "__version__",
     "button",
     "bar_chart",
+    "cache_data",
+    "cache_resource",
     "caption",
     "checkbox",
     "code",
@@ -52,6 +54,7 @@ EXPECTED_PUBLIC_EXPORTS = [
     "table",
     "success",
     "text",
+    "text_area",
     "text_input",
     "title",
     "toast",
@@ -64,6 +67,8 @@ EXPECTED_API_CLASSIFICATIONS = {
     "__version__": "v1-stable",
     "bar_chart": "v1-stable",
     "button": "v1-stable",
+    "cache_data": "post-v2 experimental",
+    "cache_resource": "post-v2 experimental",
     "caption": "v1-stable",
     "checkbox": "v1-stable",
     "code": "v1-stable",
@@ -98,6 +103,7 @@ EXPECTED_API_CLASSIFICATIONS = {
     "success": "v1-stable",
     "table": "v1-stable",
     "text": "v1-stable",
+    "text_area": "post-v2 experimental",
     "text_input": "v1-stable",
     "title": "v1-stable",
     "toast": "post-v2 experimental",
@@ -115,7 +121,7 @@ EXPECTED_STABLE_APIS = {
 EXPECTED_EXPERIMENTAL_APIS = {
     api
     for api, classification in EXPECTED_API_CLASSIFICATIONS.items()
-    if classification == "post-v1 experimental"
+    if classification.endswith("experimental")
 }
 
 EXPECTED_EXPERIMENTAL_FREEZE_DECISIONS = {
@@ -128,8 +134,6 @@ EXPECTED_DEFERRED_API_AREAS = [
     "st.sidebar",
     "st.tabs",
     "st.file_uploader",
-    "st.cache_data",
-    "st.cache_resource",
     "st.components",
     "st.empty",
     "custom column ratios/gaps",
@@ -164,6 +168,16 @@ EXPECTED_PUBLIC_SIGNATURES = {
         "help: 'str | None' = None, disabled: 'bool' = False, ",
         "on_click=None, args: 'tuple[Any, ...] | None' = None, ",
         "kwargs: 'dict[str, Any] | None' = None) -> 'bool'",
+    ),
+    "cache_data": _sig(
+        "(func: 'Callable[P, T] | None' = None, *, ",
+        "ttl: 'int | float | None' = None, ",
+        "max_entries: 'int | None' = None)",
+    ),
+    "cache_resource": _sig(
+        "(func: 'Callable[P, T] | None' = None, *, ",
+        "ttl: 'int | float | None' = None, ",
+        "max_entries: 'int | None' = None)",
     ),
     "caption": "(body: 'Any') -> 'None'",
     "checkbox": _sig(
@@ -252,6 +266,13 @@ EXPECTED_PUBLIC_SIGNATURES = {
         "max_cols: 'int | None' = None) -> 'None'",
     ),
     "text": "(body: 'Any') -> 'None'",
+    "text_area": _sig(
+        "(label: 'str', value: 'str' = '', *, height: 'int' = 6, ",
+        "key: 'str | None' = None, placeholder: 'str | None' = None, ",
+        "disabled: 'bool' = False, max_chars: 'int | None' = None, ",
+        "on_change=None, args: 'tuple[Any, ...] | None' = None, ",
+        "kwargs: 'dict[str, Any] | None' = None) -> 'str'",
+    ),
     "text_input": _sig(
         "(label: 'str', value: 'str' = '', *, ",
         "key: 'str | None' = None, placeholder: 'str | None' = None, ",
@@ -277,6 +298,8 @@ EXPECTED_REFERENCE_SIGNATURES = {
         "st.button(\n    label,\n    key=None,\n    help=None,\n    disabled=False,\n",
         "    on_click=None,\n    args=None,\n    kwargs=None,\n) -> bool",
     ),
+    "cache_data": "st.cache_data(func=None, *, ttl=None, max_entries=None)",
+    "cache_resource": "st.cache_resource(func=None, *, ttl=None, max_entries=None)",
     "caption": "st.caption(body) -> None",
     "checkbox": _sig(
         "st.checkbox(\n    label,\n    value=False,\n    *,\n    key=None,\n",
@@ -340,6 +363,12 @@ EXPECTED_REFERENCE_SIGNATURES = {
     "success": "st.success(body) -> None",
     "table": "st.table(data, *, max_rows=None, max_cols=None) -> None",
     "text": "st.text(body) -> None",
+    "text_area": _sig(
+        "st.text_area(\n    label,\n    value=\"\",\n    *,\n    height=6,\n",
+        "    key=None,\n    placeholder=None,\n    disabled=False,\n",
+        "    max_chars=None,\n    on_change=None,\n    args=None,\n",
+        "    kwargs=None,\n) -> str",
+    ),
     "text_input": _sig(
         "st.text_input(\n    label,\n    value=\"\",\n    *,\n",
         "    key=None,\n    placeholder=None,\n    disabled=False,\n",
@@ -554,7 +583,7 @@ def test_readme_api_table_matches_public_api_stability_labels() -> None:
 
     for apis, status in rows:
         classifications = {EXPECTED_API_CLASSIFICATIONS[api] for api in apis}
-        if "post-v1 experimental" in classifications:
+        if any(label.endswith("experimental") for label in classifications):
             assert "experimental" in status, apis
         if classifications == {"v1-stable"}:
             assert "v1-stable" in status, apis
@@ -605,6 +634,7 @@ def test_widget_callback_and_disabled_parameter_names_are_consistent() -> None:
         "radio": "on_change",
         "selectbox": "on_change",
         "slider": "on_change",
+        "text_area": "on_change",
         "text_input": "on_change",
         "toggle": "on_change",
     }

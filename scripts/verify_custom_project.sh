@@ -1,15 +1,24 @@
 #!/usr/bin/env sh
 set -eu
+umask 077
 
 PYTHON_CMD="${PYTHON:-python3.11}"
 CREATED_WORKDIR=0
 if [ -n "${STUI_CUSTOM_PROJECT_DIR:-}" ]; then
   WORKDIR="$STUI_CUSTOM_PROJECT_DIR"
+  if [ -e "$WORKDIR" ] || [ -L "$WORKDIR" ]; then
+    echo "error: custom project destination already exists or is a symlink: $WORKDIR" >&2
+    exit 1
+  fi
+  if ! mkdir -m 700 "$WORKDIR"; then
+    echo "error: could not create custom project destination: $WORKDIR" >&2
+    exit 1
+  fi
 else
-  WORKDIR="$(mktemp -d /tmp/stui-custom-project.XXXXXX)"
+  TMP_ROOT="${TMPDIR:-/tmp}"
+  WORKDIR="$(mktemp -d "${TMP_ROOT%/}/stui-custom-project.XXXXXX")"
   CREATED_WORKDIR=1
 fi
-mkdir -p "$WORKDIR"
 cleanup() {
   if [ "$CREATED_WORKDIR" -eq 1 ]; then
     rm -rf "$WORKDIR"
@@ -28,7 +37,7 @@ else
   STUI_BIN="$PYTHON_CMD -m stui"
 fi
 
-mkdir -p "$WORKDIR/my_project"
+mkdir "$WORKDIR/my_project"
 cat > "$WORKDIR/pyproject.toml" <<'PYPROJECT'
 [project]
 name = "stui-custom-project"

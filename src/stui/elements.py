@@ -187,6 +187,17 @@ class TextInputElement:
 
 
 @dataclass(frozen=True)
+class TextAreaElement:
+    label: str
+    key: str
+    value: str
+    height: int = 6
+    placeholder: str | None = None
+    disabled: bool = False
+    max_chars: int | None = None
+
+
+@dataclass(frozen=True)
 class CheckboxElement:
     label: str
     key: str
@@ -273,6 +284,7 @@ Element: TypeAlias = (
     | ButtonElement
     | SliderElement
     | TextInputElement
+    | TextAreaElement
     | CheckboxElement
     | NumberInputElement
     | SelectboxElement

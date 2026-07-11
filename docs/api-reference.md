@@ -25,6 +25,8 @@ defined in [API Stability](api-stability.md).
 | `__version__` | v1-stable | Package version string. |
 | `bar_chart` | v1-stable | Compact terminal bar summary, not plotting-library parity. |
 | `button` | v1-stable | Core input widget. |
+| `cache_data` | post-v2 experimental | Process-local mutation-isolated data cache, new in v2.2.0. |
+| `cache_resource` | post-v2 experimental | Process-local shared-resource cache, new in v2.2.0. |
 | `caption` | v1-stable | Core text output. |
 | `checkbox` | v1-stable | Core input widget. |
 | `code` | v1-stable | Core text output. |
@@ -59,6 +61,7 @@ defined in [API Stability](api-stability.md).
 | `success` | v1-stable | Core status output. |
 | `table` | v1-stable | Static terminal table display. |
 | `text` | v1-stable | Core text output. |
+| `text_area` | post-v2 experimental | Multiline text editor with Ctrl+Enter apply, new in v2.2.0. |
 | `text_input` | v1-stable | Core input widget. |
 | `title` | v1-stable | Core text output. |
 | `toast` | post-v2 experimental | Transient terminal notification, new in v2.1.0. |
@@ -301,6 +304,44 @@ st.text_input(
 name = st.text_input("Run name", value="baseline", placeholder="baseline")
 ```
 
+`st.text_area` is post-v2 experimental. Enter inserts a newline; Ctrl+Enter
+applies the current value and reruns. Inside a form, the applied value remains
+pending until the form submit commits it to `st.session_state`.
+
+```python
+st.text_area(
+    label,
+    value="",
+    *,
+    height=6,
+    key=None,
+    placeholder=None,
+    disabled=False,
+    max_chars=None,
+    on_change=None,
+    args=None,
+    kwargs=None,
+) -> str
+```
+
+```python
+notes = st.text_area(
+    "Run notes",
+    value="Compare the candidate\nwith the baseline.",
+    height=6,
+    max_chars=2000,
+    key="run-notes",
+)
+```
+
+`height` must be an integer of at least `3`. `max_chars`, when supplied, must
+be a positive integer and is enforced while editing as well as when the value
+is read by the script. Cursor and scroll restoration across reruns are best
+effort. C0/C1 terminal controls in the value, label, or placeholder are stored
+and rendered as visible `\\xNN` escapes; newlines, tabs, and printable Unicode
+remain unchanged. Live insertions and pastes are neutralized at the editor
+boundary before Textual renders the next frame, not only after submission.
+
 ```python
 st.checkbox(
     label,
@@ -435,6 +476,64 @@ if st.button("Save"):
     st.toast("Settings saved")
 ```
 
+## Caching
+
+`st.cache_data` and `st.cache_resource` are post-v2 experimental process-local
+decorators. They do not write to disk, use the network, start workers, or
+survive process exit.
+
+```python
+st.cache_data(func=None, *, ttl=None, max_entries=None)
+st.cache_resource(func=None, *, ttl=None, max_entries=None)
+```
+
+```python
+@st.cache_data
+def load_defaults():
+    return {"device": "cpu"}
+
+
+@st.cache_data(ttl=60, max_entries=128)
+def load_rows(path: str):
+    ...
+
+
+@st.cache_resource
+def load_model():
+    ...
+```
+
+Both decorators accept `ttl=None` or a positive finite number and
+`max_entries=None` or a positive integer. Equivalent positional/keyword calls
+share a key after signature binding, keyword ordering does not affect the key,
+and least-recently-used entries are evicted when a limit is set.
+
+`st.cache_data` serializes supported return values and restores a fresh value
+for every hit, protecting the cached copy from caller mutation.
+`st.cache_resource` returns the same object identity until invalidated or
+cleared. Arguments to both decorators must be pickle-compatible. Exceptions
+and unsupported `cache_data` results are never cached.
+
+```python
+load_rows.clear()         # one decorated function, across app scopes
+st.cache_data.clear()     # every data entry in this process
+st.cache_resource.clear() # every resource entry in this process
+```
+
+Cache keys are isolated by app script, function source identity/fingerprint,
+and normalized arguments. Source changes recreate decorated functions with a
+new fingerprint. In watch mode, any tracked source change also clears all data
+and resource entries for the affected app runtime before rerun. See
+[Caching](caching.md) for the exact contract and limits.
+
+Concurrent callers coordinate one fill per key. A cached function that
+recursively requests its own unfinished key raises a readable `RuntimeError`
+instead of waiting on itself. Decorators used outside an active stui runtime
+retain function-instance isolation in the process fallback registry.
+Script-defined decorators retain a weak decoration-time runtime for ordinary
+worker calls. An unowned, contextless worker call made while an app is active
+raises a readable error rather than being assigned to the wrong app.
+
 ## Session State
 
 ```python
@@ -508,31 +607,32 @@ package metadata, bundled demo resources, all init templates, all bundled
 examples, and doctor diagnostics without launching a full TUI. Use
 `--repeat N` to repeat generated-template and bundled-example checks.
 
-## v2.1 Stable Status
+## v2.2 Stable Status
 
-The signatures above are intentionally covered by tests in v2.1.0. The
+The signatures above are intentionally covered by tests in v2.2.0. The
 classification table marks each top-level API as `v1-stable`,
 `post-v1 experimental`, or `post-v2 experimental`; see
 [API Stability](api-stability.md) for the full compatibility promise and
 post-v1 deprecation policy.
 
-v2.1.0 keeps the v1.4 through v2.0 stable APIs intact while adding new
-experimental widgets on top of the v2 stable contract in
+v2.2.0 keeps the v1.4 through v2.0 stable APIs intact while adding new
+experimental authoring and caching APIs on top of the v2 stable contract in
 [v2 readiness](v2-readiness.md). Any change to stable names should be treated
 as a compatibility event unless it fixes a correctness, terminal, or security
 issue and is documented in the changelog and release notes.
 
-These APIs stay experimental in v2.1.0 and remain outside the v2 stable
+These APIs stay experimental in v2.2.0 and remain outside the v2 stable
 contract:
 
 - Help and status: `st.help`, `st.status`, and `st.spinner` formatting and
   grouping behavior (post-v1 experimental).
 - New in v2.1.0: `st.multiselect`, `st.toggle`, and `st.toast`
   (post-v2 experimental).
+- New in v2.2.0: `st.cache_data`, `st.cache_resource`, and `st.text_area`
+  (post-v2 experimental).
 
 APIs and feature areas explicitly deferred from the v1 stable surface are
 listed in [API Stability](api-stability.md#deferred-for-v1). They include
-`st.sidebar`, `st.tabs`, `st.file_uploader`, `st.cache_data`,
-`st.cache_resource`, `st.components`, `st.empty`, editable dataframes,
-plotting-library parity, custom column ratios/gaps, browser/server runtime,
-websocket, or port-forwarding runtime.
+`st.sidebar`, `st.tabs`, `st.file_uploader`, `st.components`, `st.empty`,
+editable dataframes, plotting-library parity, custom column ratios/gaps,
+browser/server runtime, websocket, or port-forwarding runtime.

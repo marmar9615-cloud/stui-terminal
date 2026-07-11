@@ -82,6 +82,13 @@ keyboard affordances, and predictable state retention before it belongs in the
 public surface. For now, use headings, containers, columns, or expanders to
 organize sections.
 
+The v2.2 evaluation did not add `st.tabs`. In the current top-to-bottom script
+and element model, both tab bodies would execute even if only one were visible.
+Shipping that behavior without a stronger contract could hide errors or side
+effects, destabilize generated widget keys, and make nested forms/containers
+and focus restoration surprising. Multiline input, caching, and multi-file
+watch correctness took priority over introducing that ambiguity.
+
 Concrete criteria before revisiting tabs:
 
 - Keyboard navigation is predictable in local terminals and SSH/headless-style
@@ -89,4 +96,10 @@ Concrete criteria before revisiting tabs:
 - Hidden tab content does not surprise users by preserving or losing widget
   values differently from visible content.
 - Generated widget keys remain stable when tabs are reordered or toggled.
+- Nested tabs either have deterministic behavior or fail with an explicit,
+  readable usage error.
+- Forms, columns, and expanders containing tab groups preserve their existing
+  state and render-order contracts.
+- Narrow terminals expose a discoverable keyboard path without clipping the tab
+  labels or trapping focus.
 - The API remains small and does not imply Streamlit compatibility.

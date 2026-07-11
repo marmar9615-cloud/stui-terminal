@@ -10,6 +10,9 @@ Streamlit, and not a Streamlit compatibility layer.
 
 - [API reference](api-reference.md)
 - [API stability](api-stability.md)
+- [Caching](caching.md)
+- [Watch mode](watch-mode.md)
+- [v2.2.0 proof notes](v2.2-proof.md)
 - [v2 readiness](v2-readiness.md)
 - [Layout primitives](layouts.md)
 - [Terminal compatibility](terminal-compatibility.md)

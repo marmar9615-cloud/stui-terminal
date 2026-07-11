@@ -34,6 +34,8 @@ EXAMPLE_NAMES = (
     "forms.py",
     "layouts.py",
     "charts.py",
+    "caching.py",
+    "prompt_workbench.py",
     "kitchen_sink.py",
 )
 
@@ -50,6 +52,8 @@ EXAMPLE_DESCRIPTIONS = {
     "forms.py": "Form-style user input flow.",
     "layouts.py": "Columns, containers, and page organization.",
     "charts.py": "Simple chart and data visualization patterns.",
+    "caching.py": "Process-local data and resource caching patterns.",
+    "prompt_workbench.py": "Multiline prompt authoring with cached local helpers.",
     "kitchen_sink.py": "Broad API tour for trying many widgets at once.",
 }
 
@@ -59,6 +63,8 @@ DEMO_NAMES = (
     "dashboard",
     "forms",
     "charts",
+    "caching",
+    "prompt_workbench",
     "kitchen_sink",
 )
 

@@ -5,7 +5,6 @@ import math
 import os
 from pathlib import Path
 
-from rich.json import JSON as RichJSON
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.syntax import Syntax
@@ -25,8 +24,10 @@ from textual.widgets import (
     ProgressBar,
     Static,
     Switch,
+    TextArea,
 )
 
+from ._terminal_text import visible_terminal_text
 from .elements import (
     AlertElement,
     BarChartElement,
@@ -56,6 +57,7 @@ from .elements import (
     StatusElement,
     SubheaderElement,
     TableElement,
+    TextAreaElement,
     TextElement,
     TextInputElement,
     TitleElement,
@@ -106,7 +108,7 @@ HIGH_CONTRAST_CSS = """
         text-style: bold;
     }
 
-    Input:focus, .stui-selectbox:focus, .stui-radio:focus,
+    Input:focus, TextArea:focus, .stui-selectbox:focus, .stui-radio:focus,
     .stui-multiselect:focus, Switch:focus {
         border: tall #ffff00;
         background: #000000;
@@ -175,7 +177,7 @@ def script_signature(path: Path) -> tuple[int, int] | None:
 
 
 def _clip_text(value: object, width: int) -> str:
-    text = str(value)
+    text = visible_terminal_text(value)
     if width < 1:
         return ""
     if len(text) <= width:
@@ -197,8 +199,11 @@ class StuiButton(Button):
             _clip_text(element.label, MAX_WIDGET_LABEL_WIDTH),
             id=dom_id_for_key(element.key),
             disabled=element.disabled,
-            tooltip=element.help
-            or "Enter or Space activates. Tab and Shift+Tab move focus.",
+            tooltip=(
+                visible_terminal_text(element.help)
+                if element.help is not None
+                else "Enter or Space activates. Tab and Shift+Tab move focus."
+            ),
         )
 
 
@@ -206,11 +211,77 @@ class StuiTextInput(Input):
     def __init__(self, element: TextInputElement) -> None:
         self.stui_key = element.key
         super().__init__(
-            value=element.value,
-            placeholder=element.placeholder or "",
+            value=visible_terminal_text(element.value),
+            placeholder=(
+                visible_terminal_text(element.placeholder)
+                if element.placeholder is not None
+                else ""
+            ),
             id=dom_id_for_key(element.key),
             disabled=element.disabled,
         )
+
+
+class StuiTextArea(TextArea):
+    BINDINGS = [
+        *TextArea.BINDINGS,
+        Binding("ctrl+enter", "submit", "Apply text", show=False),
+    ]
+
+    class Submitted(Message):
+        def __init__(self, text_area: StuiTextArea, value: str) -> None:
+            super().__init__()
+            self.text_area = text_area
+            self.value = value
+
+        @property
+        def control(self) -> StuiTextArea:
+            return self.text_area
+
+    def __init__(self, element: TextAreaElement) -> None:
+        self.stui_key = element.key
+        self.stui_max_chars = element.max_chars
+        super().__init__(
+            text=visible_terminal_text(element.value),
+            soft_wrap=True,
+            tab_behavior="focus",
+            read_only=element.disabled,
+            placeholder=(
+                visible_terminal_text(element.placeholder)
+                if element.placeholder is not None
+                else ""
+            ),
+            id=dom_id_for_key(element.key),
+            disabled=element.disabled,
+            compact=True,
+            highlight_cursor_line=True,
+        )
+        self.styles.height = element.height
+
+    def replace(
+        self,
+        insert: str,
+        start,
+        end,
+        *,
+        maintain_selection_offset: bool = True,
+    ):
+        insert = visible_terminal_text(insert)
+        if self.stui_max_chars is not None:
+            replaced_length = len(self.get_text_range(start, end))
+            available = self.stui_max_chars - (len(self.text) - replaced_length)
+            insert = insert[: max(0, available)]
+        return super().replace(
+            insert,
+            start,
+            end,
+            maintain_selection_offset=maintain_selection_offset,
+        )
+
+    def action_submit(self) -> None:
+        if self.disabled or self.read_only:
+            return
+        self.post_message(self.Submitted(self, self.text))
 
 
 class StuiNumberInput(Input):
@@ -549,7 +620,13 @@ class StuiApp(App[None]):
         color: #cfd3df;
     }
 
-    Input, Checkbox {
+    .stui-field-hint {
+        color: #8f93a5;
+        text-style: italic;
+        margin: 0 0 1 0;
+    }
+
+    Input, TextArea, Checkbox {
         margin: 0 0 1 0;
     }
 
@@ -557,7 +634,7 @@ class StuiApp(App[None]):
         margin: 0 0 1 0;
     }
 
-    Input:focus {
+    Input:focus, TextArea:focus {
         border: tall #8ab4ff;
         background: #202033;
     }
@@ -689,8 +766,11 @@ class StuiApp(App[None]):
         super().__init__()
         self.runtime = runtime
         self.watch = watch
-        self._watch_signature = script_signature(runtime.script_path)
         self._multiselect_cursors: dict[str, int] = {}
+        self._text_area_views: dict[
+            str,
+            tuple[tuple[int, int], tuple[float, float]],
+        ] = {}
         self.stui_theme = resolve_theme()
         self.CSS = css_for_theme(type(self).CSS, self.stui_theme)
 
@@ -700,7 +780,7 @@ class StuiApp(App[None]):
         yield Footer()
 
     async def on_mount(self) -> None:
-        script_name = self.runtime.script_path.name
+        script_name = visible_terminal_text(self.runtime.script_path.name)
         self.sub_title = f"{script_name} · watching" if self.watch else script_name
         if self.watch:
             self.set_interval(0.5, self._poll_script_change)
@@ -708,14 +788,25 @@ class StuiApp(App[None]):
         await self.render_runtime()
 
     async def _poll_script_change(self) -> None:
-        signature = script_signature(self.runtime.script_path)
-        if signature is None or signature == self._watch_signature:
+        changed_paths = self.runtime.poll_source_changes()
+        if not changed_paths:
             return
-        self._watch_signature = signature
+        self.runtime.prepare_source_reload(changed_paths)
         await self.action_rerun_script()
+        changed_label = ", ".join(
+            visible_terminal_text(path.name) for path in changed_paths
+        )
+        failed = any(
+            isinstance(element, ErrorElement)
+            for element in self.runtime.elements
+        )
         self.notify(
-            f"Reloaded {self.runtime.script_path.name}",
-            severity="information",
+            (
+                f"Reload failed for {changed_label}; watching continues"
+                if failed
+                else f"Reloaded {changed_label}"
+            ),
+            severity="error" if failed else "information",
             timeout=2,
         )
 
@@ -782,6 +873,11 @@ class StuiApp(App[None]):
         body = self.query_one("#body", VerticalScroll)
         for multiselect in self.query(StuiMultiselect):
             self._multiselect_cursors[multiselect.stui_key] = multiselect.stui_cursor
+        for text_area in self.query(StuiTextArea):
+            self._text_area_views[text_area.stui_key] = (
+                text_area.cursor_location,
+                (text_area.scroll_offset.x, text_area.scroll_offset.y),
+            )
         await body.remove_children()
         widgets = [
             self._build_widget(element, self.size.width)
@@ -789,6 +885,7 @@ class StuiApp(App[None]):
         ]
         if widgets:
             await body.mount(*widgets)
+        self._restore_text_area_views()
         await self._restore_focus()
         self._show_toasts()
 
@@ -796,28 +893,43 @@ class StuiApp(App[None]):
         toasts = self.runtime.toasts
         self.runtime.toasts = []
         for toast in toasts:
-            self.notify(toast, timeout=4)
+            self.notify(visible_terminal_text(toast), timeout=4)
 
     def _build_widget(self, element, available_width: int | None = None):
         render_width = available_width or self.size.width or 80
         if isinstance(element, TitleElement):
-            return Static(Text(element.body, style="bold"), classes="title")
+            return Static(
+                Text(visible_terminal_text(element.body), style="bold"),
+                classes="title",
+            )
         if isinstance(element, HeaderElement):
-            return Static(Text(element.body, style="bold"), classes="header")
+            return Static(
+                Text(visible_terminal_text(element.body), style="bold"),
+                classes="header",
+            )
         if isinstance(element, SubheaderElement):
-            return Static(Text(element.body, style="bold"), classes="subheader")
+            return Static(
+                Text(visible_terminal_text(element.body), style="bold"),
+                classes="subheader",
+            )
         if isinstance(element, WriteElement):
-            return Static(element.text, classes="write")
+            return Static(Text(visible_terminal_text(element.text)), classes="write")
         if isinstance(element, TextElement):
-            return Static(element.body, classes="text")
+            return Static(Text(visible_terminal_text(element.body)), classes="text")
         if isinstance(element, CaptionElement):
-            return Static(Text(element.body, style="italic dim"), classes="caption")
+            return Static(
+                Text(visible_terminal_text(element.body), style="italic dim"),
+                classes="caption",
+            )
         if isinstance(element, MarkdownElement):
-            return Static(Markdown(element.body), classes="markdown")
+            return Static(
+                Markdown(visible_terminal_text(element.body)),
+                classes="markdown",
+            )
         if isinstance(element, CodeElement):
             return Static(
                 Syntax(
-                    element.body,
+                    visible_terminal_text(element.body),
                     element.language or "text",
                     word_wrap=True,
                     theme="ansi_dark",
@@ -825,7 +937,15 @@ class StuiApp(App[None]):
                 classes="code",
             )
         if isinstance(element, JsonElement):
-            return Static(RichJSON(element.text), classes="json")
+            return Static(
+                Syntax(
+                    visible_terminal_text(element.text),
+                    "json",
+                    word_wrap=True,
+                    theme="ansi_dark",
+                ),
+                classes="json",
+            )
         if isinstance(element, TableElement):
             return Static(
                 self._render_table(element, render_width),
@@ -835,7 +955,7 @@ class StuiApp(App[None]):
             return Static(
                 Panel(
                     Text(
-                        element.traceback,
+                        visible_terminal_text(element.traceback),
                         style=self._traceback_text_style(),
                         overflow="fold",
                     ),
@@ -898,7 +1018,7 @@ class StuiApp(App[None]):
         if isinstance(element, HelpElement):
             return Static(
                 Panel(
-                    Text(element.body, overflow="fold"),
+                    Text(visible_terminal_text(element.body), overflow="fold"),
                     title="help",
                     title_align="left",
                     border_style=self._panel_style("help"),
@@ -951,7 +1071,7 @@ class StuiApp(App[None]):
             kind = element.kind.lower()
             return Static(
                 Panel(
-                    Text(str(element.body), overflow="fold"),
+                    Text(visible_terminal_text(element.body), overflow="fold"),
                     title=element.kind,
                     title_align="left",
                     border_style=self._alert_style(kind),
@@ -972,6 +1092,24 @@ class StuiApp(App[None]):
                     classes="stui-field-label",
                 ),
                 text_input,
+                classes="stui-field",
+            )
+        if isinstance(element, TextAreaElement):
+            text_area = StuiTextArea(element)
+            text_area.tooltip = (
+                "Enter adds a line. Ctrl+Enter applies and reruns. "
+                "Tab and Shift+Tab move focus."
+            )
+            return Vertical(
+                Static(
+                    _clip_text(element.label, MAX_STATIC_LABEL_WIDTH),
+                    classes="stui-field-label",
+                ),
+                text_area,
+                Static(
+                    "Ctrl+Enter applies and reruns; Enter adds a line.",
+                    classes="stui-field-hint",
+                ),
                 classes="stui-field",
             )
         if isinstance(element, NumberInputElement):
@@ -1052,7 +1190,7 @@ class StuiApp(App[None]):
             )
         if isinstance(element, SliderElement):
             slider = StuiSlider(
-                label=element.label,
+                label=visible_terminal_text(element.label),
                 key=element.key,
                 min_value=element.min_value,
                 max_value=element.max_value,
@@ -1062,15 +1200,16 @@ class StuiApp(App[None]):
                 id=dom_id_for_key(element.key),
             )
             slider.tooltip = (
-                element.help
-                or "Left/right arrows or h/l adjust. Home/End jump to min/max."
+                visible_terminal_text(element.help)
+                if element.help is not None
+                else "Left/right arrows or h/l adjust. Home/End jump to min/max."
             )
             return slider
         if isinstance(element, ErrorElement):
             return Static(
                 Panel(
                     Text(
-                        element.traceback,
+                        visible_terminal_text(element.traceback),
                         style=self._traceback_text_style(),
                         overflow="fold",
                     ),
@@ -1081,7 +1220,7 @@ class StuiApp(App[None]):
                 ),
                 classes="error",
             )
-        return Static(str(element))
+        return Static(Text(visible_terminal_text(element)))
 
     async def on_stui_selectbox_changed(
         self, event: StuiSelectbox.Changed
@@ -1114,6 +1253,19 @@ class StuiApp(App[None]):
         self.runtime.run_script()
         await self.render_runtime()
 
+    async def on_stui_text_area_submitted(
+        self,
+        event: StuiTextArea.Submitted,
+    ) -> None:
+        key = getattr(event.text_area, "stui_key", None)
+        if key is None:
+            return
+        event.stop()
+        self.runtime.last_focused_key = key
+        self.runtime.set_widget_value(key, event.value)
+        self.runtime.run_script()
+        await self.render_runtime()
+
     async def on_stui_expander_changed(self, event: StuiExpander.Changed) -> None:
         key = getattr(event.expander, "stui_key", None)
         if key is None:
@@ -1139,6 +1291,24 @@ class StuiApp(App[None]):
         if focused is None:
             return None
         return getattr(focused, "stui_key", None)
+
+    def _restore_text_area_views(self) -> None:
+        for text_area in self.query(StuiTextArea):
+            saved = self._text_area_views.get(text_area.stui_key)
+            if saved is None:
+                continue
+            cursor, scroll = saved
+            lines = text_area.text.split("\n")
+            row = min(max(cursor[0], 0), len(lines) - 1)
+            column = min(max(cursor[1], 0), len(lines[row]))
+            text_area.move_cursor((row, column))
+            text_area.scroll_to(
+                x=scroll[0],
+                y=scroll[1],
+                animate=False,
+                force=True,
+                immediate=True,
+            )
 
     def _body_is_ready(self) -> bool:
         try:

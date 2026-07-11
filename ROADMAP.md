@@ -236,6 +236,26 @@ The command surface is expected to remain stable for v1 docs:
 - Added the running script filename to the app header.
 - Kept the v2.0.0 stable API contract unchanged.
 
+## v2.2 Release Scope
+
+- Add `st.cache_data` for mutation-isolated, pickle-backed data results and
+  `st.cache_resource` for shared process-local resource identity.
+- Keep both cache decorators process-local: no disk persistence, network
+  cache, hidden workers, or exception caching.
+- Harden `stui run --watch` for imported local Python modules, atomic editor
+  saves, stale-module eviction, session-state preservation, and recovery after
+  temporary source errors.
+- Add `st.text_area` for multiline terminal authoring with Enter for newlines
+  and Ctrl+Enter for apply/rerun, including form and callback behavior.
+- Keep `st.multiselect`, `st.toggle`, and `st.toast` experimental while adding
+  more real examples and regression coverage.
+- Keep `st.tabs` deferred until hidden-content execution, widget-key,
+  focus/navigation, form, nesting, and narrow-terminal semantics can be proved
+  without complicating the current top-to-bottom element model.
+- Prove the release with a clean wheel install and a multi-file external app
+  that exercises cache hits, cache clearing, helper reload, error recovery,
+  session state, and multiline input.
+
 ## Post-v2 Candidates
 
 - Revisit additional chart variants and richer static data inspection if users
@@ -244,6 +264,12 @@ The command surface is expected to remain stable for v1 docs:
   terminal-native and dependency-light.
 - Reassess status, spinner, and help after they have enough v1 usage to either
   stabilize or redesign.
+- Revisit `st.tabs` only after the v2.2 design blockers around hidden element
+  groups, focus, forms, nesting, and generated keys have a small testable
+  answer.
+- Consider cache statistics or a narrow invalidation API only if real apps need
+  them; keep persistent, distributed, and background-refresh caching out of the
+  core runtime.
 - Continue expanding compatibility evidence across macOS, Linux, SSH/headless,
   editor terminals, containers, and Windows setups without overstating
   environments the project has not tested.

@@ -49,20 +49,22 @@ For package publishing, also follow `docs/publishing.md`.
 Before publishing, verify the current public package still installs cleanly:
 
 ```bash
-python3.11 -m venv /tmp/stui-current
-/tmp/stui-current/bin/python -m pip install --upgrade pip
-/tmp/stui-current/bin/python -m pip install --index-url https://pypi.org/simple --no-cache-dir stui-terminal
-/tmp/stui-current/bin/python -c "import stui; print(stui.__version__)"
-/tmp/stui-current/bin/stui --version
-/tmp/stui-current/bin/stui doctor --json
-/tmp/stui-current/bin/stui examples
-/tmp/stui-current/bin/stui example list
-/tmp/stui-current/bin/stui example copy basic /tmp/stui-basic.py
-/tmp/stui-current/bin/stui init /tmp/stui-app.py
-/tmp/stui-current/bin/stui init /tmp/stui-data-app.py --template data
-/tmp/stui-current/bin/stui init /tmp/stui-charts-app.py --template charts
-/tmp/stui-current/bin/stui check /tmp/stui-app.py --strict
-/tmp/stui-current/bin/stui selftest --strict
+RELEASE_TMP="$(mktemp -d "${TMPDIR:-/tmp}/stui-current.XXXXXX")"
+trap 'rm -rf "$RELEASE_TMP"' EXIT
+python3.11 -m venv "$RELEASE_TMP/venv"
+"$RELEASE_TMP/venv/bin/python" -m pip install --upgrade pip
+"$RELEASE_TMP/venv/bin/python" -m pip install --index-url https://pypi.org/simple --no-cache-dir stui-terminal
+"$RELEASE_TMP/venv/bin/python" -c "import stui; print(stui.__version__)"
+"$RELEASE_TMP/venv/bin/stui" --version
+"$RELEASE_TMP/venv/bin/stui" doctor --json
+"$RELEASE_TMP/venv/bin/stui" examples
+"$RELEASE_TMP/venv/bin/stui" example list
+"$RELEASE_TMP/venv/bin/stui" example copy basic "$RELEASE_TMP/stui-basic.py"
+"$RELEASE_TMP/venv/bin/stui" init "$RELEASE_TMP/stui-app.py"
+"$RELEASE_TMP/venv/bin/stui" init "$RELEASE_TMP/stui-data-app.py" --template data
+"$RELEASE_TMP/venv/bin/stui" init "$RELEASE_TMP/stui-charts-app.py" --template charts
+"$RELEASE_TMP/venv/bin/stui" check "$RELEASE_TMP/stui-app.py" --strict
+"$RELEASE_TMP/venv/bin/stui" selftest --strict
 ```
 
 After publishing, repeat the same check with the exact released version, for
@@ -167,6 +169,43 @@ Use this extra gate for v1.9.0 and v2.0.0:
    CLI checks, package contents audit, repo hygiene audit, and custom project
    validation are all verified.
 
+## v2.2 Fast-Rerun Gate
+
+Use this additional gate for v2.2.0:
+
+1. Confirm `st.cache_data`, `st.cache_resource`, and `st.text_area` agree across
+   `stui.__all__`, public signature tests, README, API reference, API stability,
+   caching docs, examples, changelog, and release notes.
+2. Run focused cache/watch/authoring tests before the full suite:
+   `python3.11 -m pytest tests/test_cache.py tests/test_watch_mode.py` plus the
+   dedicated text-area and v2.1-widget regression tests present in the release
+   branch.
+3. Run the multi-file validator against the built wheel:
+   `python3.11 scripts/verify_v220_project.py --wheel
+   dist/stui_terminal-2.2.0-py3-none-any.whl`.
+4. Require the validator to prove cache hits, mutation isolation, resource
+   identity, clearing, TTL/eviction, imported-helper reload, session-state
+   survival, stale-cache invalidation, temporary syntax-error survival, and
+   recovery after the source is fixed.
+5. Exercise `st.text_area` through the Textual harness: Enter inserts a
+   newline; Ctrl+Enter applies/reruns; forms defer state; callbacks run in the
+   documented order; disabled, `max_chars`, Unicode, long-text, focus, and
+   narrow-terminal paths work.
+6. Run `stui check --strict --repeat 3` on the external app, then perform a real
+   `stui run APP.py --watch` integration pass. A static unit test alone is not
+   sufficient watch-mode proof.
+7. Verify repo and bundled copies of `caching.py`, `prompt_workbench.py`,
+   `inputs.py`, and `kitchen_sink.py` are byte-for-byte synchronized.
+8. Confirm no `__pycache__`, cache payload, watch temp file, external project,
+   benchmark output, or generated proof artifact is tracked.
+9. Keep `st.tabs` out of the release unless implementation, keyboard, forms,
+   nesting, focus, hidden-content execution, generated keys, and narrow layout
+   are all proven. A design note is the correct result when those gates are not
+   met.
+10. Do not publish, tag, or create a GitHub Release until the full local gate,
+    package audit, adversarial review, security scan, clean wheel install, and
+    external-project gate are green.
+
 ## v1 Release Gates
 
 Before tagging v1.x releases, confirm:
@@ -197,6 +236,8 @@ Before tagging v1.x releases, confirm:
   `docs/terminal-compatibility.md`.
 - Public launch-style announcement copy is not generated for routine v1.x
   releases unless explicitly requested.
+- v2.2.0 additionally runs the focused cache/watch/text-area proof and the
+  v2.2 external multi-file project gate above.
 
 For v1.0.0 specifically, also confirm the final checklist in
 [`docs/v1-readiness.md`](v1-readiness.md#final-v10-checklist).

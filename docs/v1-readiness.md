@@ -1,6 +1,7 @@
 # v1 Readiness
 
-`stui` v2.1.0 is the current release; v2.0.0 was the first v2 stable release.
+`stui` v2.2.0 is the current release target; v2.0.0 was the first v2 stable
+release and v2.1.0 was the first post-v2 feature release.
 The goal for the v1 series is not to become Streamlit-compatible or to grow a
 large component catalog. The goal is a small, stable, terminal-native API that
 can be installed from PyPI, explained quickly, and trusted for local tools.
@@ -111,9 +112,10 @@ Post-v1 experimental APIs:
 
 Explicitly deferred APIs and feature areas:
 
-- `st.sidebar`, `st.tabs`, `st.file_uploader`, `st.cache_data`,
-  `st.cache_resource`, `st.components`, and `st.empty` are not in the v1
-  stable API.
+- `st.sidebar`, `st.tabs`, `st.file_uploader`, `st.components`, and `st.empty`
+  are not in the v1 stable API. `st.cache_data` and `st.cache_resource` arrived
+  after v2 as experimental APIs and are not retroactively part of the v1
+  contract.
 - custom column ratios/gaps, editable dataframes, plotting-library parity, and
   browser/server runtime, websocket, or port-forwarding runtime features are
   deferred from v1.

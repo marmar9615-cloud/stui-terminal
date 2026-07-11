@@ -6,7 +6,7 @@ and Streamlit-inspired without being Streamlit-compatible.
 `stui` is not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer.
 
-## For v1 Users
+## For v2 Users
 
 Feedback that is most helpful right now:
 
@@ -26,9 +26,16 @@ Feedback that is most helpful right now:
   color themes. Include whether the app was local, over SSH, in a container, or
   inside an editor terminal, plus `stui doctor --compat` when possible.
 - Keyboard bugs: focus order, `Tab`/`Shift+Tab`, button activation, text or
-  number input submission, checkbox toggles, selectbox/radio movement, slider
-  keys, expander toggles, and any keys captured by the terminal instead of the
-  app.
+  number input submission, multiline Enter/Ctrl+Enter behavior, checkbox and
+  multiselect toggles, selectbox/radio movement, slider keys, expander toggles,
+  and any keys captured by the terminal instead of the app.
+- Cache reports: decorator form, arguments, expected hit/miss behavior,
+  mutation isolation, resource identity, TTL/eviction, clear behavior, and
+  whether the result changed after editing app/helper source. Never include
+  secrets or sensitive argument values in a report.
+- Watch-mode reports: editor/save method, which local file changed, whether the
+  helper output changed, whether `session_state` survived, and whether the
+  watcher recovered after a temporary source error.
 - Narrow rendering bugs: clipped labels, wrapped buttons, unreadable tables,
   chart output that loses meaning, form layout issues, expander children that
   become hard to scan, and help/footer text that crowds the app.
@@ -57,7 +64,7 @@ Feedback that is most helpful right now:
   behavior, plotting behavior, layout, tabs, sidebars, or GPL widget code.
 - Bugs that can be reproduced with a short `stui run` script.
 
-## v1.x Feedback
+## v2.x Feedback
 
 Feedback that can shape near-term design:
 
@@ -86,17 +93,21 @@ Feedback that can shape near-term design:
   was nested inside another column.
 - Forms: where submit-style flows feel natural or surprising in a top-to-bottom
   rerun model.
-- Caching and session persistence: what data should persist, for how long, and
-  how explicit that behavior should be.
+- Caching and session persistence: whether the process-local v2.2 semantics are
+  predictable, what invalidation is missing, and whether TTL/LRU/clear behavior
+  is enough without disk or network persistence.
+- Multiline authoring: whether Ctrl+Enter is discoverable and reliable across
+  terminals, especially inside forms and over SSH.
 - Theming: which parts of the terminal UI need project-level styling control.
 - Mouse support improvements: where mouse behavior should complement keyboard
   control without becoming required.
 - Screenshot and GIF docs: whether the current real terminal screenshot and
   `stui demo model_demo` command set expectations clearly.
-- Remaining experimental APIs: whether status/spinner or help should graduate,
+- Remaining experimental APIs: whether status/spinner/help,
+  multiselect/toggle/toast, cache decorators, or text area should graduate,
   stay experimental, or be redesigned.
 
-## Later v1.x Feedback
+## Later v2.x Feedback
 
 Feedback that is useful but may require more design work:
 
@@ -134,5 +145,5 @@ When opening an issue or sending feedback, include:
 - Whether the app was local, over SSH, in a container, or in another constrained
   environment.
 
-Post-v1 feedback should focus on whether the stable surface is clear,
+Post-v2 feedback should focus on whether the stable surface is clear,
 installable, usable in real terminals, and small enough to maintain.
