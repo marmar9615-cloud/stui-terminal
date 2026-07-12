@@ -13,6 +13,7 @@ from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.content import Content
 from textual.css.query import NoMatches
 from textual.message import Message
 from textual.widgets import (
@@ -24,6 +25,8 @@ from textual.widgets import (
     ProgressBar,
     Static,
     Switch,
+    Tab,
+    Tabs,
     TextArea,
 )
 
@@ -57,6 +60,7 @@ from .elements import (
     StatusElement,
     SubheaderElement,
     TableElement,
+    TabsElement,
     TextAreaElement,
     TextElement,
     TextInputElement,
@@ -185,6 +189,17 @@ def _clip_text(value: object, width: int) -> str:
     if width <= 3:
         return "." * width
     return f"{text[: width - 3]}..."
+
+
+def _tab_label(value: object) -> str:
+    return _clip_text(
+        visible_terminal_text(value).replace("\t", "\\t").replace("\n", "\\n"),
+        MAX_WIDGET_LABEL_WIDTH,
+    )
+
+
+def _tab_id(key: str, index: int) -> str:
+    return f"{dom_id_for_key(key)}-tab-{index}"
 
 
 class StuiButton(Button):
@@ -754,6 +769,19 @@ class StuiApp(App[None]):
         text-style: bold;
         margin: 0 0 1 0;
     }
+
+    .stui-tabs, .stui-tab-panel {
+        height: auto;
+    }
+
+    .stui-tabs {
+        margin: 1 0;
+    }
+
+    .stui-tabs-control {
+        width: 100%;
+        height: 2;
+    }
     """
     BINDINGS = [
         Binding("q", "quit", "Quit"),
@@ -1056,6 +1084,33 @@ class StuiApp(App[None]):
             if stack_columns:
                 return Vertical(*columns, classes="stui-columns stui-columns-stacked")
             return Horizontal(*columns, classes="stui-columns")
+        if isinstance(element, TabsElement):
+            tab_widgets = [
+                Tab(Content(_tab_label(label)), id=_tab_id(element.key, index))
+                for index, label in enumerate(element.labels)
+            ]
+            for index, tab_widget in enumerate(tab_widgets):
+                tab_widget.stui_index = index
+            tabs = Tabs(
+                *tab_widgets,
+                active=_tab_id(element.key, element.active),
+                id=dom_id_for_key(element.key),
+                classes="stui-tabs-control",
+            )
+            tabs.stui_key = element.key
+            tabs.stui_active_index = element.active
+            tabs.tooltip = (
+                "Left and Right change tabs. Tab and Shift+Tab move focus."
+            )
+            children = [
+                self._build_widget(child, render_width)
+                for child in element.panes[element.active]
+            ]
+            return Vertical(
+                tabs,
+                Vertical(*children, classes="stui-tab-panel"),
+                classes="stui-tabs",
+            )
         if isinstance(element, ExpanderElement):
             if not element.expanded:
                 return StuiExpander(element, label_width=render_width)
@@ -1272,6 +1327,18 @@ class StuiApp(App[None]):
             return
         event.stop()
         self.runtime.set_widget_value(key, event.expanded)
+        self.runtime.run_script()
+        await self.render_runtime()
+
+    async def on_tabs_tab_activated(self, event: Tabs.TabActivated) -> None:
+        key = getattr(event.tabs, "stui_key", None)
+        index = getattr(event.tab, "stui_index", None)
+        if key is None or index is None:
+            return
+        if index == getattr(event.tabs, "stui_active_index", None):
+            return
+        event.stop()
+        self.runtime.set_widget_value(key, index)
         self.runtime.run_script()
         await self.render_runtime()
 

@@ -14,7 +14,7 @@ import textwrap
 import threading
 import traceback
 import weakref
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -50,6 +50,7 @@ from .elements import (
     StatusElement,
     SubheaderElement,
     TableElement,
+    TabsElement,
     TextElement,
     TextInputElement,
     TitleElement,
@@ -512,6 +513,67 @@ class Runtime:
         column_children: list[list[Element]] = [[] for _ in range(count)]
         self._append_element(ColumnsElement(column_children))
         return tuple(ElementBlock(self, children) for children in column_children)
+
+    def tabs(
+        self,
+        labels: Sequence[str],
+        *,
+        key: str | None = None,
+        default: int = 0,
+        on_change: Callable[..., Any] | None = None,
+        args: tuple[Any, ...] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> tuple[ElementBlock, ...]:
+        if isinstance(labels, (str, bytes)) or not isinstance(labels, Sequence):
+            raise ApiUsageError(
+                "st.tabs(labels) requires a non-empty sequence of non-empty strings."
+            )
+        tab_labels = tuple(labels)
+        if not tab_labels or any(
+            not isinstance(label, str) or not label.strip() for label in tab_labels
+        ):
+            raise ApiUsageError(
+                "st.tabs(labels) requires a non-empty sequence of non-empty strings."
+            )
+        if (
+            isinstance(default, bool)
+            or not isinstance(default, int)
+            or not 0 <= default < len(tab_labels)
+        ):
+            raise ApiUsageError(
+                "st.tabs default must be an integer index between "
+                f"0 and {len(tab_labels) - 1}."
+            )
+        tab_key = self.next_widget_key("tabs", repr(tab_labels), key)
+        active = self._widget_value(
+            tab_key,
+            self.session_state.get(tab_key, default),
+            disabled=False,
+        )
+        if (
+            isinstance(active, bool)
+            or not isinstance(active, int)
+            or not 0 <= active < len(tab_labels)
+        ):
+            active = default
+        changed = self._finalize_widget_value(tab_key, active, disabled=False)
+        panes: list[list[Element]] = [[] for _ in tab_labels]
+        self._append_element(
+            TabsElement(
+                labels=tab_labels,
+                key=tab_key,
+                active=active,
+                panes=panes,
+            )
+        )
+        self._handle_widget_callback(
+            tab_key,
+            changed,
+            on_change,
+            args,
+            kwargs,
+        )
+        return tuple(ElementBlock(self, pane) for pane in panes)
 
     def expander(
         self,

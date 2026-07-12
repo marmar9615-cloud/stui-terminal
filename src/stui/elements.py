@@ -133,6 +133,14 @@ class ColumnsElement:
 
 
 @dataclass(frozen=True)
+class TabsElement:
+    labels: tuple[str, ...]
+    key: str
+    active: int
+    panes: list[list[Any]]
+
+
+@dataclass(frozen=True)
 class ExpanderElement:
     label: str
     key: str
@@ -277,6 +285,7 @@ Element: TypeAlias = (
     | TableElement
     | ContainerElement
     | ColumnsElement
+    | TabsElement
     | ExpanderElement
     | DividerElement
     | AlertElement
