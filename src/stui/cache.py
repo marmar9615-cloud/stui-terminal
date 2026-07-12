@@ -10,7 +10,7 @@ import threading
 import time
 import weakref
 from collections import OrderedDict
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal, ParamSpec, TypeVar
@@ -49,6 +49,22 @@ class _FunctionCache:
     fingerprint: str
     entries: OrderedDict[bytes, _CacheEntry] = field(default_factory=OrderedDict)
     inflight: dict[bytes, _InFlightFill] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class CacheStats:
+    """Non-sensitive aggregate counts for one cache namespace."""
+
+    functions: int = 0
+    entries: int = 0
+    in_flight: int = 0
+
+    def as_dict(self) -> dict[str, int]:
+        return {
+            "functions": self.functions,
+            "entries": self.entries,
+            "in_flight": self.in_flight,
+        }
 
 
 _CACHE_MISS = object()
@@ -91,6 +107,23 @@ class _CacheNamespace:
             for runtime in tuple(self._runtime_owners):
                 runtime._clear_cache_registry(self)
             self._fallback_registry.clear()
+
+    def _clear_runtime(self, runtime: Any) -> None:
+        """Clear this namespace for one app runtime without affecting others."""
+        with self._lock:
+            runtime._clear_cache_registry(self)
+
+    def stats(self, runtime: Any | None = None) -> CacheStats:
+        """Return aggregate counts without exposing cache keys or values."""
+        if runtime is None:
+            runtime = _context_runtime_or_none()
+        if runtime is None:
+            raise RuntimeError(
+                "Cache diagnostics require an active Runtime or an explicit runtime."
+            )
+        with self._lock:
+            registry = runtime._get_cache_registry(self, create=False)
+            return _registry_stats(registry)
 
     def _decorate(
         self,
@@ -469,4 +502,48 @@ cache_data = _CacheNamespace("data")
 cache_resource = _CacheNamespace("resource")
 
 
-__all__ = ["cache_data", "cache_resource"]
+def _registry_stats(
+    registry: dict[_CacheIdentity, _FunctionCache] | None,
+) -> CacheStats:
+    if not registry:
+        return CacheStats()
+    return CacheStats(
+        functions=len(registry),
+        entries=sum(
+            len(function_cache.entries) for function_cache in registry.values()
+        ),
+        in_flight=sum(
+            len(function_cache.inflight) for function_cache in registry.values()
+        ),
+    )
+
+
+def _combine_stats(stats: Iterable[CacheStats]) -> CacheStats:
+    functions = 0
+    entries = 0
+    in_flight = 0
+    for item in stats:
+        functions += item.functions
+        entries += item.entries
+        in_flight += item.in_flight
+    return CacheStats(
+        functions=functions,
+        entries=entries,
+        in_flight=in_flight,
+    )
+
+
+def cache_info(runtime: Any | None = None) -> dict[str, object]:
+    """Return versioned aggregate cache diagnostics for one app runtime."""
+    data = cache_data.stats(runtime)
+    resource = cache_resource.stats(runtime)
+    total = _combine_stats((data, resource))
+    return {
+        "schema_version": "stui.cache_info.v1",
+        "data": data.as_dict(),
+        "resource": resource.as_dict(),
+        "total": total.as_dict(),
+    }
+
+
+__all__ = ["CacheStats", "cache_data", "cache_info", "cache_resource"]

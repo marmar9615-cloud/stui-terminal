@@ -658,6 +658,119 @@ def test_namespace_clear_is_separate_for_data_and_resources() -> None:
     assert resource() is not first_resource
 
 
+def test_cache_stats_report_aggregate_counts_without_values(tmp_path: Path) -> None:
+    runtime = Runtime(tmp_path / "app.py")
+    token = _current_runtime.set(runtime)
+    try:
+        @cache_data
+        def load_data(value: str) -> dict[str, str]:
+            return {"payload": value}
+
+        @cache_resource
+        def load_resource() -> object:
+            return object()
+
+        assert load_data("cache-secret") == {"payload": "cache-secret"}
+        assert load_data("second-secret") == {"payload": "second-secret"}
+        load_resource()
+
+        data_stats = cache_data.stats()
+        resource_stats = cache_resource.stats()
+        info = cache_module.cache_info()
+    finally:
+        _current_runtime.reset(token)
+
+    assert data_stats.functions == 1
+    assert data_stats.entries == 2
+    assert data_stats.in_flight == 0
+    assert resource_stats.functions == 1
+    assert resource_stats.entries == 1
+    assert resource_stats.in_flight == 0
+    assert info == {
+        "schema_version": "stui.cache_info.v1",
+        "data": {"functions": 1, "entries": 2, "in_flight": 0},
+        "resource": {"functions": 1, "entries": 1, "in_flight": 0},
+        "total": {"functions": 2, "entries": 3, "in_flight": 0},
+    }
+    assert "cache-secret" not in str(info)
+    assert "second-secret" not in str(info)
+    assert "load_data" not in str(info)
+
+
+def test_cache_stats_require_an_active_or_explicit_runtime() -> None:
+    with pytest.raises(RuntimeError, match="active Runtime or an explicit runtime"):
+        cache_data.stats()
+    with pytest.raises(RuntimeError, match="active Runtime or an explicit runtime"):
+        cache_module.cache_info()
+
+
+def test_cache_stats_and_clear_runtime_are_scoped_to_one_app(tmp_path: Path) -> None:
+    calls = 0
+
+    @cache_data
+    def load() -> int:
+        nonlocal calls
+        calls += 1
+        return calls
+
+    runtime_a = Runtime(tmp_path / "app_a.py")
+    runtime_b = Runtime(tmp_path / "app_b.py")
+
+    token = _current_runtime.set(runtime_a)
+    try:
+        assert load() == 1
+    finally:
+        _current_runtime.reset(token)
+
+    token = _current_runtime.set(runtime_b)
+    try:
+        assert load() == 2
+    finally:
+        _current_runtime.reset(token)
+
+    assert cache_module.cache_info(runtime_a)["data"]["entries"] == 1
+    assert cache_module.cache_info(runtime_b)["data"]["entries"] == 1
+
+    cache_data._clear_runtime(runtime_a)
+
+    assert cache_module.cache_info(runtime_a)["data"] == {
+        "functions": 0,
+        "entries": 0,
+        "in_flight": 0,
+    }
+    assert cache_module.cache_info(runtime_b)["data"]["entries"] == 1
+
+
+def test_cache_stats_include_in_flight_fills(tmp_path: Path) -> None:
+    started = threading.Event()
+    release = threading.Event()
+    runtime = Runtime(tmp_path / "app.py")
+    token = _current_runtime.set(runtime)
+    try:
+        @cache_resource
+        def load() -> object:
+            started.set()
+            release.wait(timeout=5)
+            return object()
+    finally:
+        _current_runtime.reset(token)
+
+    worker = threading.Thread(target=load)
+    worker.start()
+    assert started.wait(timeout=5)
+
+    stats = cache_resource.stats(runtime)
+    assert stats.functions == 1
+    assert stats.entries == 0
+    assert stats.in_flight == 1
+
+    release.set()
+    worker.join(timeout=5)
+    assert not worker.is_alive()
+    assert cache_resource.stats(runtime).entries == 1
+    assert cache_resource.stats(runtime).in_flight == 0
+
+
 def test_clear_apis_remove_runtime_scoped_entries(tmp_path: Path) -> None:
     data_calls = 0
     resource_calls = 0

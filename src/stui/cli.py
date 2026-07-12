@@ -16,6 +16,7 @@ import typer
 
 from . import __version__
 from .app import StuiApp, resolve_theme
+from .diagnostics import inspect_script
 from .elements import ErrorElement
 from .runtime import Runtime
 
@@ -573,6 +574,141 @@ def check_app(
         for warning in warnings:
             typer.echo(f"  - {warning}")
 
+    if exit_code:
+        raise typer.Exit(exit_code)
+
+
+def _count_details(counts: dict[str, int]) -> str:
+    if not counts:
+        return "none"
+    return ", ".join(f"{name}={count}" for name, count in sorted(counts.items()))
+
+
+def _print_inspect_report(report: dict[str, object]) -> None:
+    paths = report["paths"]
+    versions = report["versions"]
+    timings = report["timings"]
+    summary = report["summary"]
+    status = str(report["status"])
+    if report["ok"]:
+        result_label = "passed"
+    elif status == "invalid_script":
+        result_label = "invalid"
+    elif status == "ok":
+        result_label = "strict failed"
+    else:
+        result_label = "failed"
+    display_path = paths["script"] or paths["input"]
+
+    typer.echo(f"stui inspect {result_label}: {display_path}")
+    typer.echo(f"schema: {report['schema_version']}")
+    typer.echo(
+        "versions: "
+        f"stui={versions['stui']}, python={versions['python']}, "
+        f"textual={versions['textual']}, rich={versions['rich']}, "
+        f"typer={versions['typer']}"
+    )
+    typer.echo(f"project root: {paths['project_root'] or 'unavailable'}")
+    typer.echo(
+        f"runs: {summary['runs_completed']}/{summary['runs_requested']} "
+        f"in {timings['total_ms']} ms"
+    )
+    typer.echo(
+        f"elements: {summary['element_count']} current, "
+        f"{summary['total_element_count']} total "
+        f"({_count_details(summary['element_types'])})"
+    )
+    typer.echo(
+        f"widgets: {summary['widget_count']} current, "
+        f"{summary['total_widget_count']} total "
+        f"({_count_details(summary['widget_types'])})"
+    )
+    keys = summary["key_counts"]
+    typer.echo(
+        "keys: "
+        f"session={keys['session']}, widgets={keys['widgets']}, "
+        f"explicit_widgets={keys['explicit_widgets']}, forms={keys['forms']}, "
+        f"elements={keys['elements']}"
+    )
+    nesting = summary["nesting"]
+    typer.echo(
+        "nesting: "
+        f"max_depth={nesting['max_depth']}, "
+        f"nested_elements={nesting['nested_elements']}, "
+        f"containers={nesting['containers']}, "
+        f"column_groups={nesting['column_groups']}, columns={nesting['columns']}"
+    )
+    cache = summary["cache"]
+    typer.echo(
+        "cache: "
+        f"data={cache['data']['entries']} entries/"
+        f"{cache['data']['functions']} functions, "
+        f"resource={cache['resource']['entries']} entries/"
+        f"{cache['resource']['functions']} functions, "
+        f"in_flight={cache['total']['in_flight']}"
+    )
+    typer.echo(f"local modules: {summary['local_module_count']}")
+    for module in paths["local_modules"]:
+        typer.echo(f"  - {module['name']}: {module['path']}")
+    typer.echo(f"watch files: {summary['watch_file_count']}")
+    for watch_file in paths["watch_files"]:
+        typer.echo(f"  - {watch_file}")
+    if report["warnings"]:
+        typer.echo(
+            "warnings: "
+            + ", ".join(
+                f"{warning['code']}@run-{warning['run']}"
+                for warning in report["warnings"]
+            )
+        )
+    else:
+        typer.echo("warnings: none")
+    if report["errors"]:
+        typer.echo(
+            "errors: "
+            + ", ".join(
+                (
+                    str(error["code"])
+                    if error["run"] is None
+                    else f"{error['code']}@run-{error['run']}"
+                )
+                for error in report["errors"]
+            )
+        )
+    else:
+        typer.echo("errors: none")
+
+
+@app.command("inspect")
+def inspect_app(
+    script: Path,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print diagnostics as versioned JSON."),
+    ] = False,
+    strict: Annotated[
+        bool,
+        typer.Option(
+            "--strict",
+            help="Fail on authoring warnings such as scripts with no elements.",
+        ),
+    ] = False,
+    repeat: Annotated[
+        int,
+        typer.Option(
+            "--repeat",
+            min=1,
+            help="Inspect this many runs in one app runtime.",
+        ),
+    ] = 1,
+) -> None:
+    """Inspect a stui script without exposing app, cache, or environment values."""
+    report = inspect_script(script, strict=strict, repeat=repeat)
+    if json_output:
+        typer.echo(json_module.dumps(report, indent=2, sort_keys=True))
+    else:
+        _print_inspect_report(report)
+    exit_code = int(report["exit_code"])
     if exit_code:
         raise typer.Exit(exit_code)
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import math
 import os
+from collections.abc import Iterable
+from functools import partial
 from pathlib import Path
 
 from rich.markdown import Markdown
@@ -10,12 +12,13 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.table import Table as RichTable
 from rich.text import Text
-from textual.app import App, ComposeResult
+from textual.app import App, ComposeResult, SystemCommand
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.content import Content
 from textual.css.query import NoMatches
 from textual.message import Message
+from textual.screen import Screen
 from textual.widgets import (
     Button,
     Checkbox,
@@ -31,6 +34,8 @@ from textual.widgets import (
 )
 
 from ._terminal_text import visible_terminal_text
+from .cache import cache_data, cache_resource
+from .diagnostics import runtime_snapshot
 from .elements import (
     AlertElement,
     BarChartElement,
@@ -76,6 +81,7 @@ from .widgets.data_table import StuiDataTable
 from .widgets.slider import StuiSlider
 
 SUPPORTED_THEMES = {"default", "high-contrast"}
+HIGH_CONTRAST_CLASS = "stui-high-contrast"
 MAX_WIDGET_LABEL_WIDTH = 72
 MAX_STATIC_LABEL_WIDTH = 120
 MAX_TABLE_COLUMNS = 8
@@ -84,74 +90,89 @@ MAX_TABLE_COLUMN_WIDTH = 24
 MIN_RENDERED_COLUMN_WIDTH = 28
 
 HIGH_CONTRAST_CSS = """
-    Screen {
+    .stui-high-contrast Screen,
+    .stui-high-contrast CommandPalette {
         background: #000000;
         color: #ffffff;
     }
 
-    Header, Footer {
+    .stui-high-contrast Header,
+    .stui-high-contrast Footer {
         background: #000000;
         color: #ffffff;
     }
 
-    .title, .header, .subheader {
+    .stui-high-contrast .title,
+    .stui-high-contrast .header,
+    .stui-high-contrast .subheader {
         color: #ffff00;
     }
 
-    .caption, .stui-field-label, .stui-progress-label {
+    .stui-high-contrast .caption,
+    .stui-high-contrast .stui-field-label,
+    .stui-high-contrast .stui-progress-label {
         color: #ffffff;
     }
 
-    .divider {
+    .stui-high-contrast .divider {
         color: #ffffff;
     }
 
-    Button {
+    .stui-high-contrast Button {
         border: tall #ffffff;
     }
 
-    Button:focus {
+    .stui-high-contrast Button:focus {
         background: #ffff00;
         color: #000000;
         text-style: bold;
     }
 
-    Input:focus, TextArea:focus, .stui-selectbox:focus, .stui-radio:focus,
-    .stui-multiselect:focus, Switch:focus {
+    .stui-high-contrast Input:focus,
+    .stui-high-contrast TextArea:focus,
+    .stui-high-contrast .stui-selectbox:focus,
+    .stui-high-contrast .stui-radio:focus,
+    .stui-high-contrast .stui-multiselect:focus,
+    .stui-high-contrast Switch:focus {
         border: tall #ffff00;
         background: #000000;
         color: #ffffff;
     }
 
-    Checkbox:focus, .stui-slider:focus {
+    .stui-high-contrast Checkbox:focus,
+    .stui-high-contrast .stui-slider:focus {
         border: tall #ffff00;
         background: #000000;
         color: #ffffff;
         text-style: bold;
     }
 
-    .stui-toggle-label {
+    .stui-high-contrast .stui-toggle-label {
         color: #ffffff;
     }
 
-    .stui-slider {
+    .stui-high-contrast .stui-slider {
         border: tall #ffffff;
         background: #000000;
     }
 
-    .stui-expander:focus {
+    .stui-high-contrast .stui-expander:focus {
         border: tall #ffff00;
         background: #000000;
         color: #ffffff;
         text-style: bold;
     }
 
-    .alert-success, .alert-info, .alert-warning, .alert-error,
-    .stui-path-error, .traceback {
+    .stui-high-contrast .alert-success,
+    .stui-high-contrast .alert-info,
+    .stui-high-contrast .alert-warning,
+    .stui-high-contrast .alert-error,
+    .stui-high-contrast .stui-path-error,
+    .stui-high-contrast .traceback {
         color: #ffffff;
     }
 
-    .disabled {
+    .stui-high-contrast .disabled {
         color: #bfbfbf;
     }
 """
@@ -838,7 +859,11 @@ class StuiApp(App[None]):
             tuple[tuple[int, int], tuple[float, float]],
         ] = {}
         self.stui_theme = resolve_theme()
-        self.CSS = css_for_theme(type(self).CSS, self.stui_theme)
+        self.CSS = css_for_theme(type(self).CSS, "high-contrast")
+        self.set_class(
+            self.stui_theme == "high-contrast",
+            HIGH_CONTRAST_CLASS,
+        )
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
@@ -874,6 +899,128 @@ class StuiApp(App[None]):
             ),
             severity="error" if failed else "information",
             timeout=2,
+        )
+
+    def get_system_commands(self, screen: Screen) -> Iterable[SystemCommand]:
+        """Expose a fixed set of non-evaluating command palette actions."""
+        yield SystemCommand(
+            "Rerun app",
+            "Run the current stui script again",
+            self.action_rerun_script,
+        )
+        yield SystemCommand(
+            "Quit",
+            "Quit the stui application",
+            self.action_quit,
+        )
+        yield SystemCommand(
+            "Toggle theme",
+            "Toggle stui's default and high-contrast themes",
+            self.action_toggle_theme,
+        )
+        yield SystemCommand(
+            "Clear data cache",
+            "Clear cached data for this app runtime",
+            self.action_clear_data_cache,
+        )
+        yield SystemCommand(
+            "Clear resource cache",
+            "Clear cached resources for this app runtime",
+            self.action_clear_resource_cache,
+        )
+        yield SystemCommand(
+            "Focus next widget",
+            "Move focus to the next interactive widget",
+            self.action_focus_next_widget,
+        )
+        yield SystemCommand(
+            "Diagnostics",
+            "Show count-only diagnostics for the current app",
+            self.action_show_diagnostics,
+        )
+        yield SystemCommand(
+            "Help",
+            "Show key and focused-widget help",
+            self.action_show_help_panel,
+        )
+
+        for key, index, label in self._command_palette_tab_targets():
+            if (
+                not isinstance(key, str)
+                or not key
+                or isinstance(index, bool)
+                or not isinstance(index, int)
+                or index < 0
+                or not isinstance(label, str)
+                or not label.strip()
+            ):
+                continue
+            visible_label = _clip_text(label, MAX_WIDGET_LABEL_WIDTH)
+            yield SystemCommand(
+                f"Switch tab: {visible_label}",
+                "Activate this app tab",
+                partial(self._switch_command_palette_tab, key, index),
+            )
+
+    def _command_palette_tab_targets(self) -> tuple[tuple[str, int, str], ...]:
+        """Integration hook for renderer-owned tab keys, indexes, and labels."""
+        return ()
+
+    async def _switch_command_palette_tab(self, key: str, index: int) -> None:
+        self.runtime.set_widget_value(key, index)
+        await self.action_rerun_script()
+
+    def action_toggle_theme(self) -> None:
+        self.stui_theme = (
+            "default" if self.stui_theme == "high-contrast" else "high-contrast"
+        )
+        self.set_class(
+            self.stui_theme == "high-contrast",
+            HIGH_CONTRAST_CLASS,
+        )
+        self.notify(f"Theme: {self.stui_theme}", timeout=2)
+
+    def action_clear_data_cache(self) -> None:
+        cache_data._clear_runtime(self.runtime)
+        self.notify("Cleared this app's data cache", timeout=2)
+
+    def action_clear_resource_cache(self) -> None:
+        cache_resource._clear_runtime(self.runtime)
+        self.notify("Cleared this app's resource cache", timeout=2)
+
+    def action_focus_next_widget(self) -> None:
+        widgets = [
+            widget
+            for widget in self.screen.focus_chain
+            if getattr(widget, "stui_key", None) is not None
+        ]
+        if not widgets:
+            return
+        try:
+            current_index = widgets.index(self.focused)
+        except ValueError:
+            target = widgets[0]
+        else:
+            target = widgets[(current_index + 1) % len(widgets)]
+        self.set_focus(target)
+
+    def action_show_diagnostics(self) -> None:
+        snapshot = runtime_snapshot(self.runtime)
+        key_counts = snapshot["key_counts"]
+        cache = snapshot["cache"]
+        self.notify(
+            " ".join(
+                (
+                    f"elements={snapshot['element_count']}",
+                    f"widgets={snapshot['widget_count']}",
+                    f"session_keys={key_counts['session']}",
+                    f"local_modules={snapshot['local_module_count']}",
+                    f"watch_files={snapshot['watch_file_count']}",
+                    f"cache_entries={cache['total']['entries']}",
+                )
+            ),
+            title="stui diagnostics",
+            timeout=8,
         )
 
     async def action_rerun_script(self) -> None:
