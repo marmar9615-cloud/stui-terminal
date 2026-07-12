@@ -42,6 +42,7 @@ from .elements import (
     MetricElement,
     MultiselectElement,
     NumberInputElement,
+    PathInputElement,
     ProgressElement,
     RadioElement,
     SelectboxElement,
@@ -56,6 +57,15 @@ from .elements import (
     TitleElement,
     ToggleElement,
     WriteElement,
+)
+from .path_input import (
+    PATH_KINDS,
+    PathKind,
+    _normalize_extensions,
+    _normalize_path,
+    _normalize_root,
+    _validation_error,
+    _visible_path_text,
 )
 from .session_state import SessionState
 from .widgets.slider import snap_value
@@ -722,6 +732,74 @@ class Runtime:
                 value=current,
                 placeholder=placeholder,
                 disabled=disabled,
+            )
+        )
+        self._handle_widget_callback(widget_key, changed, on_change, args, kwargs)
+        return current
+
+    def path_input(
+        self,
+        label: str,
+        value: str = "",
+        *,
+        root: str | Path | None = None,
+        kind: PathKind = "any",
+        must_exist: bool = False,
+        extensions: str | Iterable[str] | None = None,
+        browse: bool = True,
+        key: str | None = None,
+        disabled: bool = False,
+        on_change: Callable[..., Any] | None = None,
+        args: tuple[Any, ...] | None = None,
+        kwargs: dict[str, Any] | None = None,
+    ) -> str:
+        if not isinstance(must_exist, bool):
+            raise ApiUsageError("st.path_input must_exist must be a boolean.")
+        if not isinstance(browse, bool):
+            raise ApiUsageError("st.path_input browse must be a boolean.")
+        if kind not in PATH_KINDS:
+            raise ApiUsageError(
+                "st.path_input kind must be 'file', 'directory', or 'any'."
+            )
+        try:
+            normalized_extensions = _normalize_extensions(extensions)
+        except ValueError as exc:
+            raise ApiUsageError(
+                "st.path_input extensions must contain file extensions."
+            ) from exc
+
+        label_text = _visible_path_text(label)
+        normalized_root = _normalize_root(root, self.script_path.parent)
+        widget_key = self.next_widget_key("path_input", label_text, key)
+        pending_value = self._widget_value(
+            widget_key,
+            self.session_state.get(widget_key, value),
+            disabled=disabled,
+        )
+        current = _normalize_path(pending_value, root=normalized_root)
+        changed = self._finalize_widget_value(
+            widget_key,
+            current,
+            disabled=disabled,
+        )
+        validation_error = _validation_error(
+            current,
+            kind=kind,
+            must_exist=must_exist,
+            extensions=normalized_extensions,
+        )
+        self._append_element(
+            PathInputElement(
+                label=label_text,
+                key=widget_key,
+                value=current,
+                root=normalized_root,
+                kind=kind,
+                must_exist=must_exist,
+                extensions=normalized_extensions,
+                browse=browse,
+                disabled=disabled,
+                validation_error=validation_error,
             )
         )
         self._handle_widget_callback(widget_key, changed, on_change, args, kwargs)

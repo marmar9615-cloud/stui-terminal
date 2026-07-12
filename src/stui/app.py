@@ -52,6 +52,7 @@ from .elements import (
     MetricElement,
     MultiselectElement,
     NumberInputElement,
+    PathInputElement,
     ProgressElement,
     RadioElement,
     SelectboxElement,
@@ -68,6 +69,7 @@ from .elements import (
     ToggleElement,
     WriteElement,
 )
+from .path_input import _visible_path_text
 from .runtime import Runtime
 from .widgets.slider import StuiSlider
 
@@ -142,7 +144,8 @@ HIGH_CONTRAST_CSS = """
         text-style: bold;
     }
 
-    .alert-success, .alert-info, .alert-warning, .alert-error, .traceback {
+    .alert-success, .alert-info, .alert-warning, .alert-error,
+    .stui-path-error, .traceback {
         color: #ffffff;
     }
 
@@ -235,6 +238,19 @@ class StuiTextInput(Input):
             id=dom_id_for_key(element.key),
             disabled=element.disabled,
         )
+
+
+class StuiPathInput(Input):
+    def __init__(self, element: PathInputElement) -> None:
+        self.stui_key = element.key
+        super().__init__(
+            value=_visible_path_text(element.value),
+            id=dom_id_for_key(element.key),
+            disabled=element.disabled,
+        )
+
+    def replace(self, text: str, start: int, end: int) -> None:
+        super().replace(_visible_path_text(text), start, end)
 
 
 class StuiTextArea(TextArea):
@@ -638,6 +654,11 @@ class StuiApp(App[None]):
     .stui-field-hint {
         color: #8f93a5;
         text-style: italic;
+        margin: 0 0 1 0;
+    }
+
+    .stui-path-error {
+        color: #ffd9d9;
         margin: 0 0 1 0;
     }
 
@@ -1136,6 +1157,30 @@ class StuiApp(App[None]):
             )
         if isinstance(element, ButtonElement):
             return StuiButton(element)
+        if isinstance(element, PathInputElement):
+            path_input = StuiPathInput(element)
+            path_input.tooltip = (
+                "Type a local path. Enter applies. "
+                "Tab and Shift+Tab move focus."
+            )
+            children = [
+                Static(
+                    _clip_text(element.label, MAX_STATIC_LABEL_WIDTH),
+                    classes="stui-field-label",
+                ),
+                path_input,
+            ]
+            if element.validation_error is not None:
+                children.append(
+                    Static(
+                        Text(
+                            visible_terminal_text(element.validation_error),
+                            overflow="fold",
+                        ),
+                        classes="stui-path-error",
+                    )
+                )
+            return Vertical(*children, classes="stui-field")
         if isinstance(element, TextInputElement):
             text_input = StuiTextInput(element)
             text_input.tooltip = (

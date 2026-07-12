@@ -195,6 +195,20 @@ class TextInputElement:
 
 
 @dataclass(frozen=True)
+class PathInputElement:
+    label: str
+    key: str
+    value: str
+    root: str
+    kind: str = "any"
+    must_exist: bool = False
+    extensions: tuple[str, ...] = ()
+    browse: bool = True
+    disabled: bool = False
+    validation_error: str | None = None
+
+
+@dataclass(frozen=True)
 class TextAreaElement:
     label: str
     key: str
@@ -293,6 +307,7 @@ Element: TypeAlias = (
     | ButtonElement
     | SliderElement
     | TextInputElement
+    | PathInputElement
     | TextAreaElement
     | CheckboxElement
     | NumberInputElement
