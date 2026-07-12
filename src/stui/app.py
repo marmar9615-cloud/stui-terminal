@@ -40,6 +40,7 @@ from .elements import (
     CodeElement,
     ColumnsElement,
     ContainerElement,
+    DataTableElement,
     DividerElement,
     ErrorElement,
     ExceptionElement,
@@ -71,6 +72,7 @@ from .elements import (
 )
 from .path_input import _visible_path_text
 from .runtime import Runtime
+from .widgets.data_table import StuiDataTable
 from .widgets.slider import StuiSlider
 
 SUPPORTED_THEMES = {"default", "high-contrast"}
@@ -748,6 +750,20 @@ class StuiApp(App[None]):
         margin: 1 0;
     }
 
+    .stui-data-table {
+        height: auto;
+        margin: 1 0;
+    }
+
+    .stui-data-table-widget {
+        width: 100%;
+    }
+
+    .stui-data-table-summary {
+        color: #8f93a5;
+        text-style: italic;
+    }
+
     .metric, .bar-chart {
         margin: 1 0;
     }
@@ -816,6 +832,7 @@ class StuiApp(App[None]):
         self.runtime = runtime
         self.watch = watch
         self._multiselect_cursors: dict[str, int] = {}
+        self._data_table_cursors: dict[str, int] = {}
         self._text_area_views: dict[
             str,
             tuple[tuple[int, int], tuple[float, float]],
@@ -922,6 +939,8 @@ class StuiApp(App[None]):
         body = self.query_one("#body", VerticalScroll)
         for multiselect in self.query(StuiMultiselect):
             self._multiselect_cursors[multiselect.stui_key] = multiselect.stui_cursor
+        for data_table in self.query(StuiDataTable):
+            self._data_table_cursors[data_table.stui_key] = data_table.cursor_row
         for text_area in self.query(StuiTextArea):
             self._text_area_views[text_area.stui_key] = (
                 text_area.cursor_location,
@@ -1000,6 +1019,25 @@ class StuiApp(App[None]):
                 self._render_table(element, render_width),
                 classes="table",
             )
+        if isinstance(element, DataTableElement):
+            data_table = StuiDataTable(
+                element,
+                cursor_row=self._data_table_cursors.get(element.key),
+                id=dom_id_for_key(element.key),
+            )
+            data_table.tooltip = (
+                "Arrow keys move. Enter or Space selects a row. "
+                "Tab and Shift+Tab move focus."
+            )
+            children = [data_table]
+            if element.hidden_rows:
+                children.append(
+                    Static(
+                        f"+{element.hidden_rows} rows",
+                        classes="stui-data-table-summary",
+                    )
+                )
+            return Vertical(*children, classes="stui-data-table")
         if isinstance(element, ExceptionElement):
             return Static(
                 Panel(
@@ -1341,6 +1379,21 @@ class StuiApp(App[None]):
             return
         event.stop()
         self.runtime.set_widget_value(key, event.value)
+        self.runtime.run_script()
+        await self.render_runtime()
+
+    async def on_data_table_row_selected(
+        self,
+        event: StuiDataTable.RowSelected,
+    ) -> None:
+        data_table = event.data_table
+        if not isinstance(data_table, StuiDataTable):
+            return
+        source_index = data_table.source_index_for_row(event.cursor_row)
+        if source_index is None or data_table.disabled:
+            return
+        event.stop()
+        self.runtime.set_widget_value(data_table.stui_key, source_index)
         self.runtime.run_script()
         await self.render_runtime()
 

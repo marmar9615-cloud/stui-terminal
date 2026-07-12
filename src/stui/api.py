@@ -153,6 +153,35 @@ def dataframe(
     get_current_runtime().dataframe(data, max_rows=max_rows, max_cols=max_cols)
 
 
+def data_table(
+    data: Any,
+    *,
+    selection_mode: str | None = None,
+    key: str | None = None,
+    disabled: bool = False,
+    on_select=None,
+    args: tuple[Any, ...] | None = None,
+    kwargs: dict[str, Any] | None = None,
+    max_rows: int | None = None,
+    max_cols: int | None = None,
+    height: int | None = None,
+    show_index: bool = False,
+) -> int | None:
+    return get_current_runtime().data_table(
+        data,
+        selection_mode=selection_mode,
+        key=key,
+        disabled=disabled,
+        on_select=on_select,
+        args=args,
+        kwargs=kwargs,
+        max_rows=max_rows,
+        max_cols=max_cols,
+        height=height,
+        show_index=show_index,
+    )
+
+
 def divider() -> None:
     get_current_runtime().divider()
 

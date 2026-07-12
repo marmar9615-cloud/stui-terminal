@@ -28,6 +28,7 @@ from .elements import (
     CodeElement,
     ColumnsElement,
     ContainerElement,
+    DataTableElement,
     DividerElement,
     Element,
     ErrorElement,
@@ -492,6 +493,129 @@ class Runtime:
         max_cols: int | None = None,
     ) -> None:
         self.table(data, max_rows=max_rows, max_cols=max_cols)
+
+    def data_table(
+        self,
+        data: Any,
+        *,
+        selection_mode: str | None = None,
+        key: str | None = None,
+        disabled: bool = False,
+        on_select: Callable[..., Any] | None = None,
+        args: tuple[Any, ...] | None = None,
+        kwargs: dict[str, Any] | None = None,
+        max_rows: int | None = None,
+        max_cols: int | None = None,
+        height: int | None = None,
+        show_index: bool = False,
+    ) -> int | None:
+        if selection_mode not in (None, "single"):
+            raise ApiUsageError(
+                'st.data_table selection_mode must be None or "single".'
+            )
+        row_limit = _normalize_data_table_limit(max_rows, "max_rows")
+        col_limit = _normalize_data_table_limit(max_cols, "max_cols")
+        normalized_height = _normalize_data_table_limit(height, "height")
+        if not isinstance(show_index, bool):
+            raise ApiUsageError("st.data_table show_index must be a bool.")
+
+        widget_key = self.next_widget_key("data_table", "data", key)
+        headers, source_rows = _normalize_table(data)
+        source_row_count = len(source_rows)
+        headers, limited_columns = _limit_table(
+            headers,
+            source_rows,
+            max_rows=None,
+            max_cols=col_limit,
+        )
+        visible_count = (
+            len(limited_columns)
+            if row_limit is None
+            else min(row_limit, len(limited_columns))
+        )
+        source_row_indices = tuple(range(visible_count))
+        rows = limited_columns[:visible_count]
+        if show_index:
+            headers = ("#", *headers)
+            rows = tuple(
+                (str(source_index), *row)
+                for source_index, row in zip(source_row_indices, rows)
+            )
+
+        stored_value = self.session_state.get(widget_key)
+        stored_is_valid = _is_valid_data_table_selection(
+            stored_value,
+            selection_mode=selection_mode,
+            source_row_count=source_row_count,
+        )
+        stored = _normalize_data_table_selection(
+            stored_value,
+            selection_mode=selection_mode,
+            source_row_count=source_row_count,
+        )
+        if not stored_is_valid and widget_key in self.session_state:
+            self.session_state[widget_key] = None
+        baseline = stored
+        form_key = self._active_form_key()
+        if form_key is not None and not disabled:
+            pending_values = self.form_pending_values.get(form_key, {})
+            if widget_key in pending_values and not _is_valid_data_table_selection(
+                pending_values[widget_key],
+                selection_mode=selection_mode,
+                source_row_count=source_row_count,
+            ):
+                pending_values.pop(widget_key)
+            baseline = _normalize_data_table_selection(
+                pending_values.get(widget_key, stored),
+                selection_mode=selection_mode,
+                source_row_count=source_row_count,
+            )
+        raw_value = self._widget_value(widget_key, baseline, disabled=disabled)
+        queued_change = not disabled and widget_key in self._active_changed_widgets
+        valid_change = _is_valid_data_table_selection(
+            raw_value,
+            selection_mode=selection_mode,
+            source_row_count=source_row_count,
+        )
+        current = (
+            _normalize_data_table_selection(
+                raw_value,
+                selection_mode=selection_mode,
+                source_row_count=source_row_count,
+            )
+            if valid_change
+            else baseline
+        )
+        changed = self._finalize_widget_value(
+            widget_key,
+            current,
+            disabled=disabled,
+        )
+        if queued_change and not valid_change:
+            changed = False
+        self._append_element(
+            DataTableElement(
+                headers=headers,
+                rows=rows,
+                source_row_indices=source_row_indices,
+                source_row_count=source_row_count,
+                hidden_rows=source_row_count - visible_count,
+                key=widget_key,
+                selected_index=current,
+                selection_mode=selection_mode,
+                disabled=disabled,
+                height=normalized_height,
+                show_index=show_index,
+            )
+        )
+        self._handle_widget_callback(
+            widget_key,
+            changed,
+            on_select,
+            args,
+            kwargs,
+        )
+        return current
 
     def divider(self) -> None:
         self._append_element(DividerElement())
@@ -1864,6 +1988,45 @@ def _normalize_table_limit(value: int | None, name: str) -> int | None:
         return None
     if not isinstance(value, int) or isinstance(value, bool) or value < 1:
         raise ApiUsageError(f"st.table {name} must be a positive integer or None.")
+    return value
+
+
+def _normalize_data_table_limit(value: int | None, name: str) -> int | None:
+    if value is None:
+        return None
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        raise ApiUsageError(f"st.data_table {name} must be a positive integer or None.")
+    return value
+
+
+def _is_valid_data_table_selection(
+    value: Any,
+    *,
+    selection_mode: str | None,
+    source_row_count: int,
+) -> bool:
+    if value is None:
+        return True
+    return (
+        selection_mode == "single"
+        and isinstance(value, int)
+        and not isinstance(value, bool)
+        and 0 <= value < source_row_count
+    )
+
+
+def _normalize_data_table_selection(
+    value: Any,
+    *,
+    selection_mode: str | None,
+    source_row_count: int,
+) -> int | None:
+    if not _is_valid_data_table_selection(
+        value,
+        selection_mode=selection_mode,
+        source_row_count=source_row_count,
+    ):
+        return None
     return value
 
 

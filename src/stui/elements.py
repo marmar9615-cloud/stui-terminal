@@ -123,6 +123,21 @@ class TableElement:
 
 
 @dataclass(frozen=True)
+class DataTableElement:
+    headers: tuple[str, ...]
+    rows: tuple[tuple[str, ...], ...]
+    source_row_indices: tuple[int, ...]
+    source_row_count: int
+    hidden_rows: int
+    key: str
+    selected_index: int | None
+    selection_mode: str | None
+    disabled: bool = False
+    height: int | None = None
+    show_index: bool = False
+
+
+@dataclass(frozen=True)
 class ContainerElement:
     children: list[Any]
 
@@ -297,6 +312,7 @@ Element: TypeAlias = (
     | BarChartElement
     | LineChartElement
     | TableElement
+    | DataTableElement
     | ContainerElement
     | ColumnsElement
     | TabsElement
