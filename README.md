@@ -16,25 +16,21 @@ not official Streamlit, is not affiliated with Streamlit, and is not a
 Streamlit compatibility layer. Existing Streamlit apps usually need edits; new
 `stui` apps should be written against the documented terminal-first API below.
 
-## Preview
+## Live Terminal Preview
 
-![stui model demo terminal screenshot](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v2.1.0/assets/stui-model-demo.png)
+These are real Textual captures from the bundled v2.3 `workspace` demo after
+driving the documented keyboard interactions. They are not mockups.
 
-```text
-┌─ stui ───────────────────────────────────────────┐
-│ stui demo basic                                  │
-│                                                  │
-│ x                                                │
-│ [██░░░░░░░░░░░░] 10                              │
-│                                                  │
-│ [ Increment ]                                    │
-│                                                  │
-│ x = 10                                           │
-│ count = 0                                        │
-│                                                  │
-│ q Quit   r Rerun   tab Focus next                │
-└──────────────────────────────────────────────────┘
-```
+![stui workspace data tab with a selected row](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v2.3.0/assets/stui-workspace.png)
+
+| Narrow terminal | Local path input |
+| --- | --- |
+| ![stui workspace at 38 by 22 cells](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v2.3.0/assets/stui-workspace-narrow.png) | ![stui local path input in the Files tab](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v2.3.0/assets/stui-path-input.png) |
+
+![stui safe command palette with tab, diagnostics, cache, focus, theme, rerun, and quit actions](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v2.3.0/assets/stui-command-palette.png)
+
+The exact interaction and capture evidence is recorded in
+[`docs/visual-proof.md`](docs/visual-proof.md).
 
 ## Install
 
@@ -110,11 +106,12 @@ Install, launch a bundled demo, then run the app you just wrote:
 python -m pip install stui-terminal
 stui demo model_demo
 stui demo dashboard
+stui demo workspace
 stui run app.py
 ```
 
-Press `q` to quit a demo. The screenshot above is a real terminal capture from
-the bundled `model_demo` demo.
+Press `q` to quit a demo. The screenshots above come from the bundled
+`workspace` demo at wide and narrow terminal sizes.
 
 Or generate a starter file instead of writing `app.py` by hand:
 
@@ -144,6 +141,9 @@ stui check app.py
 stui check app.py --json
 stui check app.py --strict
 stui check app.py --strict --repeat 2
+stui inspect app.py
+stui inspect app.py --json
+stui inspect app.py --strict --repeat 3
 ```
 
 ## Project Links
@@ -153,6 +153,10 @@ stui check app.py --strict --repeat 2
 - [API stability](docs/api-stability.md)
 - [Caching](docs/caching.md)
 - [Watch mode](docs/watch-mode.md)
+- [Tabs](docs/tabs.md)
+- [Path input](docs/path-input.md)
+- [Interactive data](docs/interactive-data.md)
+- [Inspect diagnostics](docs/inspect.md)
 - [Terminal compatibility](docs/terminal-compatibility.md)
 - [Changelog](CHANGELOG.md)
 - [Roadmap](ROADMAP.md)
@@ -216,6 +220,10 @@ stui run examples/layouts.py
 stui run examples/charts.py
 stui run examples/caching.py
 stui run examples/prompt_workbench.py
+stui run examples/workspace.py
+stui run examples/tabs.py
+stui run examples/data_explorer.py
+stui run examples/diagnostics.py
 stui run examples/kitchen_sink.py
 ```
 
@@ -229,6 +237,10 @@ stui demo model_demo
 stui demo dashboard
 stui demo forms
 stui demo charts
+stui demo workspace
+stui demo tabs
+stui demo data_explorer
+stui demo diagnostics
 stui example copy caching ./caching.py
 stui example copy prompt_workbench ./prompt_workbench.py
 stui demo kitchen_sink
@@ -243,6 +255,8 @@ stui init ./dashboard.py --template dashboard
 stui init ./data_app.py --template data
 stui init ./charts_app.py --template charts
 stui init ./forms_app.py --template forms
+stui init ./workspace.py --template workspace
+stui inspect ./workspace.py --strict --repeat 3
 stui selftest
 stui selftest --strict
 ```
@@ -251,8 +265,8 @@ Automated tests cover demo CLI behavior and bundled-resource resolution without
 starting a full TUI. For an interactive smoke check, run `stui demo dashboard`
 from any directory and press `q` to quit.
 
-`stui init` currently supports the `basic`, `dashboard`, `data`, `charts`, and
-`forms` templates. Use `python -m stui ...` for the same commands when the
+`stui init` currently supports the `basic`, `dashboard`, `data`, `charts`,
+`forms`, and `workspace` templates. Use `python -m stui ...` for the same commands when the
 `stui` script directory is not on `PATH`.
 
 If `stui doctor` runs from CI or another non-interactive shell, it may report
@@ -277,6 +291,9 @@ python -m stui check ./data_app.py --strict
 
 stui init ./charts_app.py --template charts
 python -m stui check ./charts_app.py --strict
+
+stui init ./workspace.py --template workspace
+python -m stui inspect ./workspace.py --json
 ```
 
 The stable release line treats these demo/example/init/copy/check/selftest commands
@@ -427,9 +444,10 @@ websockets, require port-forwarding, or depend on Streamlit at runtime.
 python -m pip install stui-terminal
 
 # Run a bundled first-run demo, then create and run an app.
-stui demo dashboard
-stui init app.py
+stui demo workspace
+stui init app.py --template workspace
 stui check app.py
+stui inspect app.py --json
 stui run app.py
 stui run app.py --watch
 python -m stui run app.py
@@ -444,6 +462,7 @@ stui example copy counter ./counter.py
 stui init ./new_app.py
 stui init ./dashboard.py --template dashboard
 stui init ./forms_app.py --template forms
+stui init ./workspace.py --template workspace
 
 # Print version and install/terminal diagnostics.
 stui --version
@@ -451,6 +470,7 @@ stui doctor
 stui doctor --json
 stui check app.py --json
 stui check app.py --strict --repeat 2
+stui inspect app.py --strict --repeat 3
 stui selftest --strict --repeat 2
 
 # Install the project for local development from a checkout.
@@ -515,22 +535,26 @@ stability checklist are tracked in
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v2.2.0 |
+| Area | APIs | Status in v2.3.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
 | Status/help primitives | `st.status`, `st.spinner`, `st.help` | Post-v1 experimental while terminal grouping/help formatting gathers feedback |
 | Display | `st.code`, `st.json`, `st.progress`, `st.table`, `st.dataframe` | v1-stable static terminal displays |
 | Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` | v1-stable input widgets |
-| Richer input widgets | `st.text_area`, `st.multiselect`, `st.toggle` | Post-v2 experimental authoring widgets |
+| Richer input widgets | `st.text_area`, `st.toggle` | v1-stable authoring widgets, graduated in v2.3.0 |
+| Multi-option input | `st.multiselect` | Post-v2 experimental checkbox-style selection |
 | Notifications | `st.toast` | Post-v2 experimental transient terminal notification, new in v2.1.0 |
-| Caching | `st.cache_data`, `st.cache_resource` | Post-v2 experimental process-local caches, new in v2.2.0 |
+| Caching | `st.cache_data`, `st.cache_resource` | v1-stable process-local caches, graduated in v2.3.0 |
 | Forms | `st.form`, `st.form_submit_button` | v1-stable deferred commit to `session_state` until submit |
 | Layout/grouping | `st.container`, `st.expander`, `st.columns` | v1-stable terminal grouping primitives; `st.columns` is count-only and stacks on narrow terminals |
+| Tab workspaces | `st.tabs` | Post-v2 experimental stateful tabs; all blocks execute and only the active pane mounts |
+| Local paths | `st.path_input` | Post-v2 experimental text-first local path input and metadata validation; no upload or file-content read |
+| Interactive data | `st.data_table` | Post-v2 experimental single-row selection returning a source-row index; no editing or dataframe dependency |
 | Metrics and charts | `st.metric`, `st.bar_chart`, `st.line_chart` | v1-stable compact terminal summaries, not plotting replacements |
 | State and flow | `st.session_state`, `st.rerun`, `st.stop` | v1-stable state and flow-control helpers |
 | Package metadata | `st.__version__` | v1-stable package version string |
-| CLI and examples | `stui run`, `stui check`, `stui selftest`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | v1-stable command surface |
+| CLI and examples | `stui run`, `stui check`, `stui inspect`, `stui selftest`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` | Stable installed-user commands plus the new versioned, non-sensitive `inspect` report |
 
 Inputs support stable `key` values and optional callbacks where the function
 signature documents them. Tables and charts are simple static displays and do
@@ -538,7 +562,7 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v2.2.0 stable surface is unchanged from v2.0.0: the tested API frozen in
+The v2.3.0 stable surface remains compatible with v2.0.0: the tested API frozen in
 v1.9.0 and verified for the v2 major release. It keeps the v1.9.0 API intact
 while making the v2 contract, migration expectations, release-proof gates, and
 deferred roadmap explicit. Tables and dataframes are stable for documented
@@ -551,17 +575,18 @@ correctness, terminal, or security issue forces a change.
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v2 behavior yet. In v2.2.0 this includes the post-v1
-experimental `st.status`, `st.spinner`, and `st.help`, plus the post-v2
-experimental `st.multiselect`, `st.toggle`, and `st.toast` added in v2.1.0 and
-`st.cache_data`, `st.cache_resource`, and `st.text_area` added in v2.2.0.
+promised as frozen v2 behavior yet. In v2.3.0 this includes the post-v1
+experimental `st.status`, `st.spinner`, and `st.help`; `st.multiselect` and
+`st.toast` from v2.1.0; and `st.tabs`, `st.path_input`, and `st.data_table`
+added in v2.3.0. `st.cache_data`, `st.cache_resource`, `st.text_area`, and
+`st.toggle` graduate to the stable surface in v2.3.0.
 Release notes should call out any change with a migration note when practical.
 
 APIs not shown in this table should be treated as private implementation
 details. Experimental display/status helpers may still tighten in future minor
 releases unless they
 are promoted in the API stability docs and covered by release notes.
-Deferred APIs include `st.sidebar`, `st.tabs`, `st.file_uploader`,
+Deferred APIs include `st.sidebar`, `st.file_uploader`,
 `st.components`, editable dataframes,
 custom column ratios/gaps, `st.empty`, plotting-library parity, and
 browser/server runtime features.
@@ -832,9 +857,11 @@ stui run examples/kitchen_sink.py
 - Expanders are keyboard-toggleable with Enter/Space and persist their state;
   this is still a modest terminal grouping primitive, not a full layout system.
 - Columns accept only an integer count, stack when the terminal is narrow, and
-  do not support custom ratios, sidebars, tabs, browser grids, or horizontal
+  do not support custom ratios, sidebars, browser grids, or horizontal
   scrolling. Nested columns stack based on the parent column width, but deep
   nesting can still become hard to read in small terminals.
+- Experimental tabs execute every pane during the script pass and mount only
+  the active pane. They are workspace grouping, not lazy execution or routing.
 - Charts are compact terminal summaries, not plotting-library replacements.
   `st.bar_chart` and `st.line_chart` support documented numeric terminal data
   shapes, including simple sequences, mappings, tuple pairs, list-of-dicts, and
@@ -845,7 +872,8 @@ stui run examples/kitchen_sink.py
   scheduler or async runtime.
 - No sidebars, file upload, browser components, disk cache, distributed cache,
   background refresh, or persistent cache.
-- Tables are static display only; there is no full dataframe editing or sorting.
+- `st.table` and `st.dataframe` are static displays. Experimental
+  `st.data_table` adds single-row selection, but no dataframe editing or sorting.
   Object-row support is for display only and uses dataclasses, namedtuples, or
   simple public attributes.
 - Slider input supports numeric values only.
@@ -873,13 +901,13 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v2.2 Stable Status
+## v2.3 Stable Status
 
-v2.2.0 keeps the package/import/CLI contract and full v2.0.0 stable API intact.
-It adds post-v2 experimental process-local caching and multiline authoring,
-hardens `stui run --watch` for imported local modules and error recovery, and
-keeps the v2.1 widgets available for continued feedback. Release work still
-points at [docs/v2-readiness.md](docs/v2-readiness.md).
+v2.3.0 keeps the package/import/CLI contract and full v2.0.0 stable API intact.
+It graduates process-local caching, multiline authoring, and `st.toggle`; adds
+experimental tabs, local path input, and selectable data tables; and adds a
+versioned, non-sensitive `stui inspect` report. Release work still points at
+[docs/v2-readiness.md](docs/v2-readiness.md).
 
 The remaining experimental APIs and terminal compatibility unknowns are visible
 instead of hidden. Post-v2 work should be feedback-driven and kept out of the

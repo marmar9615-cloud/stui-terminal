@@ -3,6 +3,11 @@
 `stui inspect` runs a local stui app without launching the interactive TUI and
 reports structural diagnostics about the run.
 
+User-script stdout and stderr are discarded during inspection so `--json`
+always remains one parseable report and app output cannot leak into either
+format. Human-readable paths neutralize terminal controls; JSON keeps exact
+paths as ordinary escaped JSON strings.
+
 ```bash
 stui inspect APP.py
 stui inspect APP.py --json
@@ -102,6 +107,9 @@ It has no shell execution, Python evaluation, or custom command registration
 API. A renderer integration may add `Switch tab: LABEL` entries only through
 the internal tab-target hook, which supplies a widget key, numeric tab index,
 and visible label. Switching follows the normal widget update and rerun path.
+Duplicate labels are disambiguated with their tab-group key. Nested tab groups
+inside inactive parent panes are omitted until their parent becomes active, so
+a palette command always causes a visible change.
 `Toggle theme` switches between stui's existing default and high-contrast
 themes across the app and command palette.
 

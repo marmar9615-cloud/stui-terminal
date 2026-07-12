@@ -1,6 +1,6 @@
 # v1 Readiness
 
-`stui` v2.2.0 is the current release target; v2.0.0 was the first v2 stable
+`stui` v2.3.0 is the current release target; v2.0.0 was the first v2 stable
 release and v2.1.0 was the first post-v2 feature release.
 The goal for the v1 series is not to become Streamlit-compatible or to grow a
 large component catalog. The goal is a small, stable, terminal-native API that
@@ -149,8 +149,9 @@ Stable in v1:
   `st.exception`.
 - Static display: `st.json`, `st.progress`, `st.table`, `st.dataframe`, and
   `st.metric`, `st.bar_chart`, and `st.line_chart`.
-- Input widgets: `st.button`, `st.slider`, `st.text_input`, `st.checkbox`,
-  `st.number_input`, `st.selectbox`, and `st.radio`.
+- Input widgets: `st.button`, `st.slider`, `st.text_input`, `st.text_area`,
+  `st.checkbox`, `st.toggle`, `st.number_input`, `st.selectbox`, and `st.radio`.
+- Process-local caching: `st.cache_data` and `st.cache_resource`.
 - Forms, grouping, and layout: `st.form`, `st.form_submit_button`,
   `st.container`, `st.expander`, and `st.columns`.
 - `st.session_state` as the core state mapping and attribute proxy.
@@ -163,7 +164,7 @@ Experimental in v1:
 
 - `st.status`, `st.spinner`, and `st.help` as terminal status/help primitives
   while their exact grouping and formatting contract gathers feedback.
-- Larger layout systems such as sidebars, grids, tabs, custom ratios, or
+- Larger layout systems such as sidebars, grids, custom ratios, or
   browser-style responsive layout engines.
 - Rich dataframe interactions such as editing, sorting, selection, pagination,
   pandas-specific integrations, or formatting hooks.
@@ -181,16 +182,18 @@ must match the `v1-stable` rows in `docs/api-stability.md` and
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider`, `st.code` |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` |
 | Display | `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`, `st.bar_chart`, `st.line_chart` |
-| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` |
+| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.text_area`, `st.checkbox`, `st.toggle`, `st.number_input`, `st.selectbox`, `st.radio` |
 | Forms and grouping | `st.form`, `st.form_submit_button`, `st.container`, `st.expander`, `st.columns` |
+| Caching | `st.cache_data`, `st.cache_resource` |
 | State and flow | `st.session_state`, `st.rerun`, `st.stop` |
 | Package metadata | `st.__version__` |
-| CLI | `stui run`, `stui check`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui --version` |
+| CLI | `stui run`, `stui check`, `stui inspect`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui selftest`, `stui --version` |
 
 The experimental API is public and documented, but not part of the stable table
-yet. Current experimental areas are `st.status`, `st.spinner`, and `st.help`,
+yet. Current experimental areas are `st.status`, `st.spinner`, `st.help`,
+`st.multiselect`, `st.toast`, `st.tabs`, `st.path_input`, and `st.data_table`,
 plus larger deferred layout systems, plotting-library parity,
-dataframe-editing, caching, file-upload, and browser/server runtime areas.
+dataframe-editing, file-upload, and browser/server runtime areas.
 
 Every stable API should keep:
 

@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.3.0 - 2026-07-12
+
+### Added
+
+- Added post-v2 experimental `st.tabs` with persistent active state, nested
+  tabs, callbacks, form deferral, keyboard/mouse switching, narrow-terminal
+  behavior, and an explicit all-blocks-execute/active-pane-mounts contract.
+- Added post-v2 experimental `st.path_input` for normalized local paths,
+  metadata-only file/directory validation, extension filters, forms, callbacks,
+  disabled state, and safe terminal rendering. It does not upload or read files.
+- Added post-v2 experimental `st.data_table` for optional single-row selection
+  with stable source-row indexes, keyboard/mouse activation, truncation, forms,
+  callbacks, and no pandas dependency.
+- Added `stui inspect APP.py`, including `--json`, `--strict`, and `--repeat`,
+  with versioned count-only runtime, cache, watch, key, and layout diagnostics.
+- Added a fixed safe command palette for rerun, quit, theme, cache clearing,
+  focus, diagnostics, help, and visible tab switching.
+- Added bundled `workspace`, `tabs`, `data_explorer`, and `diagnostics` demos,
+  plus a deterministic `workspace` init template.
+- Replaced the older preview with four lightweight captures from the real
+  workspace demo: wide and narrow tabs/data, local path input, and command palette.
+- Added clean-wheel smoke verification on macOS and Windows in CI.
+
+### Changed
+
+- Graduated `st.cache_data`, `st.cache_resource`, `st.text_area`, and
+  `st.toggle` to the stable API after focused state, concurrency, form,
+  callback, terminal, installed-wheel, and external-project proof.
+- Tightened experimental `st.multiselect` so duplicate options fail with a
+  readable API error instead of expanding one selection into equal duplicates.
+- Extended `stui check` and `stui inspect` through every tab pane so validation
+  and structural counts cover the complete script element tree.
+- Updated bundled examples, README, API docs, compatibility notes, roadmap,
+  release gates, and publishing guidance for interactive workspaces.
+
+### Fixed
+
+- Fixed `stui inspect --json` being corrupted by app stdout/stderr; inspected
+  script output is now discarded without exposing its content.
+- Neutralized terminal controls in human-readable inspect paths and command
+  palette tab labels.
+- Disambiguated duplicate tab labels in the command palette and omitted nested
+  tab commands hidden inside inactive parent panes or collapsed groups.
+- Fixed populated non-selectable data tables being skipped by keyboard focus;
+  they can now scroll without enabling row-selection state changes.
+- Fixed selectable tables with empty mapping or empty sequence rows crashing
+  during mount or selection by guaranteeing a rectangular display shape.
+
+### Deferred
+
+- Kept the path browser overlay deferred; `st.path_input` is text-first in
+  v2.3.0 and `root` is explicitly not a security sandbox.
+- Kept table editing, sorting, filtering, multiple selection, row-object
+  returns, custom public commands, autorefresh, and appendable logs out of this
+  release.
+
 ## 2.2.0 - 2026-07-11
 
 ### Added

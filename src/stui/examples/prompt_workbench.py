@@ -37,7 +37,9 @@ compiled = compile_prompt(instructions, tags, concise)
 if st.button("Prepare prompt"):
     st.toast("Prompt prepared locally")
 
-st.subheader("Preview")
-st.code(compiled, language="text")
-st.json(local_model_profile())
+preview, runtime = st.tabs(["Preview", "Runtime"], key="prompt-tabs")
+with preview:
+    st.code(compiled, language="text")
+with runtime:
+    st.json(local_model_profile())
 st.caption("Ctrl+Enter commits the text area. Enter inserts a newline.")

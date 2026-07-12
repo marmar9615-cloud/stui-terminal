@@ -109,6 +109,13 @@ opening a compatibility report:
 
 ## Keyboard Notes
 
+v2.3 adds harness coverage for tabs and selectable data: Left/Right switches a
+focused tab, Enter/Space selects the current interactive-table row, and mouse
+activation is exercised when Textual's test driver supplies mouse input. Only
+the active tab pane mounts, so controls in hidden panes are not focusable.
+The command palette lists visible tab groups and omits nested groups hidden
+inside an inactive parent pane.
+
 Automated Textual harness coverage verifies button activation, text and number
 input submission, multiline Enter/Ctrl+Enter behavior, checkbox toggles,
 multiselect cursor/toggle behavior, selectbox arrow movement, slider

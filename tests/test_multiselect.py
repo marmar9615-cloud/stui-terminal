@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from stui.elements import MultiselectElement, WriteElement
+from stui.elements import ErrorElement, MultiselectElement, WriteElement
 from stui.runtime import Runtime
 
 
@@ -141,6 +141,23 @@ st.write("tags =", tags)
     assert element.options == ()
     assert element.selected == ()
     assert runtime.session_state["multiselect:Tags:0"] == ()
+
+
+def test_multiselect_rejects_duplicate_options_readably(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        '''import stui as st
+
+st.multiselect("Duplicates", ["a", "a"])
+''',
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+
+    assert runtime.elements == [
+        ErrorElement("st.multiselect options must not contain duplicates.")
+    ]
 
 
 def test_multiselect_on_change_fires_only_on_change(tmp_path: Path) -> None:

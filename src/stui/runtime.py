@@ -1003,8 +1003,12 @@ class Runtime:
         args: tuple[Any, ...] | None = None,
         kwargs: dict[str, Any] | None = None,
     ) -> tuple[Any, ...]:
-        widget_key = self.next_widget_key("multiselect", label, key)
         options_tuple = tuple(options)
+        if _has_duplicate_options(options_tuple):
+            raise ApiUsageError(
+                "st.multiselect options must not contain duplicates."
+            )
+        widget_key = self.next_widget_key("multiselect", label, key)
         default_selection = _normalize_multiselect_selection(default, options_tuple)
         current = _normalize_multiselect_selection(
             self._widget_value(
@@ -1649,6 +1653,18 @@ def _normalize_multiselect_selection(
     return tuple(option for option in options if option in items)
 
 
+def _has_duplicate_options(options: tuple[Any, ...]) -> bool:
+    for index, option in enumerate(options):
+        for previous in options[:index]:
+            try:
+                if bool(option == previous):
+                    return True
+            except Exception:
+                if option is previous:
+                    return True
+    return False
+
+
 def _coerce_number(
     value: Any,
     fallback: int | float = 0,
@@ -2064,6 +2080,28 @@ def _limit_table(
 ) -> tuple[tuple[str, ...], tuple[tuple[str, ...], ...]]:
     row_limit = _normalize_table_limit(max_rows, "max_rows")
     col_limit = _normalize_table_limit(max_cols, "max_cols")
+    if not headers and not any(row for row in rows):
+        headers = ("value",)
+    column_count = max(
+        1,
+        len(headers),
+        max((len(row) for row in rows), default=0),
+    )
+    if len(headers) < column_count:
+        headers = (
+            *headers,
+            *(
+                f"col_{index + 1}"
+                for index in range(len(headers), column_count)
+            ),
+        )
+    rows = tuple(
+        (
+            *row[:column_count],
+            *("" for _ in range(column_count - len(row))),
+        )
+        for row in rows
+    )
     original_header_count = len(headers)
     original_row_count = len(rows)
     if col_limit is not None:

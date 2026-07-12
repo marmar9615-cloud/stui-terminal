@@ -6,6 +6,7 @@ from .api import (
     code,
     columns,
     container,
+    data_table,
     dataframe,
     divider,
     error,
@@ -44,8 +45,10 @@ from .api import (
     write,
 )
 from .cache import cache_data, cache_resource
+from .path_input import path_input
+from .tabs import tabs
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
 
 __all__ = [
     "__version__",
@@ -58,6 +61,7 @@ __all__ = [
     "code",
     "columns",
     "container",
+    "data_table",
     "dataframe",
     "divider",
     "error",
@@ -74,6 +78,7 @@ __all__ = [
     "metric",
     "multiselect",
     "number_input",
+    "path_input",
     "progress",
     "radio",
     "rerun",
@@ -84,6 +89,7 @@ __all__ = [
     "stop",
     "subheader",
     "status",
+    "tabs",
     "table",
     "success",
     "text",

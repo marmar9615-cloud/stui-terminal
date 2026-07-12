@@ -109,6 +109,16 @@ Feedback that can shape near-term design:
 
 ## Later v2.x Feedback
 
+For v2.3 feedback, include the exact workflow and report:
+
+- whether tab switching preserved state and focus, including nested tabs;
+- whether `st.path_input` normalization/validation matched the host platform;
+- whether selectable-table source indexes stayed clear after row/column limits;
+- whether keyboard and mouse selection behaved the same in your terminal;
+- whether `stui inspect APP.py --json` was useful and remained non-sensitive;
+- whether `stui demo workspace` and the workspace init template worked from a
+  clean installation without a checkout.
+
 Feedback that is useful but may require more design work:
 
 - Plugin or widget extension API needs for project-specific components.

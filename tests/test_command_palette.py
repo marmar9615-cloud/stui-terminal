@@ -201,3 +201,190 @@ def test_switch_tab_commands_are_available_only_through_specific_hook(
     assert "Switch tab: Details" in commands
     asyncio.run(_invoke(commands["Switch tab: Details"]))
     assert switched == [("workspace", 1)]
+
+
+def test_command_palette_discovers_and_switches_runtime_tabs(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(
+        """
+import stui as st
+
+overview, details = st.tabs(["Overview", "Details"], key="workspace")
+with overview:
+    st.write("overview")
+with details:
+    st.write("details")
+""",
+        encoding="utf-8",
+    )
+
+    async def scenario() -> None:
+        runtime = Runtime(script)
+        app = StuiApp(runtime)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            commands = {
+                command.title: command
+                for command in app.get_system_commands(app.screen)
+            }
+
+            assert "Switch tab: Overview" in commands
+            assert "Switch tab: Details" in commands
+            assert runtime.session_state["workspace"] == 0
+
+            await _invoke(commands["Switch tab: Details"])
+            await pilot.pause()
+
+            assert runtime.session_state["workspace"] == 1
+
+    asyncio.run(scenario())
+
+
+def test_command_palette_neutralizes_tab_label_controls(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(
+        """
+import stui as st
+
+safe, danger = st.tabs(["Safe", "Danger\\nQuit\\tNow"], key="workspace")
+with safe:
+    st.write("safe")
+with danger:
+    st.write("danger")
+""",
+        encoding="utf-8",
+    )
+    runtime = Runtime(script)
+    runtime.run_script()
+
+    titles = [
+        command.title
+        for command in StuiApp(runtime).get_system_commands(None)
+    ]
+
+    assert "Switch tab: Danger\\nQuit\\tNow" in titles
+    assert all("\n" not in title and "\t" not in title for title in titles)
+
+
+def test_command_palette_disambiguates_duplicate_tab_labels(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(
+        """
+import stui as st
+
+first_a, first_b = st.tabs(["Overview", "Details"], key="first")
+with first_a:
+    st.write("first overview")
+with first_b:
+    st.write("first details")
+
+second_a, second_b = st.tabs(["Overview", "Details"], key="second")
+with second_a:
+    st.write("second overview")
+with second_b:
+    st.write("second details")
+""",
+        encoding="utf-8",
+    )
+    runtime = Runtime(script)
+    runtime.run_script()
+
+    titles = [
+        command.title
+        for command in StuiApp(runtime).get_system_commands(None)
+        if command.title.startswith("Switch tab:")
+    ]
+
+    assert titles == [
+        "Switch tab: Overview [first]",
+        "Switch tab: Details [first]",
+        "Switch tab: Overview [second]",
+        "Switch tab: Details [second]",
+    ]
+
+
+def test_command_palette_omits_tabs_nested_in_inactive_panes(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(
+        """
+import stui as st
+
+visible, hidden = st.tabs(["Visible", "Hidden"], key="outer")
+with visible:
+    visible_a, visible_b = st.tabs(["Visible A", "Visible B"], key="visible")
+    with visible_a:
+        st.write("visible a")
+    with visible_b:
+        st.write("visible b")
+with hidden:
+    hidden_a, hidden_b = st.tabs(["Hidden A", "Hidden B"], key="hidden")
+    with hidden_a:
+        st.write("hidden a")
+    with hidden_b:
+        st.write("hidden b")
+""",
+        encoding="utf-8",
+    )
+    runtime = Runtime(script)
+    runtime.run_script()
+
+    titles = {
+        command.title
+        for command in StuiApp(runtime).get_system_commands(None)
+    }
+
+    assert {"Switch tab: Visible", "Switch tab: Hidden"} <= titles
+    assert {"Switch tab: Visible A", "Switch tab: Visible B"} <= titles
+    assert "Switch tab: Hidden A" not in titles
+    assert "Switch tab: Hidden B" not in titles
+
+
+def test_command_palette_omits_tabs_in_collapsed_groups(tmp_path: Path) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(
+        """
+import stui as st
+
+with st.expander("Collapsed expander", expanded=False):
+    expander_a, expander_b = st.tabs(
+        ["Hidden expander A", "Hidden expander B"],
+        key="hidden-expander-tabs",
+    )
+    with expander_a:
+        st.write("hidden expander a")
+    with expander_b:
+        st.write("hidden expander b")
+
+with st.status("Collapsed status", expanded=False):
+    status_a, status_b = st.tabs(
+        ["Hidden status A", "Hidden status B"],
+        key="hidden-status-tabs",
+    )
+    with status_a:
+        st.write("hidden status a")
+    with status_b:
+        st.write("hidden status b")
+
+with st.expander("Expanded expander", expanded=True):
+    visible_a, visible_b = st.tabs(
+        ["Visible A", "Visible B"],
+        key="visible-tabs",
+    )
+    with visible_a:
+        st.write("visible a")
+    with visible_b:
+        st.write("visible b")
+""",
+        encoding="utf-8",
+    )
+    runtime = Runtime(script)
+    runtime.run_script()
+
+    titles = {
+        command.title
+        for command in StuiApp(runtime).get_system_commands(None)
+    }
+
+    assert {"Switch tab: Visible A", "Switch tab: Visible B"} <= titles
+    assert not any("Hidden expander" in title for title in titles)
+    assert not any("Hidden status" in title for title in titles)

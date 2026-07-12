@@ -107,6 +107,46 @@ st.data_table(Frame(), key="frame")
     ]
 
 
+@pytest.mark.parametrize("data_source", ["[{}, {}]", "[[], []]"])
+def test_data_table_empty_row_shapes_mount_and_select(
+    tmp_path: Path,
+    data_source: str,
+) -> None:
+    script = write_script(
+        tmp_path,
+        f"""
+import stui as st
+
+st.data_table(
+    {data_source},
+    selection_mode="single",
+    key="rows",
+    show_index=True,
+    max_rows=2,
+    max_cols=1,
+)
+""",
+    )
+    runtime = Runtime(script)
+    runtime.run_script()
+    table = data_tables(runtime)[0]
+
+    assert table.headers == ("#", "value")
+    assert table.rows == (("0", ""), ("1", ""))
+
+    async def scenario() -> None:
+        app = StuiApp(runtime)
+        async with app.run_test(headless=True, size=(32, 12)) as pilot:
+            await pilot.pause()
+            widget = app.query_one(DataTable)
+            app.set_focus(widget)
+            await pilot.press("enter")
+            await pilot.pause()
+            assert runtime.session_state["rows"] == 0
+
+    asyncio.run(scenario())
+
+
 def test_data_table_limits_rows_and_columns_and_can_show_source_index(
     tmp_path: Path,
 ) -> None:
@@ -464,7 +504,7 @@ st.data_table(
     asyncio.run(scenario())
 
 
-def test_textual_data_table_static_and_disabled_modes_are_not_interactive(
+def test_textual_data_table_static_mode_is_focusable_but_disabled_mode_is_not(
     tmp_path: Path,
 ) -> None:
     script = write_script(
@@ -472,6 +512,7 @@ def test_textual_data_table_static_and_disabled_modes_are_not_interactive(
         """
 import stui.api as st
 
+st.session_state.runs = st.session_state.get("runs", 0) + 1
 st.data_table(["static"], key="static")
 st.data_table(
     ["disabled"],
@@ -491,11 +532,20 @@ st.data_table(
             static, disabled = app.query(DataTable)
 
             assert static.show_cursor is False
-            assert static.can_focus is False
+            assert static.can_focus is True
             assert disabled.disabled is True
             assert disabled.can_focus is False
             assert runtime.session_state["static"] is None
             assert runtime.session_state["disabled"] is None
+
+            app.set_focus(None)
+            await pilot.press("tab", "tab")
+            assert app.focused is static
+
+            await pilot.press("enter", "space")
+            await pilot.pause()
+            assert runtime.session_state["runs"] == 1
+            assert runtime.session_state["static"] is None
 
     asyncio.run(scenario())
 

@@ -206,6 +206,32 @@ Use this additional gate for v2.2.0:
     package audit, adversarial review, security scan, clean wheel install, and
     external-project gate are green.
 
+## v2.3 Interactive-Workspace Gate
+
+Use this additional gate for v2.3.0:
+
+1. Confirm `st.tabs`, `st.path_input`, and `st.data_table` agree across
+   `stui.__all__`, signature tests, README, API reference/stability docs,
+   examples, changelog, and release notes.
+2. Run focused tabs/path/table/inspect/palette tests, including hidden focus,
+   nested tabs, forms, callbacks, empty-row tables, keyboard/mouse interaction,
+   control characters, and user stdout/stderr suppression.
+3. Require `stui check` and `stui inspect` to traverse all tab panes and keep
+   inspect JSON free of user output and runtime values.
+4. Build the wheel, run `scripts/verify_installed_smoke.py dist`, and require
+   the macOS and Windows CI matrix to pass the same clean-wheel flow.
+5. Verify bundled `workspace`, `tabs`, `data_explorer`, and `diagnostics`
+   examples plus the `workspace` init template without a repo checkout.
+6. Run the v2.3 external multi-file validator with tabs, path input, selectable
+   data, cache/watch behavior, inspect, check, and real Textual interaction.
+7. Capture real default/high-contrast and narrow/wide TUI evidence through the
+   Textual harness or a real PTY; do not substitute static element snapshots.
+8. Keep the path tree overlay, data editing/sorting/filtering, arbitrary palette
+   commands, autorefresh, and appendable logs deferred unless separately proven.
+9. Do not tag or publish until adversarial reviews, full local gates, package
+   audit, repo hygiene, security/static review, custom project proof, and clean
+   wheel proof are green.
+
 ## v1 Release Gates
 
 Before tagging v1.x releases, confirm:
@@ -238,6 +264,7 @@ Before tagging v1.x releases, confirm:
   releases unless explicitly requested.
 - v2.2.0 additionally runs the focused cache/watch/text-area proof and the
   v2.2 external multi-file project gate above.
+- v2.3.0 additionally runs the interactive-workspace gate above.
 
 For v1.0.0 specifically, also confirm the final checklist in
 [`docs/v1-readiness.md`](v1-readiness.md#final-v10-checklist).

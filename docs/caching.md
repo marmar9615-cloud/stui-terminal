@@ -1,12 +1,15 @@
 # Caching
 
-`stui` v2.2.0 adds process-local caching for expensive pure computations and
-reusable local resources. The cache is terminal-native and deliberately small:
+`stui` v2.2.0 added process-local caching for expensive pure computations and
+reusable local resources. The decorators graduate to stable in v2.3.0. The
+cache is terminal-native and deliberately small:
 it does not write to disk, start workers, use the network, or survive the app
 process.
 
-Both decorators are post-v2 experimental while real applications exercise the
-new invalidation and serialization contract.
+`stui inspect APP.py --json` reports aggregate function, entry, and in-flight
+counts for the inspected runtime. It never reports keys, arguments,
+fingerprints, return values, or arbitrary representations. Ctrl+P in a running
+app exposes fixed commands to clear that app's data or resource cache.
 
 ## Choose A Cache
 

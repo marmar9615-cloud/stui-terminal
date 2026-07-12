@@ -8,6 +8,7 @@ Use `RELEASE_NOTES_vX.Y.Z.md` for stable releases and
 
 ## Current Stable Releases
 
+- [v2.3.0](RELEASE_NOTES_v2.3.0.md)
 - [v2.2.0](RELEASE_NOTES_v2.2.0.md)
 - [v2.1.0](RELEASE_NOTES_v2.1.0.md)
 - [v2.0.0](RELEASE_NOTES_v2.0.0.md)

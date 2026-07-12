@@ -16,9 +16,9 @@ Streamlit compatibility layer.
   disabled behavior, form submit behavior, `st.rerun`, and `st.stop`.
 - Ensure every stable API has focused tests and at least one README,
   example, or reference-doc mention.
-- Scope layout primitives honestly: `st.container`, `st.expander`, and
-  count-only `st.columns` are terminal grouping helpers, not sidebars, tabs,
-  browser grids, or a full layout engine.
+- Scope stable layout primitives honestly: `st.container`, `st.expander`, and
+  count-only `st.columns` are terminal grouping helpers, not sidebars, browser
+  grids, or a full layout engine. `st.tabs` remains experimental in v2.3.
 - Keep charts compact and terminal-native. `st.bar_chart` and `st.line_chart`
   are stable summaries for documented numeric shapes; richer chart variants and
   plotting-library parity remain future work.
@@ -45,9 +45,9 @@ Streamlit compatibility layer.
 - Keep `st.empty()` deferred until placeholder mutation semantics are clear in
   the rerun-based terminal runtime. A static placeholder that does not update
   would be misleading.
-- Defer larger features such as richer dataframe interactions, table selection,
-  chart variants, tabs, sidebars, or layout expansion unless real v1 feedback
-  shows a clear need.
+- Keep richer dataframe editing, chart variants, sidebars, and broader layout
+  expansion deferred. Evaluate the experimental v2.3 tab and row-selection
+  contracts from real terminal use before graduating or expanding them.
 
 ## Stable Versus Experimental API Boundary
 
@@ -57,8 +57,9 @@ call shape and core behavior through the v2 stable line unless a correctness
 issue forces a change.
 
 The experimental API is still public enough to try, but the project is asking
-for feedback before freezing it. In v2.0.0 the remaining experimental APIs are
-`st.status`, `st.spinner`, and `st.help`.
+for feedback before freezing it. In v2.3.0 the list is `st.status`,
+`st.spinner`, `st.help`, `st.multiselect`, `st.toast`, `st.tabs`,
+`st.path_input`, and `st.data_table`.
 
 The command surface is expected to remain stable for v1 docs:
 
@@ -90,8 +91,9 @@ The command surface is expected to remain stable for v1 docs:
 - Terminal reports should show readable behavior in at least one local macOS
   terminal and one Linux or SSH/headless-style environment before expanding
   columns beyond count-only behavior.
-- Do not add tabs until keyboard navigation, hidden-content state semantics, and
-  generated widget keys are predictable enough to document.
+- Keep `st.tabs` experimental until keyboard navigation, hidden-pane focus,
+  nested state/key behavior, and all-block execution semantics have enough
+  real terminal feedback to freeze.
 - Do not add sidebars, custom ratios, browser-grid behavior, or horizontal
   scrolling unless a real terminal workflow cannot be expressed with headings,
   containers, columns, and expanders.
@@ -236,7 +238,7 @@ The command surface is expected to remain stable for v1 docs:
 - Added the running script filename to the app header.
 - Kept the v2.0.0 stable API contract unchanged.
 
-## v2.2 Release Scope
+## v2.2 Shipped
 
 - Add `st.cache_data` for mutation-isolated, pickle-backed data results and
   `st.cache_resource` for shared process-local resource identity.
@@ -256,6 +258,21 @@ The command surface is expected to remain stable for v1 docs:
   that exercises cache hits, cache clearing, helper reload, error recovery,
   session state, and multiline input.
 
+## v2.3 Release Scope
+
+- Add safe stateful `st.tabs` where every block executes and only the active
+  pane mounts, including nesting, callbacks, forms, focus, and palette support.
+- Add text-first `st.path_input` with predictable absolute normalization and
+  metadata-only validation without claiming upload or sandbox semantics.
+- Add selectable `st.data_table` with source-row indexes and no dataframe
+  editing or heavyweight dependency.
+- Add versioned non-sensitive `stui inspect` reports and a fixed safe command
+  palette.
+- Graduate only APIs with enough focused, installed-wheel, and external-project
+  evidence; keep new v2.3 surfaces experimental for a feedback cycle.
+- Prove clean wheels on macOS and Windows in CI in addition to Linux/Python
+  version coverage.
+
 ## Post-v2 Candidates
 
 - Revisit additional chart variants and richer static data inspection if users
@@ -264,9 +281,10 @@ The command surface is expected to remain stable for v1 docs:
   terminal-native and dependency-light.
 - Reassess status, spinner, and help after they have enough v1 usage to either
   stabilize or redesign.
-- Revisit `st.tabs` only after the v2.2 design blockers around hidden element
-  groups, focus, forms, nesting, and generated keys have a small testable
-  answer.
+- Revisit stable promotion for `st.tabs`, `st.path_input`, and `st.data_table`
+  after real v2.3 terminal feedback.
+- Revisit a terminal path-tree overlay only if it can handle unreadable trees,
+  symlinks, narrow terminals, and large directories without implying a sandbox.
 - Consider cache statistics or a narrow invalidation API only if real apps need
   them; keep persistent, distributed, and background-refresh caching out of the
   core runtime.

@@ -6,10 +6,15 @@ Use watch mode while editing a local app:
 stui run app.py --watch
 ```
 
-v2.2.0 hardens the development loop for multi-file projects. After a
+v2.2.0 hardened the development loop for multi-file projects. After a
 successful run, `stui` tracks the app script and imported local Python modules
 under the project directory. Saving one of those files reruns the app without
 discarding `st.session_state`.
+
+In v2.3.0, `stui inspect APP.py --json` reports the local modules and watch
+files the same runtime would track. It does not include imported values, source
+contents, cache values, or environment variables. Explicit non-Python
+`--watch-path` support remains deferred.
 
 ## What Is Watched
 

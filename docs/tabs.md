@@ -72,3 +72,7 @@ also supported.
 Tabs may contain or be placed inside containers, columns, expanders, and forms.
 Nested tabs use the same active-only mounting model and support independent,
 persistent keys. Explicit keys are especially useful for nested groups.
+
+Ctrl+P opens the safe built-in command palette. It lists the current tab group
+and nested tab groups in the active pane, disambiguates duplicate labels with
+their group key, and omits groups hidden inside inactive parent panes.

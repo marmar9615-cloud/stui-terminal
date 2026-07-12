@@ -211,6 +211,31 @@ stui check "$PYPI_TMP/caching-v220.py" --strict --repeat 2
 stui check "$PYPI_TMP/prompt-workbench-v220.py" --strict --repeat 2
 ```
 
+For v2.3.0, also run this exact-version installed proof:
+
+```bash
+python - <<'PY'
+import stui as st
+
+for name in (
+    "cache_data", "cache_resource", "text_area", "toggle",
+    "tabs", "path_input", "data_table",
+):
+    assert callable(getattr(st, name)), name
+assert st.__version__ == "2.3.0"
+PY
+stui demo list
+stui example copy workspace "$PYPI_TMP/workspace.py"
+stui init "$PYPI_TMP/workspace-init.py" --template workspace
+stui check "$PYPI_TMP/workspace.py" --strict --repeat 3
+stui inspect "$PYPI_TMP/workspace.py" --strict --repeat 3 --json
+stui selftest --strict --repeat 2 --json
+```
+
+The `stui.inspect.v1` JSON must parse without any prefix or suffix from app
+stdout/stderr and must not contain rendered values, session values, cache
+arguments/results, environment values, or file contents.
+
 Run the copied examples interactively when a real terminal is available. If
 automation cannot close them reliably, use the Textual harness and record the
 exact limitation instead of claiming an unobserved manual pass.

@@ -16,6 +16,13 @@ mode = st.radio("Mode", ["fast", "balanced", "careful"], index=1)
 datasets = st.multiselect("Datasets", ["train", "val", "test"], default=["train"])
 enabled = st.checkbox("Enable dry run", value=True)
 verbose = st.toggle("Verbose logs")
+workspace = st.path_input(
+    "Workspace",
+    ".",
+    kind="directory",
+    must_exist=True,
+    key="workspace",
+)
 
 if st.button("Apply"):
     st.toast("Settings applied")
@@ -29,3 +36,4 @@ st.write("mode =", mode)
 st.write("datasets =", datasets)
 st.write("dry run =", enabled)
 st.write("verbose =", verbose)
+st.write("workspace =", workspace)

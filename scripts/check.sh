@@ -17,4 +17,7 @@ PYTHON="$PYTHON" ./scripts/verify_custom_project.sh
 if [ -d dist ] && ls dist/stui_terminal-* >/dev/null 2>&1; then
   VERSION="$("$PYTHON" -c 'import stui; print(stui.__version__)')"
   "$PYTHON" scripts/audit_package_contents.py dist --version "$VERSION"
+  "$PYTHON" scripts/verify_installed_smoke.py dist
+  WHEEL="$(ls "dist/stui_terminal-${VERSION}-"*.whl)"
+  "$PYTHON" scripts/verify_v230_project.py --wheel "$WHEEL"
 fi

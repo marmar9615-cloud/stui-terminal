@@ -944,6 +944,7 @@ class StuiApp(App[None]):
             self.action_show_help_panel,
         )
 
+        tab_targets = []
         for key, index, label in self._command_palette_tab_targets():
             if (
                 not isinstance(key, str)
@@ -955,16 +956,42 @@ class StuiApp(App[None]):
                 or not label.strip()
             ):
                 continue
-            visible_label = _clip_text(label, MAX_WIDGET_LABEL_WIDTH)
+            tab_targets.append((key, index, _tab_label(label)))
+
+        visible_labels = [label for _key, _index, label in tab_targets]
+        for key, index, visible_label in tab_targets:
+            title = f"Switch tab: {visible_label}"
+            if visible_labels.count(visible_label) > 1:
+                title = f"{title} [{_tab_label(key)}]"
             yield SystemCommand(
-                f"Switch tab: {visible_label}",
+                title,
                 "Activate this app tab",
                 partial(self._switch_command_palette_tab, key, index),
             )
 
     def _command_palette_tab_targets(self) -> tuple[tuple[str, int, str], ...]:
-        """Integration hook for renderer-owned tab keys, indexes, and labels."""
-        return ()
+        """Return safe, renderer-owned tab targets from the current element tree."""
+        targets: list[tuple[str, int, str]] = []
+
+        def collect(elements: Iterable[object]) -> None:
+            for element in elements:
+                if isinstance(element, TabsElement):
+                    targets.extend(
+                        (element.key, index, label)
+                        for index, label in enumerate(element.labels)
+                    )
+                    collect(element.panes[element.active])
+                elif isinstance(element, ColumnsElement):
+                    for column in element.columns:
+                        collect(column)
+                elif isinstance(element, (ContainerElement, SpinnerElement)):
+                    collect(element.children or [])
+                elif isinstance(element, (ExpanderElement, StatusElement)):
+                    if element.expanded:
+                        collect(element.children or [])
+
+        collect(self.runtime.elements)
+        return tuple(targets)
 
     async def _switch_command_palette_tab(self, key: str, index: int) -> None:
         self.runtime.set_widget_value(key, index)
@@ -1535,6 +1562,8 @@ class StuiApp(App[None]):
     ) -> None:
         data_table = event.data_table
         if not isinstance(data_table, StuiDataTable):
+            return
+        if data_table.stui_selection_mode != "single":
             return
         source_index = data_table.source_index_for_row(event.cursor_row)
         if source_index is None or data_table.disabled:

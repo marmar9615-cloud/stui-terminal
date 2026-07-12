@@ -118,6 +118,10 @@ def test_demo_list_prints_supported_demos() -> None:
         in result.output
     )
     assert "prompt_workbench - Multiline prompt authoring" in result.output
+    assert "workspace - Tabbed local workspace" in result.output
+    assert "tabs - Stateful tab workspaces" in result.output
+    assert "data_explorer - Selectable local records" in result.output
+    assert "diagnostics - Inspectable app structure" in result.output
     assert "kitchen_sink - Broad API tour" in result.output
     assert "counter" not in result.output
 
@@ -182,6 +186,10 @@ def test_demo_rejects_invalid_demo_name() -> None:
         "charts",
         "caching",
         "prompt_workbench",
+        "workspace",
+        "tabs",
+        "data_explorer",
+        "diagnostics",
         "kitchen_sink",
     ):
         assert name in normalized_output
@@ -298,6 +306,37 @@ def test_check_json_reports_ok_and_errors(tmp_path: Path) -> None:
     assert payload["script"] == {
         "input": str(script),
         "path": str(script.resolve()),
+    }
+
+
+def test_check_json_traverses_all_tab_panes(tmp_path: Path) -> None:
+    script = tmp_path / "tabs.py"
+    script.write_text(
+        """
+import stui as st
+
+left, right = st.tabs(["Left", "Right"], key="workspace")
+with left:
+    st.title("Left")
+    st.button("Run", key="run")
+with right:
+    st.text_input("Name", key="name")
+    st.data_table([{"name": "alpha"}], key="rows")
+""",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(cli.app, ["check", str(script), "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["summary"]["element_count"] == 5
+    assert payload["summary"]["element_types"] == {
+        "ButtonElement": 1,
+        "DataTableElement": 1,
+        "TabsElement": 1,
+        "TextInputElement": 1,
+        "TitleElement": 1,
     }
 
 
@@ -1145,6 +1184,23 @@ def test_init_forms_template_short_option(tmp_path: Path) -> None:
     assert "st.checkbox" in content
 
 
+def test_init_workspace_template(tmp_path: Path) -> None:
+    script = tmp_path / "workspace.py"
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["init", str(script), "--template", "workspace"],
+    )
+
+    assert result.exit_code == 0
+    content = script.read_text(encoding="utf-8")
+    assert 'st.title("Local workspace")' in content
+    assert "st.tabs" in content
+    assert "st.data_table" in content
+    assert "st.path_input" in content
+    assert "from the workspace template" in result.output
+
+
 def test_init_forms_template_runs_without_script_errors(tmp_path: Path) -> None:
     script = tmp_path / "signup.py"
 
@@ -1184,6 +1240,7 @@ def test_all_init_templates_run_without_script_errors(tmp_path: Path) -> None:
         ("data", "TableElement"),
         ("charts", "BarChartElement"),
         ("forms", "CheckboxElement"),
+        ("workspace", "TabsElement"),
     ],
 )
 def test_init_templates_pass_strict_check(

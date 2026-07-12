@@ -106,11 +106,9 @@ expanders, status blocks, spinners, and forms. Wide columns render side by side;
 the existing columns renderer stacks them when the available width is too
 narrow.
 
-The v2.2 baseline used for this isolated implementation does not expose
-`st.tabs`, so table-in-tab behavior is not claimed by this proof. The accepted
-v2.3 architecture requires only the active tab block to mount. Integration
-must verify keyboard focus, cursor restoration, and hidden-tab event isolation
-after the tabs workstream is merged.
+v2.3 integration verifies tables inside tabs: only the active pane mounts,
+hidden rows cannot receive events, cursor state restores after switching away
+and back, and form-pending selection survives tab navigation until submit.
 
 ## Non-Goals
 
@@ -125,7 +123,7 @@ python3.11 -m pytest tests/test_data_table.py
 python3.11 -m pytest
 ```
 
-The focused suite covers normalization, defensive state, data changes,
+The focused suite covers normalization, empty mapping/sequence rows, defensive state, data changes,
 callbacks, forms, keyboard and mouse selection, cursor persistence, disabled
 and empty states, explicit height, Unicode and long cells, narrow terminals,
 and columns.

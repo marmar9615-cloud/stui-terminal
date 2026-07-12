@@ -6,6 +6,7 @@ from typer.testing import CliRunner
 
 import stui
 from stui import cli
+from stui.runtime import Runtime
 
 
 def _inspect_module():
@@ -107,6 +108,8 @@ with st.container():
         "containers": 1,
         "column_groups": 1,
         "columns": 2,
+        "tab_groups": 0,
+        "tabs": 0,
         "by_depth": {"0": 2, "1": 2, "2": 2},
     }
     assert summary["local_module_count"] == 1
@@ -181,6 +184,44 @@ def test_inspect_reports_script_error_without_exception_message(tmp_path: Path) 
     assert "Traceback" not in result.output
 
 
+def test_inspect_json_discards_user_stdout_and_stderr(tmp_path: Path) -> None:
+    script = tmp_path / "noisy.py"
+    script.write_text(
+        """
+import sys
+import stui as st
+
+print("stdout-secret")
+print("stderr-secret", file=sys.stderr)
+st.write("ready")
+""",
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(
+        cli.app,
+        ["inspect", str(script), "--json"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["ok"] is True
+    assert "stdout-secret" not in result.stdout
+    assert "stderr-secret" not in result.stderr
+
+
+def test_inspect_human_output_neutralizes_path_controls(tmp_path: Path) -> None:
+    script = tmp_path / "evil\x1b[31m\nname.py"
+    script.write_text("import stui as st\nst.write('ready')\n", encoding="utf-8")
+
+    result = CliRunner().invoke(cli.app, ["inspect", str(script)])
+
+    assert result.exit_code == 0
+    assert "\x1b" not in result.output
+    assert "\nname.py" not in result.output
+    assert "\\x1b[31m\\x0aname.py" in result.output
+
+
 def test_inspect_repeat_stops_on_first_script_error(tmp_path: Path) -> None:
     script = tmp_path / "repeat_error.py"
     script.write_text(
@@ -247,3 +288,62 @@ def test_inspect_human_output_has_operational_summary_without_rendered_values(
     assert "cache:" in result.output
     assert "watch files: 1" in result.output
     assert "human-output-secret" not in result.output
+
+
+def test_runtime_snapshot_counts_new_nested_widgets_without_values(
+    tmp_path: Path,
+) -> None:
+    script = tmp_path / "app.py"
+    script.write_text(
+        """
+import stui as st
+
+paths, rows = st.tabs(["Paths", "Rows"], key="workspace")
+with paths:
+    st.path_input("Secret path label", "private.txt", key="artifact")
+with rows:
+    st.data_table(
+        [{"secret-column": "secret-cell"}],
+        selection_mode="single",
+        key="records",
+    )
+""",
+        encoding="utf-8",
+    )
+    runtime = Runtime(script)
+
+    runtime.run_script()
+    snapshot = _inspect_module().runtime_snapshot(runtime)
+
+    assert snapshot["element_count"] == 3
+    assert snapshot["widget_count"] == 3
+    assert snapshot["widget_types"] == {
+        "DataTableElement": 1,
+        "PathInputElement": 1,
+        "TabsElement": 1,
+    }
+    assert snapshot["key_counts"] == {
+        "session": 3,
+        "widgets": 3,
+        "explicit_widgets": 3,
+        "forms": 0,
+        "elements": 3,
+    }
+    assert snapshot["nesting"] == {
+        "max_depth": 1,
+        "nested_elements": 2,
+        "containers": 0,
+        "column_groups": 0,
+        "columns": 0,
+        "tab_groups": 1,
+        "tabs": 2,
+        "by_depth": {"0": 1, "1": 2},
+    }
+    serialized = json.dumps(snapshot)
+    for secret in (
+        "Secret path label",
+        "private.txt",
+        "secret-column",
+        "secret-cell",
+    ):
+        assert secret not in serialized

@@ -62,7 +62,8 @@ Limitations:
 - Nested grouping is supported, but deeply nested columns are discouraged
   because narrow terminals will quickly become hard to read.
 - Column layout is stable for integer-count columns, but intentionally modest:
-  no custom ratios, gaps, sidebars, tabs, or browser-grid behavior yet.
+  no custom ratios, gaps, sidebars, or browser-grid behavior yet. Tabs are a
+  separate experimental workspace primitive.
 
 ### `st.expander(label, expanded=False, key=None)`
 
@@ -77,29 +78,13 @@ with st.expander("Advanced", expanded=False, key="advanced"):
 
 ## Tabs
 
-Tabs are deferred. A terminal tab API needs stable focus behavior, clear
-keyboard affordances, and predictable state retention before it belongs in the
-public surface. For now, use headings, containers, columns, or expanders to
-organize sections.
+`st.tabs(labels, *, key=None, default=0, on_change=None, args=None,
+kwargs=None)` is post-v2 experimental in v2.3. Every tab block executes in
+normal top-to-bottom script order, while only the active pane mounts and can
+receive focus. The active index uses normal widget state, form deferral, and
+callback ordering. Left/Right and mouse clicks switch panes; nested tabs are
+supported and inactive nested groups are omitted from the command palette.
 
-The v2.2 evaluation did not add `st.tabs`. In the current top-to-bottom script
-and element model, both tab bodies would execute even if only one were visible.
-Shipping that behavior without a stronger contract could hide errors or side
-effects, destabilize generated widget keys, and make nested forms/containers
-and focus restoration surprising. Multiline input, caching, and multi-file
-watch correctness took priority over introducing that ambiguity.
-
-Concrete criteria before revisiting tabs:
-
-- Keyboard navigation is predictable in local terminals and SSH/headless-style
-  sessions.
-- Hidden tab content does not surprise users by preserving or losing widget
-  values differently from visible content.
-- Generated widget keys remain stable when tabs are reordered or toggled.
-- Nested tabs either have deterministic behavior or fail with an explicit,
-  readable usage error.
-- Forms, columns, and expanders containing tab groups preserve their existing
-  state and render-order contracts.
-- Narrow terminals expose a discoverable keyboard path without clipping the tab
-  labels or trapping focus.
-- The API remains small and does not imply Streamlit compatibility.
+This is workspace grouping, not lazy execution or routing. Put expensive pure
+work behind `st.cache_data` or `st.cache_resource`, and keep uncached side
+effects explicit. See [Tabs](tabs.md) for the complete contract and limits.

@@ -163,3 +163,25 @@ with st.spinner("Working"):
 """,
         language="python",
     )
+
+workspace_tab, data_tab, path_tab = st.tabs(
+    ["Workspace", "Data", "Path"],
+    key="kitchen-tabs",
+)
+with workspace_tab:
+    st.write("Only the active pane mounts; every block still executes.")
+with data_tab:
+    selected = st.data_table(
+        [{"name": "alpha"}, {"name": "beta"}],
+        selection_mode="single",
+        key="kitchen-row",
+    )
+    st.caption(f"selected row = {selected}")
+with path_tab:
+    st.path_input(
+        "Local path",
+        ".",
+        kind="directory",
+        must_exist=True,
+        key="kitchen-path",
+    )

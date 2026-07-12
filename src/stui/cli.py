@@ -15,6 +15,7 @@ from typing import Annotated
 import typer
 
 from . import __version__
+from ._terminal_text import visible_terminal_text
 from .app import StuiApp, resolve_theme
 from .diagnostics import inspect_script
 from .elements import ErrorElement
@@ -37,6 +38,10 @@ EXAMPLE_NAMES = (
     "charts.py",
     "caching.py",
     "prompt_workbench.py",
+    "workspace.py",
+    "tabs.py",
+    "data_explorer.py",
+    "diagnostics.py",
     "kitchen_sink.py",
 )
 
@@ -55,6 +60,10 @@ EXAMPLE_DESCRIPTIONS = {
     "charts.py": "Simple chart and data visualization patterns.",
     "caching.py": "Process-local data and resource caching patterns.",
     "prompt_workbench.py": "Multiline prompt authoring with cached local helpers.",
+    "workspace.py": "Tabbed local workspace with paths and selectable data.",
+    "tabs.py": "Stateful tab workspaces, including a nested tab group.",
+    "data_explorer.py": "Selectable local records with static and interactive views.",
+    "diagnostics.py": "Inspectable app structure, cache activity, and CLI guidance.",
     "kitchen_sink.py": "Broad API tour for trying many widgets at once.",
 }
 
@@ -66,6 +75,10 @@ DEMO_NAMES = (
     "charts",
     "caching",
     "prompt_workbench",
+    "workspace",
+    "tabs",
+    "data_explorer",
+    "diagnostics",
     "kitchen_sink",
 )
 
@@ -144,6 +157,48 @@ if st.button("Submit"):
             st.info("Product updates are enabled.")
     else:
         st.error("Name and email are required.")
+''',
+    "workspace": '''import stui as st
+
+st.title("Local workspace")
+st.caption("Inspect it with: stui inspect {filename}")
+
+@st.cache_data
+def load_rows():
+    return [
+        {{"name": "alpha", "score": 91, "status": "ready"}},
+        {{"name": "beta", "score": 87, "status": "review"}},
+        {{"name": "gamma", "score": 82, "status": "ready"}},
+    ]
+
+overview, data, files = st.tabs(
+    ["Overview", "Data", "Files"],
+    key="workspace-tabs",
+)
+
+with overview:
+    st.metric("Rows", len(load_rows()), "+3")
+    st.text_area("Notes", "Review the local run.", key="notes")
+
+with data:
+    selected = st.data_table(
+        load_rows(),
+        selection_mode="single",
+        key="selected-row",
+        show_index=True,
+    )
+    if selected is not None:
+        st.info(f"Selected source row {{selected}}")
+
+with files:
+    path = st.path_input(
+        "Workspace path",
+        ".",
+        kind="directory",
+        must_exist=True,
+        key="workspace-path",
+    )
+    st.caption(path)
 ''',
 }
 
@@ -584,6 +639,12 @@ def _count_details(counts: dict[str, int]) -> str:
     return ", ".join(f"{name}={count}" for name, count in sorted(counts.items()))
 
 
+def _inspect_display_text(value: object) -> str:
+    return visible_terminal_text(value).replace("\t", "\\x09").replace(
+        "\n", "\\x0a"
+    )
+
+
 def _print_inspect_report(report: dict[str, object]) -> None:
     paths = report["paths"]
     versions = report["versions"]
@@ -598,7 +659,7 @@ def _print_inspect_report(report: dict[str, object]) -> None:
         result_label = "strict failed"
     else:
         result_label = "failed"
-    display_path = paths["script"] or paths["input"]
+    display_path = _inspect_display_text(paths["script"] or paths["input"])
 
     typer.echo(f"stui inspect {result_label}: {display_path}")
     typer.echo(f"schema: {report['schema_version']}")
@@ -608,7 +669,8 @@ def _print_inspect_report(report: dict[str, object]) -> None:
         f"textual={versions['textual']}, rich={versions['rich']}, "
         f"typer={versions['typer']}"
     )
-    typer.echo(f"project root: {paths['project_root'] or 'unavailable'}")
+    project_root = _inspect_display_text(paths["project_root"] or "unavailable")
+    typer.echo(f"project root: {project_root}")
     typer.echo(
         f"runs: {summary['runs_completed']}/{summary['runs_requested']} "
         f"in {timings['total_ms']} ms"
@@ -649,10 +711,12 @@ def _print_inspect_report(report: dict[str, object]) -> None:
     )
     typer.echo(f"local modules: {summary['local_module_count']}")
     for module in paths["local_modules"]:
-        typer.echo(f"  - {module['name']}: {module['path']}")
+        name = _inspect_display_text(module["name"])
+        path = _inspect_display_text(module["path"])
+        typer.echo(f"  - {name}: {path}")
     typer.echo(f"watch files: {summary['watch_file_count']}")
     for watch_file in paths["watch_files"]:
-        typer.echo(f"  - {watch_file}")
+        typer.echo(f"  - {_inspect_display_text(watch_file)}")
     if report["warnings"]:
         typer.echo(
             "warnings: "
@@ -830,6 +894,11 @@ def _iter_rendered_elements(elements: list[object]):
         if columns:
             for column in columns:
                 yield from _iter_rendered_elements(column)
+
+        panes = getattr(element, "panes", None)
+        if panes:
+            for pane in panes:
+                yield from _iter_rendered_elements(pane)
 
 
 def _check_payload(
@@ -1317,7 +1386,7 @@ def init_app(
             "-t",
             help=(
                 "Starter template to create: basic, dashboard, data, charts, "
-                "or forms."
+                "forms, or workspace."
             ),
         ),
     ] = "basic",

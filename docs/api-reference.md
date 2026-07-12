@@ -25,13 +25,14 @@ defined in [API Stability](api-stability.md).
 | `__version__` | v1-stable | Package version string. |
 | `bar_chart` | v1-stable | Compact terminal bar summary, not plotting-library parity. |
 | `button` | v1-stable | Core input widget. |
-| `cache_data` | post-v2 experimental | Process-local mutation-isolated data cache, new in v2.2.0. |
-| `cache_resource` | post-v2 experimental | Process-local shared-resource cache, new in v2.2.0. |
+| `cache_data` | v1-stable | Process-local mutation-isolated data cache, graduated in v2.3.0. |
+| `cache_resource` | v1-stable | Process-local shared-resource cache, graduated in v2.3.0. |
 | `caption` | v1-stable | Core text output. |
 | `checkbox` | v1-stable | Core input widget. |
 | `code` | v1-stable | Core text output. |
 | `columns` | v1-stable | Count-only responsive terminal columns that stack on narrow terminals. |
 | `container` | v1-stable | Terminal grouping primitive, not a full layout engine. |
+| `data_table` | post-v2 experimental | Selectable terminal rows that return a source-row index; no editing or dataframe dependency. |
 | `dataframe` | v1-stable | Static terminal display; editing and sorting are out of scope. |
 | `divider` | v1-stable | Core visual separator. |
 | `error` | v1-stable | Core status output. |
@@ -48,6 +49,7 @@ defined in [API Stability](api-stability.md).
 | `metric` | v1-stable | Compact terminal summary display. |
 | `multiselect` | post-v2 experimental | Checkbox-style multi-option selection, new in v2.1.0. |
 | `number_input` | v1-stable | Numeric input widget. |
+| `path_input` | post-v2 experimental | Text-first local path selection and metadata validation; no upload or file-content reads. |
 | `progress` | v1-stable | Clamped terminal progress display. |
 | `radio` | v1-stable | Selection input widget. |
 | `rerun` | v1-stable | Flow-control helper for explicit reruns. |
@@ -58,14 +60,15 @@ defined in [API Stability](api-stability.md).
 | `stop` | v1-stable | Flow-control helper that halts the current script pass. |
 | `subheader` | v1-stable | Core text output. |
 | `status` | post-v1 experimental | Status grouping behavior may still tighten in v1.x. |
+| `tabs` | post-v2 experimental | Stateful terminal workspaces; all blocks execute and only the active pane mounts. |
 | `success` | v1-stable | Core status output. |
 | `table` | v1-stable | Static terminal table display. |
 | `text` | v1-stable | Core text output. |
-| `text_area` | post-v2 experimental | Multiline text editor with Ctrl+Enter apply, new in v2.2.0. |
+| `text_area` | v1-stable | Multiline text editor with Ctrl+Enter apply, graduated in v2.3.0. |
 | `text_input` | v1-stable | Core input widget. |
 | `title` | v1-stable | Core text output. |
 | `toast` | post-v2 experimental | Transient terminal notification, new in v2.1.0. |
-| `toggle` | post-v2 experimental | On/off switch with checkbox semantics, new in v2.1.0. |
+| `toggle` | v1-stable | On/off switch with checkbox semantics, graduated in v2.3.0. |
 | `warning` | v1-stable | Core status output. |
 | `write` | v1-stable | Core text/value output. |
 <!-- API_CLASSIFICATION_END -->
@@ -138,6 +141,20 @@ docstring for Python objects; it is not a pager or object browser.
 st.json(obj) -> None
 st.table(data, *, max_rows=None, max_cols=None) -> None
 st.dataframe(data, *, max_rows=None, max_cols=None) -> None
+st.data_table(
+    data,
+    *,
+    selection_mode=None,
+    key=None,
+    disabled=False,
+    on_select=None,
+    args=None,
+    kwargs=None,
+    max_rows=None,
+    max_cols=None,
+    height=None,
+    show_index=False,
+) -> int | None
 st.metric(label, value, delta=None) -> None
 st.progress(value, text=None) -> None
 st.bar_chart(data, *, width=None, height=None) -> None
@@ -156,6 +173,14 @@ attributes, and pandas-like objects with `to_dict(orient="records")` and
 sorting, selection, or pandas as a required dependency.
 Use `max_rows` and `max_cols` to cap static output; hidden rows or columns are
 called out with visible `+N rows` or `+N cols` markers.
+
+`st.data_table` is post-v2 experimental and uses Textual's first-party table
+for optional single-row selection. With `selection_mode="single"`, it returns
+the selected source-row index or `None`; without selection it remains a
+focusable interactive view and returns `None`. `max_rows` and `max_cols` affect
+display only, never the source index contract. Arrow keys move the cursor,
+Enter or Space selects, and mouse row clicks select where terminal mouse input
+is available. See [Interactive Data](interactive-data.md).
 
 Charts are compact terminal summaries. `st.bar_chart` supports numeric scalars,
 lists or tuples of numbers, dicts of numbers, simple `(label, value)` pairs,
@@ -185,6 +210,8 @@ st.bar_chart({"baseline": 42, "quantized": 24})
 `st.form_submit_button` are v1-stable. They are terminal grouping primitives,
 not browser layout compatibility APIs.
 
+`st.tabs` is a post-v2 experimental terminal workspace primitive.
+
 ```python
 st.container()
 st.columns(count)
@@ -198,6 +225,15 @@ st.form_submit_button(
     args=None,
     kwargs=None,
 ) -> bool
+st.tabs(
+    labels,
+    *,
+    key=None,
+    default=0,
+    on_change=None,
+    args=None,
+    kwargs=None,
+)
 ```
 
 Use layout helpers as context managers:
@@ -224,6 +260,12 @@ with st.form("job-form"):
 
 if submitted:
     st.success(f"Queued {name} with batch size {batch}")
+
+overview, logs = st.tabs(["Overview", "Logs"], key="workspace")
+with overview:
+    st.metric("Queued", 4)
+with logs:
+    st.code("ready")
 ```
 
 `st.columns(count)` accepts a positive integer and returns that many context
@@ -231,6 +273,12 @@ managers. Columns render side-by-side when each column has enough terminal
 width, then stack vertically on narrow terminals. It does not support browser
 grid behavior, custom gaps, width ratios, tabs, sidebars, or horizontal
 scrolling. See [Layout Primitives](layouts.md) for the current layout boundary.
+
+Every tab block executes in script order, but only the active pane's element
+subtree is mounted and focusable. The active index persists through normal
+widget state, callbacks, forms, and reruns. Left and Right switch the focused
+tab; mouse activation is supported. Nested tabs are supported. See
+[Tabs](tabs.md) for the execution contract and limitations.
 
 ## Widgets
 
@@ -304,7 +352,34 @@ st.text_input(
 name = st.text_input("Run name", value="baseline", placeholder="baseline")
 ```
 
-`st.text_area` is post-v2 experimental. Enter inserts a newline; Ctrl+Enter
+`st.path_input` is post-v2 experimental. It accepts local path text and returns
+an absolute normalized string without opening or parsing the target.
+
+```python
+st.path_input(
+    label,
+    value="",
+    *,
+    root=None,
+    kind="any",
+    must_exist=False,
+    extensions=None,
+    browse=True,
+    key=None,
+    disabled=False,
+    on_change=None,
+    args=None,
+    kwargs=None,
+) -> str
+```
+
+Relative paths resolve from `root`, or from the app script directory when no
+root is supplied. `~` expands; environment variables do not. `root` is not a
+security sandbox, and the initial v2.3 implementation is text-first: the
+`browse` flag reserves the experimental call shape but does not open a tree
+overlay. See [Path Input](path-input.md).
+
+`st.text_area` is stable in v2.3.0. Enter inserts a newline; Ctrl+Enter
 applies the current value and reruns. Inside a form, the applied value remains
 pending until the form submit commits it to `st.session_state`.
 
@@ -439,7 +514,7 @@ st.multiselect(
 datasets = st.multiselect("Datasets", ["train", "val", "test"], default=["train"])
 ```
 
-`st.toggle` is post-v2 experimental. It behaves exactly like `st.checkbox` but
+`st.toggle` is stable in v2.3.0. It behaves exactly like `st.checkbox` but
 renders as an on/off switch.
 
 ```python
@@ -478,9 +553,9 @@ if st.button("Save"):
 
 ## Caching
 
-`st.cache_data` and `st.cache_resource` are post-v2 experimental process-local
-decorators. They do not write to disk, use the network, start workers, or
-survive process exit.
+`st.cache_data` and `st.cache_resource` are stable process-local decorators in
+v2.3.0. They do not write to disk, use the network, start workers, or survive
+process exit.
 
 ```python
 st.cache_data(func=None, *, ttl=None, max_entries=None)
@@ -585,6 +660,9 @@ stui check APP.py
 stui check APP.py --json
 stui check APP.py --strict
 stui check APP.py --strict --repeat 2
+stui inspect APP.py
+stui inspect APP.py --json
+stui inspect APP.py --strict --repeat 3
 stui selftest
 stui selftest --json
 stui selftest --strict
@@ -602,37 +680,47 @@ elements fail the check while keeping `error: null` and `status: "ok"` for
 warning-only failures. Use `--repeat N` to run the script multiple times in one
 runtime and catch repeat-run state or recovery issues.
 
+`stui inspect` uses the same runtime but returns versioned, count-only
+diagnostics for elements, widgets, keys, nesting, local modules, watched files,
+timings, and cache aggregates. It discards user stdout/stderr and never reports
+session values, cache arguments/results, rendered content, environment values,
+or file contents. See [Inspect And Safe Commands](inspect.md).
+
 `stui selftest --strict` is an installed-package/release gate. It validates
 package metadata, bundled demo resources, all init templates, all bundled
 examples, and doctor diagnostics without launching a full TUI. Use
 `--repeat N` to repeat generated-template and bundled-example checks.
 
-## v2.2 Stable Status
+## v2.3 Stable Status
 
-The signatures above are intentionally covered by tests in v2.2.0. The
+The signatures above are intentionally covered by tests in v2.3.0. The
 classification table marks each top-level API as `v1-stable`,
 `post-v1 experimental`, or `post-v2 experimental`; see
 [API Stability](api-stability.md) for the full compatibility promise and
 post-v1 deprecation policy.
 
-v2.2.0 keeps the v1.4 through v2.0 stable APIs intact while adding new
-experimental authoring and caching APIs on top of the v2 stable contract in
+v2.3.0 keeps the v2 stable APIs intact while adding experimental workspace,
+local-path, selectable-data, and diagnostics APIs on top of the contract in
 [v2 readiness](v2-readiness.md). Any change to stable names should be treated
 as a compatibility event unless it fixes a correctness, terminal, or security
 issue and is documented in the changelog and release notes.
 
-These APIs stay experimental in v2.2.0 and remain outside the v2 stable
+These APIs stay experimental in v2.3.0 and remain outside the v2 stable
 contract:
 
 - Help and status: `st.help`, `st.status`, and `st.spinner` formatting and
   grouping behavior (post-v1 experimental).
-- New in v2.1.0: `st.multiselect`, `st.toggle`, and `st.toast`
+- Remaining from v2.1.0: `st.multiselect` and `st.toast`
+  (post-v2 experimental). `st.toggle` graduates in v2.3.0.
+- New in v2.3.0: `st.tabs`, `st.path_input`, and `st.data_table`
   (post-v2 experimental).
-- New in v2.2.0: `st.cache_data`, `st.cache_resource`, and `st.text_area`
-  (post-v2 experimental).
+
+`st.cache_data`, `st.cache_resource`, `st.text_area`, and `st.toggle` graduate
+to the stable API in v2.3.0 after their focused state, form, callback,
+concurrency, cache-isolation, and terminal interaction suites passed.
 
 APIs and feature areas explicitly deferred from the v1 stable surface are
 listed in [API Stability](api-stability.md#deferred-for-v1). They include
-`st.sidebar`, `st.tabs`, `st.file_uploader`, `st.components`, `st.empty`,
+`st.sidebar`, `st.file_uploader`, `st.components`, `st.empty`,
 editable dataframes, plotting-library parity, custom column ratios/gaps,
 browser/server runtime, websocket, or port-forwarding runtime.

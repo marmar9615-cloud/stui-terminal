@@ -1,9 +1,9 @@
 # v2 Readiness
 
-`stui` v2.0.0 established the stable v2 contract. v2.2.0 is the
-fast-reruns-and-richer-authoring release: it preserves that stable surface while
-adding experimental process-local caching, multiline input, and a dependable
-multi-file watch loop.
+`stui` v2.0.0 established the stable v2 contract. v2.3.0 is the interactive
+workspaces and deep diagnostics release: it preserves compatibility while
+adding experimental tabs, local path input, selectable data, and versioned
+non-sensitive inspection.
 
 `stui` remains terminal-native, Streamlit-inspired, and deliberately not
 Streamlit-compatible. The PyPI distribution remains `stui-terminal`; the import
@@ -36,25 +36,25 @@ terminal, or security issue requires tightening.
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider`, `st.code` |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` |
 | Display | `st.json`, `st.progress`, `st.table`, `st.dataframe`, `st.metric`, `st.bar_chart`, `st.line_chart` |
-| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.checkbox`, `st.number_input`, `st.selectbox`, `st.radio` |
+| Inputs | `st.button`, `st.slider`, `st.text_input`, `st.text_area`, `st.checkbox`, `st.toggle`, `st.number_input`, `st.selectbox`, `st.radio` |
 | Forms and grouping | `st.form`, `st.form_submit_button`, `st.container`, `st.expander`, `st.columns` |
+| Caching | `st.cache_data`, `st.cache_resource` |
 | State and flow | `st.session_state`, `st.rerun`, `st.stop` |
 | Package metadata | `st.__version__` |
 | CLI | `stui run`, `stui check`, `stui demo list`, `stui demo NAME`, `stui examples`, `stui example list`, `stui example copy`, `stui init`, `stui doctor`, `stui selftest`, `stui --version` |
 
 ## Experimental APIs
 
-These APIs remain public but experimental in v2.2.0:
+These APIs remain public but experimental in v2.3.0:
 
 - `st.status`
 - `st.spinner`
 - `st.help`
 - `st.multiselect`
-- `st.toggle`
 - `st.toast`
-- `st.cache_data`
-- `st.cache_resource`
-- `st.text_area`
+- `st.tabs`
+- `st.path_input`
+- `st.data_table`
 
 They are tested and documented, but their exact terminal formatting, keyboard,
 serialization/invalidation, notification lifecycle, or grouping behavior still
@@ -66,7 +66,6 @@ These APIs and feature areas are explicitly deferred from the v2.0.0 stable
 contract:
 
 - `st.sidebar`
-- `st.tabs`
 - `st.file_uploader`
 - `st.components`
 - `st.empty`
@@ -84,10 +83,27 @@ The v2.0.0 release preserves the `stui-terminal` distribution name,
 Apps using `st.status`, `st.spinner`, or `st.help` should treat those APIs as
 experimental until they are promoted in release notes.
 
-Apps using the v2.1 or v2.2 additions should also track the experimental API
-notes. The new cache APIs are process-local and do not promise Streamlit cache
-compatibility; `st.text_area` uses Ctrl+Enter to apply and Enter to insert a
-newline.
+The v2.3 release graduates the process-local cache decorators, multiline text
+area, and toggle. Cache APIs still do not promise Streamlit compatibility;
+`st.text_area` uses Ctrl+Enter to apply and Enter to insert a newline.
+
+## v2.3.0 Release Decision
+
+v2.3.0 is ready only when evidence proves all of the following:
+
+- tab state, nested panes, hidden focus, forms, callbacks, and palette switching
+  behave predictably;
+- path input validates metadata without reading file contents or claiming a
+  sandbox boundary;
+- interactive tables preserve source-row indexes across truncation and handle
+  empty, uneven, Unicode, narrow, keyboard, and mouse cases;
+- `stui check` and `stui inspect` traverse all tab panes while JSON inspection
+  suppresses user stdout/stderr and never exposes runtime values;
+- macOS and Windows clean-wheel jobs exercise imports, workspace templates,
+  inspect, strict check, selftest, demos, and examples;
+- local gates, custom external-project proof, package audit, security/static
+  review, main/tag CI, Trusted Publishing, PyPI, GitHub Release, and a fresh
+  exact-version install all pass.
 
 ## v2.2.0 Release Decision
 

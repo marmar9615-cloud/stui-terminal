@@ -1,6 +1,6 @@
 # API Stability
 
-`stui` v2.2.0 keeps the top-level stable API intentionally small and
+`stui` v2.3.0 keeps the top-level stable API intentional and
 Streamlit-inspired, but it is not Streamlit-compatible and does not depend on
 Streamlit at runtime.
 
@@ -50,13 +50,14 @@ rename in the v1.x line.
 | `__version__` | v1-stable | Package version string. |
 | `bar_chart` | v1-stable | Compact terminal bar summary, not plotting-library parity. |
 | `button` | v1-stable | Core input widget. |
-| `cache_data` | post-v2 experimental | Process-local mutation-isolated data cache, new in v2.2.0. |
-| `cache_resource` | post-v2 experimental | Process-local shared-resource cache, new in v2.2.0. |
+| `cache_data` | v1-stable | Process-local mutation-isolated data cache, graduated in v2.3.0. |
+| `cache_resource` | v1-stable | Process-local shared-resource cache, graduated in v2.3.0. |
 | `caption` | v1-stable | Core text output. |
 | `checkbox` | v1-stable | Core input widget. |
 | `code` | v1-stable | Core text output. |
 | `columns` | v1-stable | Count-only responsive terminal columns that stack on narrow terminals and inside narrow parent columns. |
 | `container` | v1-stable | Terminal grouping primitive, not a full layout engine. |
+| `data_table` | post-v2 experimental | Selectable terminal rows that return a source-row index; no editing or dataframe dependency. |
 | `dataframe` | v1-stable | Static terminal display; editing and sorting are out of scope. |
 | `divider` | v1-stable | Core visual separator. |
 | `error` | v1-stable | Core status output. |
@@ -73,6 +74,7 @@ rename in the v1.x line.
 | `metric` | v1-stable | Compact terminal summary display. |
 | `multiselect` | post-v2 experimental | Checkbox-style multi-option selection, new in v2.1.0. |
 | `number_input` | v1-stable | Numeric input widget. |
+| `path_input` | post-v2 experimental | Text-first local path selection and metadata validation; no upload or file-content reads. |
 | `progress` | v1-stable | Clamped terminal progress display. |
 | `radio` | v1-stable | Selection input widget. |
 | `rerun` | v1-stable | Flow-control helper for explicit reruns. |
@@ -83,14 +85,15 @@ rename in the v1.x line.
 | `stop` | v1-stable | Flow-control helper that halts the current script pass. |
 | `subheader` | v1-stable | Core text output. |
 | `status` | post-v1 experimental | Status grouping behavior may still tighten in v1.x. |
+| `tabs` | post-v2 experimental | Stateful terminal workspaces; all blocks execute and only the active pane mounts. |
 | `success` | v1-stable | Core status output. |
 | `table` | v1-stable | Static terminal table display. |
 | `text` | v1-stable | Core text output. |
-| `text_area` | post-v2 experimental | Multiline text editor with Ctrl+Enter apply, new in v2.2.0. |
+| `text_area` | v1-stable | Multiline text editor with Ctrl+Enter apply, graduated in v2.3.0. |
 | `text_input` | v1-stable | Core input widget. |
 | `title` | v1-stable | Core text output. |
 | `toast` | post-v2 experimental | Transient terminal notification, new in v2.1.0. |
-| `toggle` | post-v2 experimental | On/off switch with checkbox semantics, new in v2.1.0. |
+| `toggle` | v1-stable | On/off switch with checkbox semantics, graduated in v2.3.0. |
 | `warning` | v1-stable | Core status output. |
 | `write` | v1-stable | Core text/value output. |
 <!-- API_CLASSIFICATION_END -->
@@ -120,7 +123,6 @@ surface:
 | API or area | v1 status | Notes |
 | --- | --- | --- |
 | `st.sidebar` | deferred for v1 | No sidebar layout primitive in the terminal-first v1 surface. |
-| `st.tabs` | deferred for v1 | No tabbed layout primitive in the v1 surface. |
 | `st.file_uploader` | deferred for v1 | File upload is out of scope for the local terminal MVP. |
 | `st.components` | deferred for v1 | Browser component embedding is intentionally unsupported. |
 | `st.empty` | deferred for v1 | Placeholder mutation semantics are not frozen for the terminal rerun model. |
@@ -161,19 +163,23 @@ v2.0.0 does not remove or rename any top-level public APIs. The v2 stable
 contract is the current `v1-stable` set. `st.status`, `st.spinner`, and
 `st.help` remain `post-v1 experimental` and outside the v2 stable contract.
 
-v2.1.0 adds `st.multiselect`, `st.toggle`, and `st.toast` as
+v2.1.0 added `st.multiselect`, `st.toggle`, and `st.toast` as
 `post-v2 experimental` APIs. They are public enough to use, but stay outside
 the v2 stable contract until real terminal usage confirms their call shapes
 and keyboard behavior.
 
-v2.2.0 adds `st.cache_data`, `st.cache_resource`, and `st.text_area` as
+v2.2.0 added `st.cache_data`, `st.cache_resource`, and `st.text_area` as
 `post-v2 experimental` APIs. The cache decorators are intentionally
 process-local and dependency-light; `st.text_area` uses Enter for newlines and
 Ctrl+Enter to apply. These APIs remain outside the stable v2 contract while
 their invalidation, serialization, multiline editing, form, and terminal
 behavior gather real usage evidence.
 
-`st.multiselect`, `st.toggle`, and `st.toast` remain post-v2 experimental in
-v2.2.0. `st.tabs` remains deferred because inactive-content execution, widget
-key, focus, nesting, form, and narrow-terminal semantics are not yet strong
-enough to freeze.
+v2.3.0 graduates `st.cache_data`, `st.cache_resource`, `st.text_area`, and
+`st.toggle` after cache isolation/concurrency, multiline form interaction, and
+toggle callback/state evidence passed focused, installed-wheel, and external
+project gates. `st.multiselect` and `st.toast` remain post-v2 experimental.
+
+v2.3.0 also adds `st.tabs`, `st.path_input`, and `st.data_table` as post-v2
+experimental APIs. Their contracts are documented and tested, but need a
+release of real terminal feedback before stable promotion.

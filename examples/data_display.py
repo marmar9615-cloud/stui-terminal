@@ -12,6 +12,20 @@ st.table(
     ]
 )
 
+st.subheader("Interactive Rows")
+selected = st.data_table(
+    [
+        {"name": "baseline", "accuracy": 0.81, "latency_ms": 42},
+        {"name": "quantized", "accuracy": 0.79, "latency_ms": 24},
+        {"name": "distilled", "accuracy": 0.77, "latency_ms": 18},
+    ],
+    selection_mode="single",
+    key="selected-run",
+    show_index=True,
+)
+if selected is not None:
+    st.info(f"Selected source row {selected}")
+
 st.subheader("Column Data")
 st.dataframe(
     {
@@ -51,4 +65,4 @@ st.dataframe({"stage": ["queued", "done"], "jobs": [4, 8]}, max_rows=2)
     language="python",
 )
 
-st.info("Tables are static displays: no editing, sorting, or dataframe dependency.")
+st.info("Static tables and selectable rows work without a dataframe dependency.")

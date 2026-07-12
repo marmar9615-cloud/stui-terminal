@@ -62,6 +62,16 @@ def verify(dist: Path) -> dict[str, object]:
             "-c",
             "import stui; print(stui.__version__)",
         ).stdout.strip()
+        _run(
+            python,
+            "-c",
+            (
+                "import stui as st; "
+                "assert callable(st.tabs); "
+                "assert callable(st.path_input); "
+                "assert callable(st.data_table)"
+            ),
+        )
         module_version = _run(python, "-m", "stui", "--version").stdout.strip()
         doctor = _json_command(python, "doctor", "--json")
         selftest = _json_command(
@@ -93,8 +103,47 @@ def verify(dist: Path) -> dict[str, object]:
             raise RuntimeError("strict installed-package selftest failed")
         if checked.get("ok") is not True:
             raise RuntimeError("generated app validation failed")
-        if "basic" not in demos or "basic" not in examples:
-            raise RuntimeError("bundled basic demo/example was not discoverable")
+        if not {"basic", "workspace", "tabs", "data_explorer"} <= set(
+            demos.split()
+        ):
+            raise RuntimeError("new bundled demos were not discoverable")
+        if not {"basic", "workspace", "tabs", "data_explorer"} <= set(
+            examples.split()
+        ):
+            raise RuntimeError("new bundled examples were not discoverable")
+
+        workspace_path = root / "workspace.py"
+        _run(
+            python,
+            "-m",
+            "stui",
+            "init",
+            str(workspace_path),
+            "--template",
+            "workspace",
+        )
+        workspace_check = _json_command(
+            python,
+            "check",
+            str(workspace_path),
+            "--strict",
+            "--repeat",
+            "2",
+            "--json",
+        )
+        inspected = _json_command(
+            python,
+            "inspect",
+            str(workspace_path),
+            "--strict",
+            "--repeat",
+            "2",
+            "--json",
+        )
+        if workspace_check.get("ok") is not True:
+            raise RuntimeError("workspace template validation failed")
+        if inspected.get("ok") is not True:
+            raise RuntimeError("workspace template inspection failed")
 
         return {
             "schema_version": "stui.installed-smoke.v1",
@@ -105,6 +154,7 @@ def verify(dist: Path) -> dict[str, object]:
             "doctor_schema": doctor.get("schema_version"),
             "selftest_schema": selftest.get("schema_version"),
             "check_schema": checked.get("schema_version"),
+            "inspect_schema": inspected.get("schema_version"),
         }
 
 

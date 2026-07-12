@@ -3,6 +3,7 @@ from __future__ import annotations
 import platform
 import time
 from collections import Counter
+from contextlib import redirect_stderr, redirect_stdout
 from importlib import metadata
 from pathlib import Path
 
@@ -13,17 +14,20 @@ from .elements import (
     CheckboxElement,
     ColumnsElement,
     ContainerElement,
+    DataTableElement,
     ErrorElement,
     ExpanderElement,
     HeaderElement,
     MultiselectElement,
     NumberInputElement,
+    PathInputElement,
     RadioElement,
     SelectboxElement,
     SliderElement,
     SpinnerElement,
     StatusElement,
     SubheaderElement,
+    TabsElement,
     TextAreaElement,
     TextInputElement,
     TitleElement,
@@ -33,17 +37,30 @@ from .runtime import Runtime
 
 _perf_counter = time.perf_counter
 
+
+class _DiscardTextOutput:
+    encoding = "utf-8"
+
+    def write(self, value: str) -> int:
+        return len(value)
+
+    def flush(self) -> None:
+        pass
+
 _WIDGET_ELEMENTS = (
     ButtonElement,
     CheckboxElement,
+    DataTableElement,
     ExpanderElement,
     MultiselectElement,
     NumberInputElement,
+    PathInputElement,
     RadioElement,
     SelectboxElement,
     SliderElement,
     TextAreaElement,
     TextInputElement,
+    TabsElement,
     ToggleElement,
 )
 _KEYED_ELEMENTS = (
@@ -80,6 +97,9 @@ def _walk_elements(elements: list[object], depth: int = 0):
         if isinstance(element, ColumnsElement):
             for column in element.columns:
                 yield from _walk_elements(column, depth + 1)
+        if isinstance(element, TabsElement):
+            for pane in element.panes:
+                yield from _walk_elements(pane, depth + 1)
 
 
 def _has_script_error(runtime: Runtime) -> bool:
@@ -130,6 +150,14 @@ def runtime_snapshot(runtime: Runtime) -> dict[str, object]:
                 for element, _depth in walked
                 if isinstance(element, ColumnsElement)
             ),
+            "tab_groups": sum(
+                isinstance(element, TabsElement) for element, _depth in walked
+            ),
+            "tabs": sum(
+                len(element.panes)
+                for element, _depth in walked
+                if isinstance(element, TabsElement)
+            ),
             "by_depth": {
                 str(depth): count for depth, count in sorted(depths.items())
             },
@@ -172,6 +200,8 @@ def _empty_snapshot() -> dict[str, object]:
             "containers": 0,
             "column_groups": 0,
             "columns": 0,
+            "tab_groups": 0,
+            "tabs": 0,
             "by_depth": {},
         },
         "local_module_count": 0,
@@ -298,7 +328,9 @@ def inspect_script(
 
     for run_number in range(1, repeat + 1):
         run_started_at = _perf_counter()
-        runtime.run_script()
+        sink = _DiscardTextOutput()
+        with redirect_stdout(sink), redirect_stderr(sink):
+            runtime.run_script()
         run_timings.append(
             {"run": run_number, "duration_ms": _elapsed_ms(run_started_at)}
         )

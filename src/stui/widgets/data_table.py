@@ -25,25 +25,26 @@ class StuiDataTable(DataTable):
         cursor_row: int | None = None,
         id: str | None = None,
     ) -> None:
-        interactive = (
+        focusable = bool(element.source_row_indices) and not element.disabled
+        selectable = (
             element.selection_mode == "single"
-            and bool(element.source_row_indices)
-            and not element.disabled
+            and focusable
         )
         self.stui_key = element.key
+        self.stui_selection_mode = element.selection_mode
         self.stui_source_row_indices = element.source_row_indices
         self.stui_selected_index = element.selected_index
         super().__init__(
             show_header=True,
             show_row_labels=False,
             zebra_stripes=True,
-            show_cursor=interactive,
-            cursor_type="row" if interactive else "none",
+            show_cursor=selectable,
+            cursor_type="row" if selectable else "none",
             id=id,
             classes="stui-data-table-widget",
             disabled=element.disabled,
         )
-        self.can_focus = interactive
+        self.can_focus = focusable
 
         for column_index, header in enumerate(element.headers):
             values = (row[column_index] for row in element.rows)

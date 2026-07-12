@@ -90,6 +90,38 @@ st.write(dark)
     assert runtime.session_state.calls == 1
 
 
+def test_toggle_callback_receives_args_after_state_commit(tmp_path: Path) -> None:
+    script = write_script(
+        tmp_path,
+        """
+import stui as st
+
+if "events" not in st.session_state:
+    st.session_state.events = []
+
+def record(key, *, prefix):
+    st.session_state.events.append(
+        f"{prefix}:{st.session_state[key]}"
+    )
+
+st.toggle(
+    "Enabled",
+    key="enabled",
+    on_change=record,
+    args=("enabled",),
+    kwargs={"prefix": "toggle"},
+)
+""",
+    )
+    runtime = Runtime(script)
+    runtime.run_script()
+
+    runtime.set_widget_value("enabled", True)
+    runtime.run_script()
+
+    assert runtime.session_state["enabled"] is True
+    assert runtime.session_state.events == ["toggle:True"]
+
 def test_toast_collects_messages_for_the_current_run(tmp_path: Path) -> None:
     script = write_script(
         tmp_path,
