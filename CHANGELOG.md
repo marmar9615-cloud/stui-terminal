@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- Fullscreen data explorer for existing `st.data_table` widgets, opened with
+  F4 or the command palette. Includes live search, numeric-aware sorting,
+  full normalized row details, and responsive wide/narrow layouts.
+- Source-index-preserving selection from sorted and filtered views, including
+  callbacks and pending form values. Browsing does not rerun scripts; watch
+  reloads wait until the explorer closes.
+- Rebuilt the bundled `data_explorer` demo as Run lab with 24 synthetic
+  benchmarks, metrics, trends, and selected-record details.
+
+### Fixed
+
+- Explorer search matches the escaped control-character text shown in cells.
+- Source distributions include the explorer's real SVG preview captures.
+
 ## 2.3.0 - 2026-07-12
 
 ### Added

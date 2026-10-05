@@ -3,6 +3,7 @@ from __future__ import annotations
 from rich.cells import cell_len
 from rich.text import Text
 from textual.binding import Binding
+from textual.message import Message
 from textual.widgets import DataTable
 
 from .._terminal_text import visible_terminal_text
@@ -16,7 +17,13 @@ class StuiDataTable(DataTable):
     BINDINGS = [
         *DataTable.BINDINGS,
         Binding("space", "select_cursor", "Select", show=False),
+        Binding("f4", "explore", "Explore table"),
     ]
+
+    class Explore(Message):
+        def __init__(self, table: StuiDataTable) -> None:
+            super().__init__()
+            self.table = table
 
     def __init__(
         self,
@@ -25,6 +32,7 @@ class StuiDataTable(DataTable):
         cursor_row: int | None = None,
         id: str | None = None,
     ) -> None:
+        self.stui_element = element
         focusable = bool(element.source_row_indices) and not element.disabled
         selectable = (
             element.selection_mode == "single"
@@ -106,3 +114,7 @@ class StuiDataTable(DataTable):
         if 0 <= cursor_row < len(self.stui_source_row_indices):
             return self.stui_source_row_indices[cursor_row]
         return None
+
+    def action_explore(self) -> None:
+        if not self.disabled:
+            self.post_message(self.Explore(self))

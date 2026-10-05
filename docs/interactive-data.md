@@ -110,9 +110,48 @@ v2.3 integration verifies tables inside tabs: only the active pane mounts,
 hidden rows cannot receive events, cursor state restores after switching away
 and back, and form-pending selection survives tab navigation until submit.
 
+## Fullscreen explorer
+
+Available in the current `main` checkout, pending the next package release.
+
+Focus any enabled `st.data_table` and press **F4**, or open the Ctrl+P command
+palette and choose `Explore table: KEY`. No API changes are needed.
+
+The explorer shows a scrollable table beside a full-text row-details pane.
+Below 72 terminal columns, details stack underneath the table.
+
+| Control | Action |
+| --- | --- |
+| Ctrl+F | Focus live search; Enter returns focus to the table |
+| F6 | Cycle sort columns, including original source order |
+| F7 | Reverse the current column sort |
+| F8 | Clear search and restore source order |
+| Column header click | Sort that column; click again to reverse |
+| Up / Down | Move the cursor and update row details |
+| Enter / Space | Select the source row and return to the app |
+| Escape | Return without changing selection |
+
+Search is case-insensitive and matches every whitespace-separated term against
+any displayed cell. Sorting uses normalized display values: finite numeric text
+sorts numerically, followed by case-insensitive text. Equal values retain source
+order. Source indexes never change when the view is filtered or sorted.
+
+Browsing does not execute the script or call `on_select`. Selecting a row uses
+the existing callback and form-pending behavior. Non-selectable tables allow
+browsing and row details, but Enter does not commit or close the explorer.
+
+The explorer uses a snapshot of the normalized, display-limited table. It does
+not retrieve rows or columns excluded by `max_rows` or `max_cols`. Details show
+complete normalized cell strings, not original Python objects. Watch-mode
+reloads wait until the explorer closes, then the next watch poll processes
+pending source changes. Search and sort settings reset each time it opens.
+
+Try `python -m stui demo data_explorer` for the Run lab demo with 24 synthetic
+benchmarks, summary metrics, trends, and selection details.
+
 ## Non-Goals
 
-The initial contract does not include cell editing, sorting, filtering,
+The API does not include cell editing, programmatic sorting or filtering,
 multiple selection, dataframe row labels, or returning mutable row data.
 `st.table` and `st.dataframe` remain the stable static-display choices.
 
@@ -120,6 +159,7 @@ multiple selection, dataframe row labels, or returning mutable row data.
 
 ```bash
 python3.11 -m pytest tests/test_data_table.py
+python3.11 -m pytest tests/test_data_explorer.py
 python3.11 -m pytest
 ```
 
@@ -127,3 +167,11 @@ The focused suite covers normalization, empty mapping/sequence rows, defensive s
 callbacks, forms, keyboard and mouse selection, cursor persistence, disabled
 and empty states, explicit height, Unicode and long cells, narrow terminals,
 and columns.
+
+Explorer tests additionally cover search, sorting, source identity, callbacks,
+form deferral, cancellation, read-only/disabled tables, display limits, watch
+reload deferral, terminal text, and resizing. Real Textual Pilot captures from
+the Run lab demo are in `assets/stui-run-lab.svg`,
+`assets/stui-data-explorer.svg`, and `assets/stui-data-explorer-narrow.svg`.
+These show 120x36 and 38x22 cell layouts; they do not establish compatibility
+with every terminal emulator.

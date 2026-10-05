@@ -77,6 +77,7 @@ from .elements import (
 )
 from .path_input import _visible_path_text
 from .runtime import Runtime
+from .widgets.data_explorer import DataExplorerScreen
 from .widgets.data_table import StuiDataTable
 from .widgets.slider import StuiSlider
 
@@ -879,6 +880,8 @@ class StuiApp(App[None]):
         await self.render_runtime()
 
     async def _poll_script_change(self) -> None:
+        if any(isinstance(screen, DataExplorerScreen) for screen in self.screen_stack):
+            return
         changed_paths = self.runtime.poll_source_changes()
         if not changed_paths:
             return
@@ -903,6 +906,13 @@ class StuiApp(App[None]):
 
     def get_system_commands(self, screen: Screen) -> Iterable[SystemCommand]:
         """Expose a fixed set of non-evaluating command palette actions."""
+        if isinstance(screen, DataExplorerScreen):
+            yield SystemCommand(
+                "Close data explorer",
+                "Return to the app without changing selection",
+                screen.action_close,
+            )
+            return
         yield SystemCommand(
             "Rerun app",
             "Run the current stui script again",
@@ -943,6 +953,15 @@ class StuiApp(App[None]):
             "Show key and focused-widget help",
             self.action_show_help_panel,
         )
+
+        if screen is not None:
+            for table in screen.query(StuiDataTable):
+                if not table.disabled:
+                    yield SystemCommand(
+                        f"Explore table: {_tab_label(table.stui_key)}",
+                        "Search, sort, and inspect displayed rows in fullscreen",
+                        partial(self._open_data_explorer, table),
+                    )
 
         tab_targets = []
         for key, index, label in self._command_palette_tab_targets():
@@ -1201,7 +1220,7 @@ class StuiApp(App[None]):
             )
             data_table.tooltip = (
                 "Arrow keys move. Enter or Space selects a row. "
-                "Tab and Shift+Tab move focus."
+                "F4 opens the fullscreen data explorer. Tab moves focus."
             )
             children = [data_table]
             if element.hidden_rows:
@@ -1570,6 +1589,32 @@ class StuiApp(App[None]):
             return
         event.stop()
         self.runtime.set_widget_value(data_table.stui_key, source_index)
+        self.runtime.run_script()
+        await self.render_runtime()
+
+    def on_stui_data_table_explore(self, event: StuiDataTable.Explore) -> None:
+        event.stop()
+        self._open_data_explorer(event.table)
+
+    def _open_data_explorer(self, table: StuiDataTable) -> None:
+        if table.disabled or not table.is_mounted:
+            return
+        if any(isinstance(screen, DataExplorerScreen) for screen in self.screen_stack):
+            return
+        self.push_screen(
+            DataExplorerScreen(table.stui_element, cursor_row=table.cursor_row),
+            partial(self._apply_explorer_selection, table),
+        )
+
+    async def _apply_explorer_selection(
+        self, table: StuiDataTable, source_index: int | None
+    ) -> None:
+        if source_index is None:
+            return
+        if not table.is_mounted or table.disabled:
+            return
+        table.move_cursor(row=table.stui_source_row_indices.index(source_index))
+        self.runtime.set_widget_value(table.stui_key, source_index)
         self.runtime.run_script()
         await self.render_runtime()
 

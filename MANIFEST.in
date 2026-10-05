@@ -7,7 +7,7 @@ include ROADMAP.md
 include SECURITY.md
 include SUPPORT.md
 include pyproject.toml
-recursive-include assets *.png
+recursive-include assets *.png *.svg
 recursive-include docs *.md
 recursive-include examples *.py
 recursive-include scripts *.sh *.py

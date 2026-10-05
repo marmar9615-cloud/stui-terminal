@@ -18,6 +18,22 @@ Streamlit compatibility layer. Existing Streamlit apps usually need edits; new
 
 ## Live Terminal Preview
 
+### New in this checkout: fullscreen data explorer
+
+This feature is available from the current `main` checkout; the published
+v2.3.0 package does not include it yet. In an editable checkout, run
+`python -m stui demo data_explorer`, focus the table, and press **F4**.
+Search across columns, sort numeric values, and read complete cell text in the
+row-details pane. Enter selects the original source row back in your app;
+Escape returns without changing selection. Existing `st.data_table` calls gain
+this interface without code changes or new dependencies.
+
+The explorer browses the displayed snapshot within `max_rows` and `max_cols`.
+Search and sorting do not rerun your script. See
+[interactive data](docs/interactive-data.md#fullscreen-explorer) for controls.
+
+![Fullscreen data explorer with numeric sorting and row details](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/main/assets/stui-data-explorer.svg)
+
 These are real Textual captures from the bundled v2.3 `workspace` demo after
 driving the documented keyboard interactions. They are not mockups.
 
@@ -873,7 +889,8 @@ stui run examples/kitchen_sink.py
 - No sidebars, file upload, browser components, disk cache, distributed cache,
   background refresh, or persistent cache.
 - `st.table` and `st.dataframe` are static displays. Experimental
-  `st.data_table` adds single-row selection, but no dataframe editing or sorting.
+  `st.data_table` adds single-row selection and fullscreen search/sorting, but
+  no dataframe editing.
   Object-row support is for display only and uses dataclasses, namedtuples, or
   simple public attributes.
 - Slider input supports numeric values only.
