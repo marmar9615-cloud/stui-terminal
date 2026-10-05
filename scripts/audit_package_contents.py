@@ -69,6 +69,7 @@ SDIST_REQUIRED_SUFFIXES = {
     "pyproject.toml",
     "docs/releases/README.md",
     "docs/releases/RELEASE_NOTES_v2.3.0.md",
+    "docs/releases/RELEASE_NOTES_v2.4.0.md",
     "docs/tabs.md",
     "docs/path-input.md",
     "docs/interactive-data.md",

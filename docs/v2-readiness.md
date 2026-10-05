@@ -1,9 +1,14 @@
 # v2 Readiness
 
-`stui` v2.0.0 established the stable v2 contract. v2.3.0 is the interactive
+`stui` v2.0.0 established the stable v2 contract. v2.3.0 was the interactive
 workspaces and deep diagnostics release: it preserves compatibility while
 adding experimental tabs, local path input, selectable data, and versioned
 non-sensitive inspection.
+
+v2.4.0 adds fullscreen exploration to existing experimental data tables with
+search, numeric-aware sorting, and row details. It changes no public signatures,
+stable API classifications, or dependencies. Release-specific scope and proof
+are recorded in [the v2.4.0 notes](releases/RELEASE_NOTES_v2.4.0.md).
 
 `stui` remains terminal-native, Streamlit-inspired, and deliberately not
 Streamlit-compatible. The PyPI distribution remains `stui-terminal`; the import

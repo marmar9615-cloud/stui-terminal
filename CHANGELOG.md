@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## 2.4.0 - 2026-10-04
+
 ### Added
 
 - Fullscreen data explorer for existing `st.data_table` widgets, opened with

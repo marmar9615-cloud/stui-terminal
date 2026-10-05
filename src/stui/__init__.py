@@ -48,7 +48,7 @@ from .cache import cache_data, cache_resource
 from .path_input import path_input
 from .tabs import tabs
 
-__version__ = "2.3.0"
+__version__ = "2.4.0"
 
 __all__ = [
     "__version__",

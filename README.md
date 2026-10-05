@@ -18,11 +18,9 @@ Streamlit compatibility layer. Existing Streamlit apps usually need edits; new
 
 ## Live Terminal Preview
 
-### New in this checkout: fullscreen data explorer
+### New in v2.4.0: fullscreen data explorer
 
-This feature is available from the current `main` checkout; the published
-v2.3.0 package does not include it yet. In an editable checkout, run
-`python -m stui demo data_explorer`, focus the table, and press **F4**.
+Run `python -m stui demo data_explorer`, focus the table, and press **F4**.
 Search across columns, sort numeric values, and read complete cell text in the
 row-details pane. Enter selects the original source row back in your app;
 Escape returns without changing selection. Existing `st.data_table` calls gain
@@ -32,7 +30,7 @@ The explorer browses the displayed snapshot within `max_rows` and `max_cols`.
 Search and sorting do not rerun your script. See
 [interactive data](docs/interactive-data.md#fullscreen-explorer) for controls.
 
-![Fullscreen data explorer with numeric sorting and row details](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/main/assets/stui-data-explorer.svg)
+![Fullscreen data explorer with numeric sorting and row details](https://raw.githubusercontent.com/marmar9615-cloud/stui-terminal/v2.4.0/assets/stui-data-explorer.svg)
 
 These are real Textual captures from the bundled v2.3 `workspace` demo after
 driving the documented keyboard interactions. They are not mockups.
@@ -551,7 +549,7 @@ stability checklist are tracked in
 The terminal support checklist lives in
 [docs/terminal-compatibility.md](docs/terminal-compatibility.md).
 
-| Area | APIs | Status in v2.3.0 |
+| Area | APIs | Status in v2.4.0 |
 | --- | --- | --- |
 | Text | `st.title`, `st.header`, `st.subheader`, `st.caption`, `st.text`, `st.markdown`, `st.write`, `st.divider` | v1-stable |
 | Status | `st.info`, `st.success`, `st.warning`, `st.error`, `st.exception` | v1-stable |
@@ -578,7 +576,7 @@ not require pandas or plotting dependencies.
 
 ### Stable API
 
-The v2.3.0 stable surface remains compatible with v2.0.0: the tested API frozen in
+The v2.4.0 stable surface remains compatible with v2.0.0: the tested API frozen in
 v1.9.0 and verified for the v2 major release. It keeps the v1.9.0 API intact
 while making the v2 contract, migration expectations, release-proof gates, and
 deferred roadmap explicit. Tables and dataframes are stable for documented
@@ -591,7 +589,7 @@ correctness, terminal, or security issue forces a change.
 ### Experimental API
 
 The documented experimental APIs are public enough to try, but they are not
-promised as frozen v2 behavior yet. In v2.3.0 this includes the post-v1
+promised as frozen v2 behavior yet. In v2.4.0 this includes the post-v1
 experimental `st.status`, `st.spinner`, and `st.help`; `st.multiselect` and
 `st.toast` from v2.1.0; and `st.tabs`, `st.path_input`, and `st.data_table`
 added in v2.3.0. `st.cache_data`, `st.cache_resource`, `st.text_area`, and
@@ -918,12 +916,13 @@ stui run examples/kitchen_sink.py
 - A large component marketplace before the terminal API is stable.
 - A wrapper around GPL slider/widget code or `textual-slider`.
 
-## v2.3 Stable Status
+## v2.4 Stable Status
 
-v2.3.0 keeps the package/import/CLI contract and full v2.0.0 stable API intact.
-It graduates process-local caching, multiline authoring, and `st.toggle`; adds
-experimental tabs, local path input, and selectable data tables; and adds a
-versioned, non-sensitive `stui inspect` report. Release work still points at
+v2.4.0 keeps the package/import/CLI contract and full v2.0.0 stable API intact.
+It adds fullscreen exploration to existing experimental `st.data_table`
+widgets, with live search, numeric-aware sorting, and full row details. The
+stable APIs and experimental classifications are unchanged from v2.3.0.
+Release work still points at
 [docs/v2-readiness.md](docs/v2-readiness.md).
 
 The remaining experimental APIs and terminal compatibility unknowns are visible

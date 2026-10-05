@@ -691,21 +691,22 @@ package metadata, bundled demo resources, all init templates, all bundled
 examples, and doctor diagnostics without launching a full TUI. Use
 `--repeat N` to repeat generated-template and bundled-example checks.
 
-## v2.3 Stable Status
+## v2.4 Stable Status
 
-The signatures above are intentionally covered by tests in v2.3.0. The
+The signatures above are intentionally covered by tests in v2.4.0. The
 classification table marks each top-level API as `v1-stable`,
 `post-v1 experimental`, or `post-v2 experimental`; see
 [API Stability](api-stability.md) for the full compatibility promise and
 post-v1 deprecation policy.
 
-v2.3.0 keeps the v2 stable APIs intact while adding experimental workspace,
-local-path, selectable-data, and diagnostics APIs on top of the contract in
+v2.4.0 keeps the v2 stable APIs and v2.3 workspace, local-path, selectable-data,
+and diagnostics APIs intact while adding fullscreen data exploration to
+existing experimental tables on top of the contract in
 [v2 readiness](v2-readiness.md). Any change to stable names should be treated
 as a compatibility event unless it fixes a correctness, terminal, or security
 issue and is documented in the changelog and release notes.
 
-These APIs stay experimental in v2.3.0 and remain outside the v2 stable
+These APIs stay experimental in v2.4.0 and remain outside the v2 stable
 contract:
 
 - Help and status: `st.help`, `st.status`, and `st.spinner` formatting and

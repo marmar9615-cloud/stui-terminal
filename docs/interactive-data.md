@@ -112,7 +112,7 @@ and back, and form-pending selection survives tab navigation until submit.
 
 ## Fullscreen explorer
 
-Available in the current `main` checkout, pending the next package release.
+Available in v2.4.0 and later.
 
 Focus any enabled `st.data_table` and press **F4**, or open the Ctrl+P command
 palette and choose `Explore table: KEY`. No API changes are needed.

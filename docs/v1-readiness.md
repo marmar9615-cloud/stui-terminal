@@ -1,6 +1,6 @@
 # v1 Readiness
 
-`stui` v2.3.0 is the current release target; v2.0.0 was the first v2 stable
+`stui` v2.4.0 is the current release target; v2.0.0 was the first v2 stable
 release and v2.1.0 was the first post-v2 feature release.
 The goal for the v1 series is not to become Streamlit-compatible or to grow a
 large component catalog. The goal is a small, stable, terminal-native API that

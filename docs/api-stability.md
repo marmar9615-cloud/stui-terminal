@@ -1,6 +1,6 @@
 # API Stability
 
-`stui` v2.3.0 keeps the top-level stable API intentional and
+`stui` v2.4.0 keeps the top-level stable API intentional and
 Streamlit-inspired, but it is not Streamlit-compatible and does not depend on
 Streamlit at runtime.
 
