@@ -511,6 +511,7 @@ python3.11 -m pytest
 - `r`: rerun the script
 - `tab`: focus the next widget
 - `shift+tab`: focus the previous widget
+- `F4`: open the fullscreen explorer for the focused, enabled `st.data_table`
 - `enter` or `space`: press the focused button
 - `space`: toggle the focused checkbox
 - `enter` in text and number inputs: submit the edited value
